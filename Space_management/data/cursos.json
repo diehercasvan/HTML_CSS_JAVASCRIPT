@@ -1,0 +1,34 @@
+{
+    "cursos": [
+        {
+            "id": "101",
+            "nombre": "Matemáticas 10°",
+            "grado": "10",
+            "jornada": "Mañana"
+        },
+        {
+            "id": "102",
+            "nombre": "Español 10°",
+            "grado": "10",
+            "jornada": "Mañana"
+        },
+        {
+            "id": "103",
+            "nombre": "Ciencias 10°",
+            "grado": "10",
+            "jornada": "Mañana"
+        },
+        {
+            "id": "201",
+            "nombre": "Inglés 11°",
+            "grado": "11",
+            "jornada": "Tarde"
+        },
+        {
+            "id": "202",
+            "nombre": "Sociales 11°",
+            "grado": "11",
+            "jornada": "Tarde"
+        }
+    ]
+}

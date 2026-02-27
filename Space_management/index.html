@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Salones de Clase - v0.4</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <!-- Estilos personalizados -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <!-- Navbar con opciones de exportar/importar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">
+        <i class="fas fa-chalkboard-teacher"></i> Gestión de Salones v0.4
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="fas fa-database"></i> Datos
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <button class="dropdown-item" onclick="exportarDatos()">
+                  <i class="fas fa-download"></i> Descargar JSON
+                </button>
+              </li>
+              <li>
+                <label for="importarArchivo" class="dropdown-item" style="cursor: pointer;">
+                  <i class="fas fa-upload"></i> Cargar JSON
+                  <input type="file" id="importarArchivo" accept=".json" style="display: none;"
+                    onchange="importarDatos(event)">
+                </label>
+              </li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li>
+                <button class="dropdown-item" onclick="generarReporteCompleto()">
+                  <i class="fas fa-file-pdf"></i> Reporte General
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item text-danger" onclick="limpiarTodosLosDatos()">
+                  <i class="fas fa-trash"></i> Limpiar todo
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid mt-4">
+    <!-- Pestañas de navegación -->
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="responsable-tab" data-bs-toggle="tab" data-bs-target="#responsable"
+          type="button" role="tab">
+          <i class="fas fa-user"></i> Responsables
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="puestos-tab" data-bs-toggle="tab" data-bs-target="#puestos" type="button"
+          role="tab">
+          <i class="fas fa-chair"></i> Puestos
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="equipos-tab" data-bs-toggle="tab" data-bs-target="#equipos" type="button"
+          role="tab">
+          <i class="fas fa-tv"></i> TV/Proyectores
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="sillas-tab" data-bs-toggle="tab" data-bs-target="#sillas" type="button" role="tab">
+          <i class="fas fa-chair"></i> Sillas
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="asistencia-tab" data-bs-toggle="tab" data-bs-target="#asistencia" type="button"
+          role="tab">
+          <i class="fas fa-calendar-check"></i> Asistencia
+        </button>
+      </li>
+    </ul>
+
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
+      <!-- Pestaña Responsable -->
+      <div class="tab-pane fade show active" id="responsable" role="tabpanel">
+        <div class="row">
+          <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4>Responsables Registrados</h4>
+              <button class="btn btn-success" onclick="mostrarFormularioResponsable()">
+                <i class="fas fa-plus"></i> Nuevo Responsable
+              </button>
+            </div>
+
+            <!-- Tabla de responsables -->
+            <div class="table-responsive">
+              <table class="table table-striped table-hover table-bordered" id="tablaResponsables">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Curso</th>
+                    <th>Nombre</th>
+                    <th>Documento</th>
+                    <th>Salón</th>
+                    <th>Fecha</th>
+                    <th>H.Inicio</th>
+                    <th>H.Fin</th>
+                    <th>Estado PC</th>
+                    <th>Limpieza</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="cuerpoTablaResponsables">
+                  <!-- Datos cargados dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña Puestos -->
+      <div class="tab-pane fade" id="puestos" role="tabpanel">
+        <div class="row">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label for="cursoPuestoDocente" class="form-label">Seleccionar Curso para Puesto Docente</label>
+              <select class="form-select" id="cursoPuestoDocente" onchange="cargarDocentesParaPuesto()">
+                <option value="">Seleccione un curso</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <h4>Puestos del Docente</h4>
+            <button class="btn btn-success mb-3" onclick="agregarPuestoDocente()">
+              <i class="fas fa-plus"></i> Agregar Puesto Docente
+            </button>
+
+            <!-- Tabla de puestos docentes -->
+            <div class="table-responsive">
+              <table class="table table-striped table-hover table-bordered" id="tablaPuestosDocentes">
+                <thead class="table-dark">
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Documento</th>
+                    <th>Serial PC</th>
+                    <th>Estado PC</th>
+                    <th>Mouse</th>
+                    <th>Teclado</th>
+                    <th>Pantalla</th>
+                    <th>Internet</th>
+                    <th>Limpieza</th>
+                    <th>Observaciones</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="cuerpoTablaPuestosDocentes">
+                  <!-- Datos cargados dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <h4>Configuración de Mesas</h4>
+
+            <!-- Selector de curso para mesas -->
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="cursoMesas" class="form-label">Seleccionar Curso</label>
+                <select class="form-select" id="cursoMesas" onchange="cargarEstudiantesParaMesas()">
+                  <option value="">Seleccione un curso</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Botón para mostrar/ocultar configuración -->
+            <button class="btn btn-outline-primary mb-3" type="button" data-bs-toggle="collapse"
+              data-bs-target="#panelConfiguracionMesas" aria-expanded="true">
+              <i class="fas fa-cog"></i> <span id="toggleConfigText">Ocultar</span> Configuración
+            </button>
+
+            <!-- Panel de configuración colapsable -->
+            <div class="collapse show mb-3" id="panelConfiguracionMesas">
+              <div class="card card-body">
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="filas" class="form-label">Número de Filas</label>
+                      <input type="number" class="form-control" id="filas" min="1" max="10" value="3">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="columnas" class="form-label">Número de Columnas (max 6)</label>
+                      <input type="number" class="form-control" id="columnas" min="1" max="6" value="2">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="pcsPorMesa" class="form-label">PCs por Mesa</label>
+                      <input type="number" class="form-control" id="pcsPorMesa" min="1" max="6" value="2">
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12">
+                    <button class="btn btn-primary" onclick="crearDistribucionMesas()">
+                      <i class="fas fa-table"></i> Crear Distribución
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Contenedor de mesas -->
+            <div id="mesasContainer" class="row mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pestaña TV/Proyectores -->
+      <div class="tab-pane fade" id="equipos" role="tabpanel">
+        <h4>TV y Proyectores</h4>
+        <button class="btn btn-success mb-3" onclick="agregarEquipo()">
+          <i class="fas fa-plus"></i> Agregar Equipo
+        </button>
+
+        <!-- Tabla de equipos -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover table-bordered" id="tablaEquipos">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Limpieza</th>
+                <th>Observaciones</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaEquipos">
+              <!-- Datos cargados dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pestaña Sillas -->
+      <div class="tab-pane fade" id="sillas" role="tabpanel">
+        <h4>Gestión de Sillas</h4>
+
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i> Cada silla tiene un serial único. Un estudiante solo puede tener UNA silla
+          asignada.
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Configuración de Sillas</h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="cursoSillas" class="form-label">Curso</label>
+                      <select class="form-select" id="cursoSillas" onchange="cargarEstudiantesParaSillas()">
+                        <option value="">Seleccione un curso</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="numeroSillas" class="form-label">Número de Sillas</label>
+                      <input type="number" class="form-control" id="numeroSillas" min="1" max="50" value="12">
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-12">
+                    <button class="btn btn-primary" onclick="crearSillas()">
+                      <i class="fas fa-chair"></i> Crear Sillas
+                    </button>
+                    <button class="btn btn-success" onclick="asignarSillasAutomaticamente()">
+                      <i class="fas fa-magic"></i> Asignar Automáticamente
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Estadísticas</h5>
+              </div>
+              <div class="card-body">
+                <div id="estadisticasSillas">
+                  <p class="text-muted">Seleccione un curso para ver estadísticas</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenedor de sillas -->
+        <div id="sillasContainer" class="row"></div>
+      </div>
+
+      <!-- Pestaña Asistencia (NUEVA) -->
+      <div class="tab-pane fade" id="asistencia" role="tabpanel">
+        <h4>Registro de Asistencia</h4>
+
+        <div class="alert alert-success">
+          <i class="fas fa-calendar-check"></i> Registre la asistencia de los estudiantes por curso y fecha.
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <label for="cursoAsistencia" class="form-label">Seleccionar Curso</label>
+            <select class="form-select" id="cursoAsistencia" onchange="cargarAsistenciaPorCurso()">
+              <option value="">Seleccione un curso</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="fechaAsistencia" class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="fechaAsistencia" value="">
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary me-2" onclick="filtrarAsistencia()">
+              <i class="fas fa-search"></i> Filtrar
+            </button>
+            <button class="btn btn-success" onclick="guardarAsistencia()">
+              <i class="fas fa-save"></i> Guardar Asistencia
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de asistencia -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover table-bordered" id="tablaAsistencia">
+            <thead class="table-dark">
+              <tr>
+                <th>Documento</th>
+                <th>Nombre Completo</th>
+                <th>Silla Asignada</th>
+                <th>Serial Silla</th>
+                <th>Asistencia</th>
+                <th>Observaciones</th>
+              </tr>
+            </thead>
+            <tbody id="cuerpoTablaAsistencia">
+              <!-- Datos cargados dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALES (existentes) -->
+  <!-- Modal para responsable -->
+  <div class="modal fade" id="modalResponsable" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar/Editar Responsable</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formResponsable">
+            <input type="hidden" id="responsableId" value="-1">
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="cursoResponsable" class="form-label">Curso</label>
+                  <select class="form-select" id="cursoResponsable" required onchange="cargarDocentesPorCurso()">
+                    <option value="">Seleccione un curso</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="docenteResponsable" class="form-label">Docente</label>
+                  <select class="form-select" id="docenteResponsable" required onchange="cargarDatosDocente()">
+                    <option value="">Seleccione un docente</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="numeroSalon" class="form-label">Número de Salón</label>
+                  <input type="text" class="form-control" id="numeroSalon" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fecha" class="form-label">Fecha</label>
+                  <input type="date" class="form-control" id="fecha" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="horarioInicio" class="form-label">Horario inicio</label>
+                  <input type="time" class="form-control" id="horarioInicio" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="horarioFin" class="form-label">Horario final</label>
+                  <input type="time" class="form-control" id="horarioFin" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Estado del Equipo</label>
+                  <select class="form-select" id="estadoEquipo" required>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Estado de Limpieza</label>
+                  <select class="form-select" id="estadoLimpieza" required>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="observaciones" class="form-label">Observaciones</label>
+              <textarea class="form-control" id="observaciones" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarResponsable()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para puesto docente -->
+  <div class="modal fade" id="modalPuestoDocente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar Puesto Docente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formPuestoDocente">
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="selectDocente" class="form-label">Seleccionar Docente</label>
+                  <select class="form-select" id="selectDocente" required onchange="cargarDatosDocentePuesto()">
+                    <option value="">Primero seleccione un curso</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="documentoDocente" class="form-label">Documento</label>
+                  <input type="text" class="form-control" id="documentoDocente" readonly>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="serialPC" class="form-label">Serial del PC</label>
+                  <input type="text" class="form-control" id="serialPC" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="estadoPC" class="form-label">Estado del PC</label>
+                  <select class="form-select" id="estadoPC" required>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Mouse</label>
+                  <select class="form-select" id="mousePC">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Teclado</label>
+                  <select class="form-select" id="tecladoPC">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Pantalla</label>
+                  <select class="form-select" id="pantallaPC">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Internet</label>
+                  <select class="form-select" id="internet">
+                    <option value="Funciona">Funciona</option>
+                    <option value="No funciona">No funciona</option>
+                    <option value="Lento">Lento</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Estado de Limpieza</label>
+                  <select class="form-select" id="estadoLimpiezaPC">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="observacionesPC" class="form-label">Observaciones</label>
+              <textarea class="form-control" id="observacionesPC" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarPuestoDocente()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para equipo -->
+  <div class="modal fade" id="modalEquipo" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agregar/Editar Equipo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formEquipo">
+            <input type="hidden" id="equipoIndex" value="-1">
+
+            <div class="mb-3">
+              <label for="equipoTipo" class="form-label">Tipo de Equipo</label>
+              <select class="form-select" id="equipoTipo" required>
+                <option value="">Seleccione un tipo</option>
+                <option value="TV">TV</option>
+                <option value="Proyector">Proyector</option>
+                <option value="Smart TV">Smart TV</option>
+                <option value="Video Beam">Video Beam</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="equipoEstado" class="form-label">Estado</label>
+              <select class="form-select" id="equipoEstado" required>
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Dañado">Dañado</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="equipoLimpieza" class="form-label">Estado de Limpieza</label>
+              <select class="form-select" id="equipoLimpieza" required>
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Malo">Malo</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="equipoObservaciones" class="form-label">Observaciones</label>
+              <textarea class="form-control" id="equipoObservaciones" rows="3"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarEquipo()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para configuración de PC -->
+  <div class="modal fade" id="modalConfigurarPC" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Configurar PC de Mesa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <h6 id="mesaInfo">Mesa: </h6>
+            </div>
+            <div class="col-md-6">
+              <h6 id="pcInfo">PC: </h6>
+            </div>
+          </div>
+
+          <div class="alert alert-info" id="cursoInfo" style="display: none;">
+            <i class="fas fa-info-circle"></i> Curso: <span id="cursoActual"></span>
+          </div>
+
+          <form id="formConfigurarPC">
+            <input type="hidden" id="mesaId" value="">
+            <input type="hidden" id="pcIndex" value="">
+            <input type="hidden" id="cursoMesa" value="">
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Serial del PC</label>
+                  <input type="text" class="form-control" id="pcSerial" placeholder="Ingrese el serial del PC">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Estudiante</label>
+                  <select class="form-select" id="selectEstudiantePC" onchange="cargarDatosEstudiantePC()">
+                    <option value="">Seleccione un estudiante</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Nombre del Estudiante</label>
+                  <input type="text" class="form-control" id="pcEstudiante" readonly>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Documento</label>
+                  <input type="text" class="form-control" id="pcDocumento" readonly>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Estado del PC</label>
+                  <select class="form-select" id="pcEstado">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Mouse</label>
+                  <select class="form-select" id="pcMouse">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Teclado</label>
+                  <select class="form-select" id="pcTeclado">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Pantalla</label>
+                  <select class="form-select" id="pcPantalla">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Dañado">Dañado</option>
+                    <option value="No tiene">No tiene</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Internet</label>
+                  <select class="form-select" id="pcInternet">
+                    <option value="Funciona">Funciona</option>
+                    <option value="No funciona">No funciona</option>
+                    <option value="Lento">Lento</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Limpieza</label>
+                  <select class="form-select" id="pcLimpieza">
+                    <option value="Excelente">Excelente</option>
+                    <option value="Bueno">Bueno</option>
+                    <option value="Regular">Regular</option>
+                    <option value="Malo">Malo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-control" id="pcObservaciones" rows="2"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarConfiguracionPC()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para asignar silla -->
+  <div class="modal fade" id="modalAsignarSilla" tabindex="-1" aria-labelledby="modalAsignarSillaLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalAsignarSillaLabel">Asignar Silla a Estudiante</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formAsignarSilla">
+            <input type="hidden" id="sillaIndex" value="-1">
+            <input type="hidden" id="sillaId" value="">
+
+            <div class="mb-3">
+              <label for="sillaSerial" class="form-label">Serial de la Silla</label>
+              <input type="text" class="form-control" id="sillaSerial" readonly>
+            </div>
+
+            <div class="mb-3">
+              <label for="sillaNumero" class="form-label">Número de Silla</label>
+              <input type="text" class="form-control" id="sillaNumero" readonly>
+            </div>
+
+            <div class="mb-3">
+              <label for="selectEstudianteSilla" class="form-label">Seleccionar Estudiante</label>
+              <select class="form-select" id="selectEstudianteSilla" onchange="cargarDatosEstudianteSilla()">
+                <option value="">Seleccione un estudiante</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="sillaEstudianteNombre" class="form-label">Nombre del Estudiante</label>
+                  <input type="text" class="form-control" id="sillaEstudianteNombre" readonly>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="sillaEstudianteDocumento" class="form-label">Documento</label>
+                  <input type="text" class="form-control" id="sillaEstudianteDocumento" readonly>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="sillaEstado" class="form-label">Estado de la Silla</label>
+              <select class="form-select" id="sillaEstado">
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Malo">Malo</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="sillaObservaciones" class="form-label">Observaciones</label>
+              <textarea class="form-control" id="sillaObservaciones" rows="2"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="desasignarSilla()">Desasignar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarAsignacionSilla()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="js/dataManager.js"></script>
+  <script src="js/uiManager.js"></script>
+  <script src="js/reportes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
