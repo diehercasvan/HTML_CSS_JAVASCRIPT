@@ -2,103 +2,103 @@
     "estudiantes": [
         {
             "documento": "1001234567",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Diego Alejandro",
             "apellidos": "González Méndez",
             "estado": "Activo",
             "celular": "3001234567",
             "correo": "diego.gonzalez@estudiante.edu",
-            "numero_curso": "101"
+            "numeroCurso": "101"
         },
         {
             "documento": "1002345678",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Valentina Sofía",
             "apellidos": "Rodríguez López",
             "estado": "Activo",
             "celular": "3002345678",
             "correo": "valentina.rodriguez@estudiante.edu",
-            "numero_curso": "101"
+            "numeroCurso": "101"
         },
         {
             "documento": "1003456789",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Santiago Andrés",
             "apellidos": "Martínez Pérez",
             "estado": "Activo",
             "celular": "3003456789",
             "correo": "santiago.martinez@estudiante.edu",
-            "numero_curso": "102"
+            "numeroCurso": "102"
         },
         {
             "documento": "1004567890",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "María José",
             "apellidos": "García Sánchez",
             "estado": "Activo",
             "celular": "3004567890",
             "correo": "maria.garcia@estudiante.edu",
-            "numero_curso": "102"
+            "numeroCurso": "102"
         },
         {
             "documento": "1005678901",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Juan Sebastián",
             "apellidos": "Torres Castro",
             "estado": "Activo",
             "celular": "3005678901",
             "correo": "juan.torres@estudiante.edu",
-            "numero_curso": "103"
+            "numeroCurso": "103"
         },
         {
             "documento": "1006789012",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Laura Camila",
             "apellidos": "Herrera Díaz",
             "estado": "Activo",
             "celular": "3006789012",
             "correo": "laura.herrera@estudiante.edu",
-            "numero_curso": "103"
+            "numeroCurso": "103"
         },
         {
             "documento": "1007890123",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Daniel Felipe",
             "apellidos": "Ortiz Ruiz",
             "estado": "Activo",
             "celular": "3007890123",
             "correo": "daniel.ortiz@estudiante.edu",
-            "numero_curso": "201"
+            "numeroCurso": "201"
         },
         {
             "documento": "1008901234",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Andrea Carolina",
             "apellidos": "Mendoza Vargas",
             "estado": "Activo",
             "celular": "3008901234",
             "correo": "andrea.mendoza@estudiante.edu",
-            "numero_curso": "201"
+            "numeroCurso": "201"
         },
         {
             "documento": "1009012345",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Cristian David",
             "apellidos": "Rojas Silva",
             "estado": "Activo",
             "celular": "3009012345",
             "correo": "cristian.rojas@estudiante.edu",
-            "numero_curso": "202"
+            "numeroCurso": "202"
         },
         {
             "documento": "1010123456",
-            "tipo_documento": "CC",
+            "tipoDocumento": "CC",
             "nombres": "Natalia Andrea",
             "apellidos": "Jiménez Rincón",
             "estado": "Activo",
             "celular": "3010123456",
             "correo": "natalia.jimenez@estudiante.edu",
-            "numero_curso": "202"
+            "numeroCurso": "202"
         }
     ]
 }

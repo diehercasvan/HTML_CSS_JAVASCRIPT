@@ -1,672 +1,574 @@
-// reportes.js - Módulo para generar reportes detallados v0.4
-// RECONSTRUIDO COMPLETAMENTE
+// reportes.js - Módulo profesional de reportes v0.5
+// CON GENERACIÓN DE PDF Y TABLAS ESTILIZADAS
 
 const Reportes = (function() {
     
-    // ===== FUNCIÓN PRINCIPAL =====
-    
     /**
-     * Genera un reporte completo de todos los datos
+     * Genera un reporte profesional con tablas estilizadas
      */
-    function generarReporteCompleto() {
+    function generarReporteProfesional() {
+        console.log('🔄 Generando reporte profesional...');
+        
         try {
-            console.log('🔄 Generando reporte completo...');
-            
             const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
             
             if (!datos) {
-                console.error('No se pudieron obtener los datos para el reporte');
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudieron obtener los datos para el reporte'
+                    icon: 'warning',
+                    title: 'Sin datos',
+                    text: 'No hay datos para generar el reporte'
                 });
                 return;
             }
+
+            const fechaActual = new Date().toLocaleString();
+            const titulo = `📊 REPORTE DE GESTIÓN DE SALONES - ${fechaActual}`;
+
+            // Crear contenido HTML profesional
+            const contenidoHTML = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Reporte Gestión de Salones</title>
+                    <style>
+                        body { 
+                            font-family: 'Segoe UI', Arial, sans-serif; 
+                            margin: 40px; 
+                            color: #333;
+                            background: #fff;
+                        }
+                        h1 { 
+                            color: #0d6efd; 
+                            border-bottom: 3px solid #0d6efd; 
+                            padding-bottom: 10px;
+                            text-align: center;
+                        }
+                        h2 { 
+                            color: #0d6efd; 
+                            margin-top: 30px;
+                            border-left: 4px solid #0d6efd;
+                            padding-left: 10px;
+                        }
+                        .fecha { 
+                            text-align: center; 
+                            color: #6c757d; 
+                            margin-bottom: 30px;
+                        }
+                        .stats-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                            gap: 20px;
+                            margin: 30px 0;
+                        }
+                        .stat-card {
+                            background: #f8f9fa;
+                            border-radius: 10px;
+                            padding: 20px;
+                            text-align: center;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            border-left: 4px solid #0d6efd;
+                        }
+                        .stat-card h3 {
+                            font-size: 2rem;
+                            margin: 0;
+                            color: #0d6efd;
+                        }
+                        .stat-card p {
+                            margin: 5px 0 0;
+                            color: #6c757d;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                            font-size: 14px;
+                        }
+                        th {
+                            background: #343a40;
+                            color: white;
+                            padding: 12px;
+                            text-align: left;
+                        }
+                        td {
+                            padding: 10px;
+                            border-bottom: 1px solid #dee2e6;
+                        }
+                        tr:hover {
+                            background: #f8f9fa;
+                        }
+                        .badge {
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-size: 12px;
+                            font-weight: bold;
+                        }
+                        .badge-excelente { background: #198754; color: white; }
+                        .badge-bueno { background: #0dcaf0; color: black; }
+                        .badge-regular { background: #ffc107; color: black; }
+                        .badge-danado { background: #dc3545; color: white; }
+                        .footer {
+                            text-align: center;
+                            margin-top: 50px;
+                            color: #6c757d;
+                            font-size: 12px;
+                            border-top: 1px solid #dee2e6;
+                            padding-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>📊 GESTIÓN DE SALONES DE CLASE</h1>
+                    <div class="fecha">Reporte generado: ${fechaActual}</div>
+                    
+                    ${generarResumenProfesional(datos)}
+                    ${generarTablaResponsables(datos)}
+                    ${generarTablaPuestosDocentes(datos)}
+                    ${generarTablaMesas(datos)}
+                    ${generarTablaSillas(datos)}
+                    ${generarTablaEquipos(datos)}
+                    ${generarTablaAsistencia(datos)}
+                    
+                    <div class="footer">
+                        Reporte generado automáticamente - Sistema de Gestión de Salones v0.5<br>
+                        Total de registros: ${calcularTotalRegistros(datos)}
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Abrir en nueva ventana para impresión/PDF
+            const ventana = window.open('', '_blank');
+            ventana.document.write(contenidoHTML);
+            ventana.document.close();
+            ventana.focus();
             
-            // Calcular estadísticas generales
-            const stats = calcularEstadisticasGenerales(datos);
-            
-            // Generar HTML del reporte
-            const reporteHTML = generarHTMLReporte(datos, stats);
-            
-            // Mostrar reporte en modal
-            mostrarReporteModal(reporteHTML);
-            
-            console.log('✅ Reporte generado correctamente');
-            
+            // Ofrecer guardar como PDF
+            setTimeout(() => {
+                if (confirm('¿Desea guardar este reporte como PDF?')) {
+                    ventana.print();
+                }
+            }, 500);
+
+            console.log('✅ Reporte profesional generado');
+
         } catch (error) {
-            console.error('❌ Error generando reporte:', error);
+            console.error('❌ Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'No se pudo generar el reporte: ' + error.message
+                text: 'No se pudo generar el reporte'
             });
         }
     }
-    
-    // ===== FUNCIONES DE CÁLCULO =====
-    
-    /**
-     * Calcula estadísticas generales a partir de los datos
-     */
-    function calcularEstadisticasGenerales(datos) {
-        try {
-            // Total de cursos
-            const totalCursos = datos.cursos?.length || 0;
-            
-            // Total de responsables
-            const totalResponsables = datos.responsables?.length || 0;
-            
-            // Total de puestos docentes
-            const totalPuestosDocentes = datos.puestosDocentes?.length || 0;
-            
-            // Total de PCs en mesas
-            let totalPCs = 0;
-            let pcsAsignados = 0;
-            let pcsExcelente = 0;
-            let pcsBueno = 0;
-            let pcsRegular = 0;
-            let pcsDanado = 0;
-            
-            if (datos.mesas) {
-                datos.mesas.forEach(mesa => {
-                    if (mesa.pcs) {
-                        totalPCs += mesa.pcs.length;
-                        pcsAsignados += mesa.pcs.filter(pc => pc.estudiante).length;
-                        
-                        mesa.pcs.forEach(pc => {
-                            switch(pc.estado?.toLowerCase()) {
-                                case 'excelente': pcsExcelente++; break;
-                                case 'bueno': pcsBueno++; break;
-                                case 'regular': pcsRegular++; break;
-                                case 'dañado': pcsDanado++; break;
-                            }
-                        });
-                    }
-                });
-            }
-            
-            // Total de equipos
-            const totalEquipos = datos.equipos?.length || 0;
-            
-            // Total de sillas
-            const totalSillas = datos.sillas?.length || 0;
-            const sillasOcupadas = datos.sillas?.filter(s => s.documento).length || 0;
-            
-            // Total de registros de asistencia
-            const totalAsistencias = datos.asistencia?.length || 0;
-            
-            return {
-                totalCursos,
-                totalResponsables,
-                totalPuestosDocentes,
-                totalPCs,
-                pcsAsignados,
-                pcsExcelente,
-                pcsBueno,
-                pcsRegular,
-                pcsDanado,
-                totalEquipos,
-                totalSillas,
-                sillasOcupadas,
-                sillasDisponibles: totalSillas - sillasOcupadas,
-                totalAsistencias
-            };
-            
-        } catch (error) {
-            console.error('Error calculando estadísticas:', error);
-            return {};
-        }
-    }
-    
-    // ===== FUNCIONES DE GENERACIÓN DE HTML =====
-    
-    /**
-     * Genera el HTML completo del reporte
-     */
-    function generarHTMLReporte(datos, stats) {
-        const fechaActual = new Date().toLocaleString();
-        
+
+    function generarResumenProfesional(datos) {
+        const totalCursos = datos.cursos?.length || 0;
+        const totalResponsables = datos.responsables?.length || 0;
+        const totalPuestos = datos.puestosDocentes?.length || 0;
+        const totalMesas = datos.mesas?.length || 0;
+        const totalSillas = datos.sillas?.length || 0;
+        const totalEquipos = datos.equipos?.length || 0;
+
+        let totalPCs = 0;
+        let PCsAsignados = 0;
+        datos.mesas?.forEach(m => {
+            totalPCs += m.pcs?.length || 0;
+            PCsAsignados += m.pcs?.filter(p => p.estudiante).length || 0;
+        });
+
+        const sillasOcupadas = datos.sillas?.filter(s => s.documento).length || 0;
+
         return `
-            <div class="reporte-container p-3" style="max-height: 70vh; overflow-y: auto;">
-                <style>
-                    .reporte-titulo { color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; }
-                    .reporte-subtitulo { color: #495057; margin-top: 20px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; }
-                    .reporte-card { background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #0d6efd; }
-                    .reporte-stat { text-align: center; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                    .reporte-stat h3 { margin: 0; color: #0d6efd; font-weight: bold; }
-                    .reporte-stat p { margin: 0; color: #6c757d; }
-                    .reporte-tabla { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    .reporte-tabla th { background: #343a40; color: white; padding: 8px; text-align: left; }
-                    .reporte-tabla td { padding: 8px; border-bottom: 1px solid #dee2e6; }
-                    .reporte-tabla tr:hover { background: #f8f9fa; }
-                    .badge-excelente { background: #198754; color: white; padding: 3px 8px; border-radius: 12px; }
-                    .badge-bueno { background: #0dcaf0; color: black; padding: 3px 8px; border-radius: 12px; }
-                    .badge-regular { background: #ffc107; color: black; padding: 3px 8px; border-radius: 12px; }
-                    .badge-danado { background: #dc3545; color: white; padding: 3px 8px; border-radius: 12px; }
-                </style>
-                
-                <h2 class="reporte-titulo text-center">
-                    <i class="fas fa-chart-bar"></i> Reporte General de Gestión de Salones
-                </h2>
-                <p class="text-center text-muted">Generado el: ${fechaActual}</p>
-                
-                ${generarResumenGeneral(stats)}
-                
-                ${generarDetallePorCurso(datos)}
-                
-                ${generarEstadoPCs(datos)}
-                
-                ${generarAsignacionSillas(datos)}
-                
-                ${generarRegistroAsistencia(datos)}
-                
-                <div class="text-center text-muted mt-4">
-                    <small>Reporte generado automáticamente - Versión 0.4</small>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>${totalCursos}</h3>
+                    <p>Cursos</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${totalResponsables}</h3>
+                    <p>Responsables</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${totalPuestos}</h3>
+                    <p>Puestos Docentes</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${totalPCs}</h3>
+                    <p>Total PCs</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${PCsAsignados}</h3>
+                    <p>PCs Asignados</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${totalSillas}</h3>
+                    <p>Total Sillas</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${sillasOcupadas}</h3>
+                    <p>Sillas Ocupadas</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${totalEquipos}</h3>
+                    <p>Equipos</p>
                 </div>
             </div>
         `;
     }
-    
-    /**
-     * Genera el resumen general con tarjetas de estadísticas
-     */
-    function generarResumenGeneral(stats) {
-        return `
-            <div class="reporte-card">
-                <h5><i class="fas fa-chart-pie"></i> Resumen General</h5>
-                <div class="row mt-3">
-                    <div class="col-md-3 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.totalCursos || 0}</h3>
-                            <p>Cursos</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.totalResponsables || 0}</h3>
-                            <p>Responsables</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.totalPuestosDocentes || 0}</h3>
-                            <p>Puestos Docentes</p>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.totalPCs || 0}</h3>
-                            <p>Total PCs</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-4 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.pcsAsignados || 0}/${stats.totalPCs || 0}</h3>
-                            <p>PCs Asignados</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.totalSillas || 0}</h3>
-                            <p>Total Sillas</p>
-                        </div>
-                    </div>
-                    <div class="col-md-4 col-6 mb-3">
-                        <div class="reporte-stat">
-                            <h3>${stats.sillasOcupadas || 0}/${stats.totalSillas || 0}</h3>
-                            <p>Sillas Ocupadas</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    /**
-     * Genera el detalle por curso
-     */
-    function generarDetallePorCurso(datos) {
-        const cursos = datos.cursos || [];
-        
-        if (cursos.length === 0) {
-            return '<p class="text-muted">No hay cursos registrados</p>';
-        }
-        
-        let html = `
-            <div class="reporte-card">
-                <h5><i class="fas fa-users"></i> Detalle por Curso</h5>
-                <div class="table-responsive">
-                    <table class="reporte-tabla">
-                        <thead>
-                            <tr>
-                                <th>Curso</th>
-                                <th>Responsables</th>
-                                <th>PCs</th>
-                                <th>PCs Asignados</th>
-                                <th>Sillas</th>
-                                <th>Sillas Ocupadas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        cursos.forEach(curso => {
-            const cursoId = curso.id;
-            
-            // Contar responsables del curso
-            const responsablesCurso = datos.responsables?.filter(r => r.numeroCurso === cursoId) || [];
-            
-            // Contar PCs del curso
-            const mesasCurso = datos.mesas?.filter(m => m.curso === cursoId) || [];
-            let pcsCurso = 0;
-            let pcsAsignadosCurso = 0;
-            
-            mesasCurso.forEach(mesa => {
-                pcsCurso += mesa.pcs?.length || 0;
-                pcsAsignadosCurso += mesa.pcs?.filter(pc => pc.estudiante).length || 0;
-            });
-            
-            // Contar sillas del curso
-            const sillasCurso = datos.sillas?.filter(s => s.curso === cursoId) || [];
-            const sillasOcupadasCurso = sillasCurso.filter(s => s.documento).length;
-            
+
+    function generarTablaResponsables(datos) {
+        if (!datos.responsables?.length) return '';
+
+        let html = '<h2>👤 Responsables Registrados</h2>';
+        html += '<table><thead><tr><th>Curso</th><th>Nombre</th><th>Documento</th><th>Salón</th><th>Fecha</th><th>Horario</th></tr></thead><tbody>';
+
+        datos.responsables.forEach(r => {
             html += `
                 <tr>
-                    <td><strong>${curso.id}</strong> - ${curso.nombre}</td>
-                    <td>${responsablesCurso.length}</td>
-                    <td>${pcsCurso}</td>
-                    <td>${pcsAsignadosCurso}</td>
-                    <td>${sillasCurso.length}</td>
-                    <td>${sillasOcupadasCurso}</td>
+                    <td>${r.numeroCurso || ''}</td>
+                    <td>${r.nombre || ''}</td>
+                    <td>${r.documento || ''}</td>
+                    <td>${r.numeroSalon || ''}</td>
+                    <td>${r.fecha || ''}</td>
+                    <td>${r.horarioInicio || ''} - ${r.horarioFin || ''}</td>
                 </tr>
             `;
         });
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
+
+        html += '</tbody></table>';
         return html;
     }
-    
-    /**
-     * Genera el estado de los PCs
-     */
-    function generarEstadoPCs(datos) {
-        const cursos = datos.cursos || [];
-        
-        if (cursos.length === 0) {
-            return '';
-        }
-        
-        let html = `
-            <div class="reporte-card">
-                <h5><i class="fas fa-desktop"></i> Estado de PCs por Curso</h5>
-                <div class="table-responsive">
-                    <table class="reporte-tabla">
-                        <thead>
-                            <tr>
-                                <th>Curso</th>
-                                <th>Excelente</th>
-                                <th>Bueno</th>
-                                <th>Regular</th>
-                                <th>Dañado</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        cursos.forEach(curso => {
-            const cursoId = curso.id;
-            const mesasCurso = datos.mesas?.filter(m => m.curso === cursoId) || [];
-            
-            let excelente = 0, bueno = 0, regular = 0, danado = 0, total = 0;
-            
-            mesasCurso.forEach(mesa => {
-                mesa.pcs?.forEach(pc => {
-                    total++;
-                    switch(pc.estado?.toLowerCase()) {
-                        case 'excelente': excelente++; break;
-                        case 'bueno': bueno++; break;
-                        case 'regular': regular++; break;
-                        case 'dañado': danado++; break;
-                    }
-                });
-            });
-            
-            if (total > 0) {
-                html += `
-                    <tr>
-                        <td>${curso.id}</td>
-                        <td><span class="badge-excelente">${excelente}</span></td>
-                        <td><span class="badge-bueno">${bueno}</span></td>
-                        <td><span class="badge-regular">${regular}</span></td>
-                        <td><span class="badge-danado">${danado}</span></td>
-                        <td><strong>${total}</strong></td>
-                    </tr>
-                `;
-            }
-        });
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        return html;
-    }
-    
-    /**
-     * Genera la asignación de sillas
-     */
-    function generarAsignacionSillas(datos) {
-        const cursos = datos.cursos || [];
-        
-        if (cursos.length === 0) {
-            return '';
-        }
-        
-        let html = `
-            <div class="reporte-card">
-                <h5><i class="fas fa-chair"></i> Asignación de Sillas por Curso</h5>
-                <div class="table-responsive">
-                    <table class="reporte-tabla">
-                        <thead>
-                            <tr>
-                                <th>Curso</th>
-                                <th>Total Sillas</th>
-                                <th>Ocupadas</th>
-                                <th>Disponibles</th>
-                                <th>% Ocupación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        cursos.forEach(curso => {
-            const cursoId = curso.id;
-            const sillasCurso = datos.sillas?.filter(s => s.curso === cursoId) || [];
-            
-            const total = sillasCurso.length;
-            const ocupadas = sillasCurso.filter(s => s.documento).length;
-            const disponibles = total - ocupadas;
-            const porcentaje = total > 0 ? Math.round((ocupadas / total) * 100) : 0;
-            
-            if (total > 0) {
-                html += `
-                    <tr>
-                        <td>${curso.id}</td>
-                        <td>${total}</td>
-                        <td>${ocupadas}</td>
-                        <td>${disponibles}</td>
-                        <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%;" 
-                                     aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">
-                                    ${porcentaje}%
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-        });
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        return html;
-    }
-    
-    /**
-     * Genera el registro de asistencia
-     */
-    function generarRegistroAsistencia(datos) {
-        const asistencias = datos.asistencia || [];
-        
-        if (asistencias.length === 0) {
-            return `
-                <div class="reporte-card">
-                    <h5><i class="fas fa-calendar-check"></i> Registro de Asistencia</h5>
-                    <p class="text-muted">No hay registros de asistencia</p>
-                </div>
-            `;
-        }
-        
-        // Ordenar por fecha descendente
-        asistencias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-        
-        let html = `
-            <div class="reporte-card">
-                <h5><i class="fas fa-calendar-check"></i> Últimos Registros de Asistencia</h5>
-                <div class="table-responsive">
-                    <table class="reporte-tabla">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Curso</th>
-                                <th>Presentes</th>
-                                <th>Ausentes</th>
-                                <th>Total</th>
-                                <th>% Asistencia</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        // Mostrar solo los últimos 10 registros
-        asistencias.slice(0, 10).forEach(asist => {
-            const total = asist.registros?.length || 0;
-            const presentes = asist.registros?.filter(r => r.asistio).length || 0;
-            const ausentes = total - presentes;
-            const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
-            
-            const fechaFormateada = new Date(asist.fecha).toLocaleDateString();
-            
+
+    function generarTablaPuestosDocentes(datos) {
+        if (!datos.puestosDocentes?.length) return '';
+
+        let html = '<h2>👨‍🏫 Puestos Docentes</h2>';
+        html += '<table><thead><tr><th>Nombre</th><th>Documento</th><th>Serial PC</th><th>Estado PC</th><th>Mouse</th><th>Teclado</th></tr></thead><tbody>';
+
+        datos.puestosDocentes.forEach(p => {
             html += `
                 <tr>
-                    <td>${fechaFormateada}</td>
-                    <td>${asist.curso}</td>
-                    <td>${presentes}</td>
-                    <td>${ausentes}</td>
-                    <td>${total}</td>
-                    <td>
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: ${porcentaje}%;" 
-                                 aria-valuenow="${porcentaje}" aria-valuemin="0" aria-valuemax="100">
-                                ${porcentaje}%
-                            </div>
-                        </div>
+                    <td>${p.nombre || ''}</td>
+                    <td>${p.documento || ''}</td>
+                    <td>${p.serial || ''}</td>
+                    <td><span class="badge badge-${p.estado?.toLowerCase()}">${p.estado || ''}</span></td>
+                    <td><span class="badge badge-${p.mouse?.toLowerCase()}">${p.mouse || ''}</span></td>
+                    <td><span class="badge badge-${p.teclado?.toLowerCase()}">${p.teclado || ''}</span></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function generarTablaMesas(datos) {
+        if (!datos.mesas?.length) return '';
+
+        let html = '<h2>🖥️ Configuración de Mesas</h2>';
+        
+        datos.mesas.forEach((mesa, idx) => {
+            html += `<h3>Mesa ${idx + 1} - Curso ${mesa.curso}</h3>`;
+            html += '<table><thead><tr><th>PC</th><th>Serial</th><th>Estudiante</th><th>Estado</th></tr></thead><tbody>';
+
+            mesa.pcs?.forEach((pc, i) => {
+                html += `
+                    <tr>
+                        <td>PC ${i + 1}</td>
+                        <td>${pc.serial || ''}</td>
+                        <td>${pc.estudiante || 'Sin asignar'}</td>
+                        <td><span class="badge badge-${pc.estado?.toLowerCase()}">${pc.estado || ''}</span></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        });
+
+        return html;
+    }
+
+    function generarTablaSillas(datos) {
+        if (!datos.sillas?.length) return '';
+
+        let html = '<h2>🪑 Asignación de Sillas</h2>';
+        html += '<table><thead><tr><th>Curso</th><th>Silla</th><th>Serial</th><th>Estudiante</th><th>Documento</th><th>Estado</th></tr></thead><tbody>';
+
+        datos.sillas.forEach(s => {
+            html += `
+                <tr>
+                    <td>${s.curso || ''}</td>
+                    <td>${s.numero || ''}</td>
+                    <td>${s.serial || ''}</td>
+                    <td>${s.nombreEstudiante || 'Disponible'}</td>
+                    <td>${s.documento || ''}</td>
+                    <td><span class="badge badge-${s.estado?.toLowerCase()}">${s.estado || ''}</span></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function generarTablaEquipos(datos) {
+        if (!datos.equipos?.length) return '';
+
+        let html = '<h2>📺 TV y Proyectores</h2>';
+        html += '<table><thead><tr><th>Tipo</th><th>Serial</th><th>Estado</th><th>Limpieza</th><th>Observaciones</th></tr></thead><tbody>';
+
+        datos.equipos.forEach(e => {
+            html += `
+                <tr>
+                    <td>${e.tipo || ''}</td>
+                    <td>${e.serial || ''}</td>
+                    <td><span class="badge badge-${e.estado?.toLowerCase()}">${e.estado || ''}</span></td>
+                    <td><span class="badge badge-${e.estadoLimpieza?.toLowerCase()}">${e.estadoLimpieza || ''}</span></td>
+                    <td>${e.observaciones || ''}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function generarTablaAsistencia(datos) {
+        if (!datos.asistencia?.length) return '';
+
+        // Ordenar por fecha descendente
+        const asistencias = [...datos.asistencia].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+        let html = '<h2>📅 Registro de Asistencia</h2>';
+        
+        asistencias.slice(0, 5).forEach(asist => {
+            html += `<h3>Fecha: ${new Date(asist.fecha).toLocaleDateString()} - Curso ${asist.curso}</h3>`;
+            html += '<table><thead><tr><th>Documento</th><th>Estudiante</th><th>Asistencia</th><th>Uniforme</th><th>Observaciones</th></tr></thead><tbody>';
+
+            asist.registros?.forEach(r => {
+                html += `
+                    <tr>
+                        <td>${r.documento || ''}</td>
+                        <td>${r.nombre || ''}</td>
+                        <td>${r.asistio ? '✅ Presente' : '❌ Ausente'}</td>
+                        <td>${r.uniforme ? '👕 Sí' : '👕 No'}</td>
+                        <td>${r.observaciones || ''}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+        });
+
+        if (asistencias.length > 5) {
+            html += `<p>... y ${asistencias.length - 5} registros más</p>`;
+        }
+
+        return html;
+    }
+
+    function calcularTotalRegistros(datos) {
+        let total = 0;
+        total += datos.responsables?.length || 0;
+        total += datos.puestosDocentes?.length || 0;
+        total += datos.equipos?.length || 0;
+        total += datos.sillas?.length || 0;
+        
+        datos.mesas?.forEach(m => total += m.pcs?.length || 0);
+        datos.asistencia?.forEach(a => total += a.registros?.length || 0);
+        
+        return total;
+    }
+
+    // ===== FUNCIONES DE HISTORIAL =====
+
+    /**
+     * Muestra el historial de snapshots guardados
+     */
+    function mostrarHistorial() {
+        const historial = DataManager.getHistorial ? DataManager.getHistorial() : [];
+        
+        if (historial.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sin historial',
+                text: 'No hay snapshots guardados'
+            });
+            return;
+        }
+
+        let html = '<div style="max-height: 400px; overflow-y: auto;">';
+        html += '<table style="width: 100%; border-collapse: collapse;">';
+        html += '<thead><tr style="background: #343a40; color: white;"><th>Fecha</th><th>Hora</th><th>Acciones</th></tr></thead><tbody>';
+
+        historial.slice().reverse().forEach(h => {
+            html += `
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 10px;">${h.fecha}</td>
+                    <td style="padding: 10px;">${h.hora}</td>
+                    <td style="padding: 10px;">
+                        <button class="btn btn-sm btn-primary" onclick="cargarSnapshot(${h.id})">
+                            <i class="fas fa-upload"></i> Cargar
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="verSnapshot(${h.id})">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
                     </td>
                 </tr>
             `;
         });
-        
-        html += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-        
-        return html;
-    }
-    
-    // ===== FUNCIONES DE VISUALIZACIÓN =====
-    
-    /**
-     * Muestra el reporte en un modal de SweetAlert2
-     */
-    function mostrarReporteModal(contenidoHTML) {
+
+        html += '</tbody></table></div>';
+
         Swal.fire({
-            title: '📊 Reporte General',
-            html: contenidoHTML,
-            width: '1200px',
+            title: '📚 Historial de Snapshots',
+            html: html,
+            width: '800px',
             showConfirmButton: true,
-            confirmButtonText: 'Cerrar',
-            showCloseButton: true,
-            showCancelButton: true,
-            cancelButtonText: 'Imprimir',
-            cancelButtonColor: '#3085d6',
-            reverseButtons: true,
-            customClass: {
-                container: 'reporte-modal'
-            }
-        }).then((result) => {
-            if (result.dismiss === Swal.DismissReason.cancel) {
-                // Si el usuario hace clic en "Imprimir"
-                imprimirReporte();
-            }
+            confirmButtonText: 'Cerrar'
         });
     }
-    
+
     /**
-     * Función para imprimir el reporte
+     * Guarda un snapshot con la fecha actual
      */
-    function imprimirReporte() {
-        window.print();
-    }
-    
-    /**
-     * Genera un reporte resumido (versión simplificada)
-     */
-    function generarReporteResumido() {
-        try {
-            const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
-            
-            if (!datos) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudieron obtener los datos'
-                });
-                return;
-            }
-            
-            const stats = calcularEstadisticasGenerales(datos);
-            
-            let mensaje = `📊 REPORTE RESUMEN\n\n`;
-            mensaje += `Total Cursos: ${stats.totalCursos}\n`;
-            mensaje += `Total Responsables: ${stats.totalResponsables}\n`;
-            mensaje += `Total Puestos Docentes: ${stats.totalPuestosDocentes}\n`;
-            mensaje += `Total PCs: ${stats.totalPCs} (Asignados: ${stats.pcsAsignados})\n`;
-            mensaje += `Total Sillas: ${stats.totalSillas} (Ocupadas: ${stats.sillasOcupadas})\n`;
-            mensaje += `Total Equipos: ${stats.totalEquipos}\n`;
-            mensaje += `Registros Asistencia: ${stats.totalAsistencias}\n\n`;
-            mensaje += `Generado: ${new Date().toLocaleString()}`;
-            
-            Swal.fire({
-                title: 'Reporte Resumen',
-                text: mensaje,
-                icon: 'info',
-                confirmButtonText: 'Aceptar'
-            });
-            
-        } catch (error) {
-            console.error('Error generando reporte resumido:', error);
-        }
-    }
-    
-    // ===== FUNCIONES DE EXPORTACIÓN =====
-    
-    /**
-     * Exporta el reporte a CSV
-     */
-    function exportarReporteCSV() {
-        try {
-            const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
-            
-            if (!datos) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudieron obtener los datos'
-                });
-                return;
-            }
-            
-            // Crear contenido CSV
-            let csv = "Tipo,Curso,Estudiante,Documento,Silla,Serial Silla,Estado,Observaciones\n";
-            
-            // Agregar datos de sillas
-            if (datos.sillas) {
-                datos.sillas.forEach(silla => {
-                    const estudiante = silla.nombreEstudiante || 'Sin asignar';
-                    const documento = silla.documento || 'N/A';
-                    csv += `Silla,${silla.curso},${estudiante},${documento},${silla.numero},${silla.serial},${silla.estado},${silla.observaciones}\n`;
-                });
-            }
-            
-            // Agregar datos de PCs
-            if (datos.mesas) {
-                datos.mesas.forEach(mesa => {
-                    if (mesa.pcs) {
-                        mesa.pcs.forEach(pc => {
-                            if (pc.estudiante) {
-                                csv += `PC,${mesa.curso},${pc.estudiante},${pc.documento || 'N/A'},Mesa ${mesa.fila+1}-${mesa.columna+1},${pc.serial},${pc.estado},${pc.observaciones}\n`;
-                            }
-                        });
-                    }
-                });
-            }
-            
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reporte-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+    function guardarSnapshot() {
+        const snapshot = DataManager.guardarSnapshot ? DataManager.guardarSnapshot() : null;
+        
+        if (snapshot) {
             Swal.fire({
                 icon: 'success',
-                title: 'Exportado',
-                text: 'Reporte CSV descargado',
-                timer: 1500,
+                title: 'Snapshot guardado',
+                text: `Fecha: ${snapshot.fecha} - ${snapshot.hora}`,
+                timer: 2000,
                 showConfirmButton: false
             });
-            
-        } catch (error) {
-            console.error('Error exportando CSV:', error);
+        } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'No se pudo exportar el reporte'
+                text: 'No se pudo guardar el snapshot'
             });
         }
     }
-    
+
+    /**
+     * Carga un snapshot específico
+     */
+    window.cargarSnapshot = function(id) {
+        Swal.fire({
+            title: '¿Cargar snapshot?',
+            text: 'Los datos actuales serán reemplazados',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, cargar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const cargado = DataManager.cargarSnapshot ? DataManager.cargarSnapshot(id) : false;
+                
+                if (cargado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Snapshot cargado',
+                        text: 'Recargando página...',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo cargar el snapshot'
+                    });
+                }
+            }
+        });
+    };
+
+    /**
+     * Ver un snapshot sin cargarlo
+     */
+    window.verSnapshot = function(id) {
+        const historial = DataManager.getHistorial ? DataManager.getHistorial() : [];
+        const snapshot = historial.find(h => h.id === id);
+        
+        if (snapshot) {
+            const datos = snapshot.datos;
+            const totalRegistros = calcularTotalRegistros(datos);
+            
+            Swal.fire({
+                title: `Snapshot ${snapshot.fecha} ${snapshot.hora}`,
+                html: `
+                    <p><strong>Total registros:</strong> ${totalRegistros}</p>
+                    <p><strong>Responsables:</strong> ${datos.responsables?.length || 0}</p>
+                    <p><strong>Puestos Docentes:</strong> ${datos.puestosDocentes?.length || 0}</p>
+                    <p><strong>Mesas:</strong> ${datos.mesas?.length || 0}</p>
+                    <p><strong>Sillas:</strong> ${datos.sillas?.length || 0}</p>
+                    <p><strong>Equipos:</strong> ${datos.equipos?.length || 0}</p>
+                    <p><strong>Asistencias:</strong> ${datos.asistencia?.length || 0}</p>
+                `,
+                icon: 'info',
+                confirmButtonText: 'Cerrar'
+            });
+        }
+    };
+
+    /**
+     * Exporta todo el historial a JSON
+     */
+    function exportarHistorialCompleto() {
+        const datos = DataManager.exportarHistorialCompleto ? DataManager.exportarHistorialCompleto() : null;
+        
+        if (!datos) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo exportar el historial'
+            });
+            return;
+        }
+
+        const fecha = new Date().toISOString().split('T')[0];
+        const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historial-completo-${fecha}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Historial exportado',
+            text: `Archivo: historial-completo-${fecha}.json`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
     // ===== API PÚBLICA =====
     return {
-        generarReporteCompleto,
-        generarReporteResumido,
-        imprimirReporte,
-        exportarReporteCSV
+        generarReporteProfesional,
+        mostrarHistorial,
+        guardarSnapshot,
+        exportarHistorialCompleto
     };
 })();
 
-// Verificar que Reportes se cargó correctamente
+// Verificar carga
 if (typeof Reportes !== 'undefined') {
-    console.log('✅ Reportes v0.4 cargado correctamente');
-    console.log('📋 Funciones disponibles:', Object.keys(Reportes));
-} else {
-    console.error('❌ Error cargando Reportes');
+    console.log('✅ Reportes Profesional v0.5 cargado correctamente');
 }
+
+// Exponer funciones globalmente
+window.generarReporteCompleto = () => Reportes.generarReporteProfesional();
+window.mostrarHistorial = () => Reportes.mostrarHistorial();
+window.guardarSnapshot = () => Reportes.guardarSnapshot();
+window.exportarHistorialCompleto = () => Reportes.exportarHistorialCompleto();

@@ -1,161 +1,116 @@
-// uiManager.js - Módulo para manejar la interfaz de usuario v0.4
-// RECONSTRUIDO COMPLETAMENTE
+// uiManager.js - Módulo para manejar la interfaz de usuario v0.5
+// VERSIÓN ESTABLE - CORREGIDA
 
 const UIManager = (function() {
-    // ===== VARIABLES PRIVADAS =====
     let cursos = [];
     let responsables = [];
     let estudiantesCache = {};
 
     // ===== FUNCIONES DE INICIALIZACIÓN =====
     
-    /**
-     * Inicializa todos los selectores de la aplicación
-     */
     async function inicializarSelectores() {
         console.log('🔄 Inicializando selectores UI...');
-    try {
-        // Cargar cursos primero
-        await cargarCursosSelectores();
-        
-        // Luego cargar responsables
-        await cargarResponsablesData();
-        
-        console.log('✅ Selectores UI inicializados');
-    } catch (error) {
-        console.error('Error inicializando selectores:', error);
-    }
-    }
-
-    /**
-     * Carga los cursos en todos los selectores de la aplicación
-     */
-   // uiManager.js - Función cargarCursosSelectores CORREGIDA
-
-/**
- * Carga los cursos en todos los selectores de la aplicación
- */
-async function cargarCursosSelectores() {
-    try {
-        console.log('🔄 Cargando cursos en selectores...');
-        
-        // Verificar que DataManager existe
-        if (typeof DataManager === 'undefined') {
-            console.error('❌ DataManager no está disponible');
-            return;
-        }
-        
-        // Obtener cursos con validación
-        let cursosData = [];
         try {
-            cursosData = DataManager.getCursos ? DataManager.getCursos() : [];
-        } catch (e) {
-            console.error('Error al obtener cursos:', e);
-            cursosData = [];
+            await cargarCursosSelectores();
+            await cargarResponsablesData();
+            console.log('✅ Selectores UI inicializados');
+        } catch (error) {
+            console.error('Error inicializando selectores:', error);
         }
-        
-        // Si no hay cursos, intentar cargarlos
-        if (cursosData.length === 0) {
-            try {
-                cursosData = await DataManager.cargarCursos ? await DataManager.cargarCursos() : [];
-            } catch (e) {
-                console.error('Error al cargar cursos:', e);
+    }
+
+    async function cargarCursosSelectores() {
+        try {
+            console.log('🔄 Cargando cursos en selectores...');
+            
+            if (typeof DataManager === 'undefined') {
+                console.error('❌ DataManager no está disponible');
+                return;
             }
-        }
-        
-        console.log(`📚 Cursos obtenidos: ${cursosData.length}`);
-        
-        // Si aún no hay cursos, usar datos de ejemplo
-        if (cursosData.length === 0) {
-            console.warn('⚠️ Usando cursos de ejemplo');
-            cursosData = [
-                { id: '101', nombre: 'Matemáticas 10°' },
-                { id: '102', nombre: 'Español 10°' },
-                { id: '103', nombre: 'Ciencias 10°' }
+            
+            let cursosData = DataManager.getCursos ? DataManager.getCursos() : [];
+            
+            if (cursosData.length === 0) {
+                cursosData = await DataManager.cargarCursos ? await DataManager.cargarCursos() : [];
+            }
+            
+            if (cursosData.length === 0) {
+                console.warn('⚠️ Usando cursos de ejemplo');
+                cursosData = [
+                    { id: '101', nombre: 'Matemáticas 10°' },
+                    { id: '102', nombre: 'Español 10°' },
+                    { id: '103', nombre: 'Ciencias 10°' }
+                ];
+            }
+            
+            const selectores = [
+                'cursoResponsable',
+                'cursoMesas',
+                'cursoSillas',
+                'cursoAsistencia',
+                'cursoPuestoDocente'
             ];
-        }
-        
-        // Array de selectores donde se deben cargar los cursos
-        const selectores = [
-            'cursoResponsable',
-            'cursoMesas',
-            'cursoSillas',
-            'cursoAsistencia',
-            'cursoPuestoDocente'
-        ];
-        
-        let selectoresEncontrados = 0;
-        
-        selectores.forEach(id => {
-            const select = document.getElementById(id);
-            if (select) {
-                selectoresEncontrados++;
-                
-                // Guardar el valor seleccionado actualmente si existe
-                const valorActual = select.value;
-                
-                // Limpiar y llenar el select
-                select.innerHTML = '<option value="">Seleccione un curso</option>';
-                
-                cursosData.forEach(curso => {
-                    const option = document.createElement('option');
-                    option.value = curso.id;
-                    option.textContent = `${curso.id} - ${curso.nombre}`;
-                    select.appendChild(option);
-                });
-                
-                // Restaurar el valor seleccionado si existía y sigue siendo válido
-                if (valorActual) {
-                    for (let i = 0; i < select.options.length; i++) {
-                        if (select.options[i].value === valorActual) {
-                            select.selectedIndex = i;
-                            break;
+            
+            let selectoresEncontrados = 0;
+            
+            selectores.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    selectoresEncontrados++;
+                    const valorActual = select.value;
+                    
+                    select.innerHTML = '<option value="">Seleccione un curso</option>';
+                    
+                    cursosData.forEach(curso => {
+                        const option = document.createElement('option');
+                        option.value = curso.id;
+                        option.textContent = `${curso.id} - ${curso.nombre}`;
+                        select.appendChild(option);
+                    });
+                    
+                    if (valorActual) {
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value === valorActual) {
+                                select.selectedIndex = i;
+                                break;
+                            }
                         }
                     }
                 }
-            }
-        });
-        
-        console.log(`✅ Cursos cargados en ${selectoresEncontrados} selectores`);
-        
-    } catch (error) {
-        console.error('❌ Error en cargarCursosSelectores:', error);
+            });
+            
+            console.log(`✅ Cursos cargados en ${selectoresEncontrados} selectores`);
+            
+        } catch (error) {
+            console.error('❌ Error en cargarCursosSelectores:', error);
+        }
     }
-}
 
-    /**
-     * Carga los datos de responsables
-     */
     async function cargarResponsablesData() {
         try {
-        console.log('🔄 Cargando responsables...');
-        
-        if (typeof DataManager === 'undefined') {
-            console.error('❌ DataManager no está disponible');
-            responsables = [];
-            return;
-        }
-        
-        try {
+            console.log('🔄 Cargando responsables...');
+            
+            if (typeof DataManager === 'undefined') {
+                console.error('❌ DataManager no está disponible');
+                responsables = [];
+                return;
+            }
+            
             responsables = await DataManager.cargarResponsables ? await DataManager.cargarResponsables() : [];
-        } catch (e) {
-            console.error('Error al cargar responsables:', e);
+            
+            console.log(`✅ Responsables cargados: ${responsables.length}`);
+            if (responsables.length > 0) {
+                console.log('📋 Ejemplo de estructura:', responsables[0]);
+            }
+            
+        } catch (error) {
+            console.error('Error cargando responsables:', error);
             responsables = [];
         }
-        
-        console.log(`✅ Responsables cargados: ${responsables.length}`);
-        
-    } catch (error) {
-        console.error('Error cargando responsables:', error);
-        responsables = [];
-    }
     }
 
     // ===== FUNCIONES DE RESPONSABLES =====
     
-    /**
-     * Carga los docentes según el curso seleccionado
-     */
     function cargarDocentesPorCurso() {
         try {
             const cursoSelect = document.getElementById('cursoResponsable');
@@ -168,18 +123,14 @@ async function cargarCursosSelectores() {
             
             const cursoId = cursoSelect.value;
             
-            // Limpiar select de docentes
             docenteSelect.innerHTML = '<option value="">Seleccione un docente</option>';
-            
-            // Limpiar campos de datos del docente
             limpiarCamposDocente();
             
-            if (!cursoId) {
-                return;
-            }
+            if (!cursoId) return;
             
-            // Filtrar responsables por curso
-            const docentesFiltrados = responsables.filter(r => r.numero_curso === cursoId);
+            const docentesFiltrados = responsables.filter(r => r.numeroCurso === cursoId);
+            
+            console.log(`📚 Docentes encontrados para curso ${cursoId}:`, docentesFiltrados.length);
             
             if (docentesFiltrados.length === 0) {
                 docenteSelect.innerHTML = '<option value="">No hay docentes para este curso</option>';
@@ -191,31 +142,23 @@ async function cargarCursosSelectores() {
                 option.value = docente.documento || '';
                 option.setAttribute('data-nombre', docente.nombre || '');
                 option.setAttribute('data-documento', docente.documento || '');
-                option.setAttribute('data-horario-inicio', docente.horario_inicio || '');
-                option.setAttribute('data-horario-fin', docente.horario_fin || '');
+                option.setAttribute('data-horarioInicio', docente.horarioInicio || '');
+                option.setAttribute('data-horarioFin', docente.horarioFin || '');
                 option.setAttribute('data-materia', docente.materia || '');
                 option.textContent = `${docente.nombre} (${docente.documento})${docente.materia ? ' - ' + docente.materia : ''}`;
                 docenteSelect.appendChild(option);
             });
-            
-            console.log(`✅ ${docentesFiltrados.length} docentes cargados para el curso ${cursoId}`);
             
         } catch (error) {
             console.error('Error en cargarDocentesPorCurso:', error);
         }
     }
 
-    /**
-     * Carga los datos del docente seleccionado
-     */
     function cargarDatosDocente() {
         try {
             const docenteSelect = document.getElementById('docenteResponsable');
             
-            if (!docenteSelect) {
-                console.warn('Selector de docente no encontrado');
-                return;
-            }
+            if (!docenteSelect) return;
             
             const selectedIndex = docenteSelect.selectedIndex;
             
@@ -226,13 +169,11 @@ async function cargarCursosSelectores() {
             
             const selectedOption = docenteSelect.options[selectedIndex];
             
-            // Obtener valores
             const nombre = selectedOption.getAttribute('data-nombre') || '';
             const documento = selectedOption.getAttribute('data-documento') || '';
-            const horarioInicio = selectedOption.getAttribute('data-horario-inicio') || '';
-            const horarioFin = selectedOption.getAttribute('data-horario-fin') || '';
+            const horarioInicio = selectedOption.getAttribute('data-horarioInicio') || '';
+            const horarioFin = selectedOption.getAttribute('data-horarioFin') || '';
             
-            // Asignar valores a los campos
             const nombreField = document.getElementById('nombreResponsable');
             const documentoField = document.getElementById('documentoResponsable');
             const horarioInicioField = document.getElementById('horarioInicio');
@@ -248,9 +189,6 @@ async function cargarCursosSelectores() {
         }
     }
 
-    /**
-     * Limpia los campos de datos del docente
-     */
     function limpiarCamposDocente() {
         const nombreField = document.getElementById('nombreResponsable');
         const documentoField = document.getElementById('documentoResponsable');
@@ -263,17 +201,11 @@ async function cargarCursosSelectores() {
         if (horarioFinField) horarioFinField.value = '';
     }
 
-    /**
-     * Renderiza la tabla de responsables
-     */
     function renderizarTablaResponsables() {
         const tbody = document.getElementById('cuerpoTablaResponsables');
-        if (!tbody) {
-            console.warn('Tabla de responsables no encontrada');
-            return;
-        }
+        if (!tbody) return;
 
-        const responsablesList = DataManager.getResponsables() || [];
+        const responsablesList = DataManager.getResponsables ? DataManager.getResponsables() : [];
         
         if (responsablesList.length === 0) {
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">No hay responsables registrados</td></tr>';
@@ -282,7 +214,7 @@ async function cargarCursosSelectores() {
 
         let html = '';
         responsablesList.forEach(responsable => {
-            const horarioInicio = responsable.horarioInicio || responsable.horario || 'N/A';
+            const horarioInicio = responsable.horarioInicio || 'N/A';
             const horarioFin = responsable.horarioFin || 'N/A';
             
             html += `
@@ -313,17 +245,11 @@ async function cargarCursosSelectores() {
 
     // ===== FUNCIONES DE PUESTOS DOCENTES =====
     
-    /**
-     * Renderiza la tabla de puestos docentes
-     */
     function renderizarPuestosDocentes() {
         const tbody = document.getElementById('cuerpoTablaPuestosDocentes');
-        if (!tbody) {
-            console.warn('Tabla de puestos docentes no encontrada');
-            return;
-        }
+        if (!tbody) return;
 
-        const puestos = DataManager.getPuestosDocentes() || [];
+        const puestos = DataManager.getPuestosDocentes ? DataManager.getPuestosDocentes() : [];
         
         if (puestos.length === 0) {
             tbody.innerHTML = '<tr><td colspan="12" class="text-center">No hay puestos docentes registrados</td></tr>';
@@ -358,9 +284,6 @@ async function cargarCursosSelectores() {
 
     // ===== FUNCIONES DE MESAS =====
     
-    /**
-     * Carga los estudiantes para las mesas según el curso seleccionado
-     */
     async function cargarEstudiantesParaMesas() {
         try {
             const cursoSelect = document.getElementById('cursoMesas');
@@ -375,31 +298,21 @@ async function cargarCursosSelectores() {
             
             sessionStorage.setItem('cursoMesasSeleccionado', cursoId);
             
-            // Cargar estudiantes para cache
             const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId);
             estudiantesCache[cursoId] = estudiantes;
-            
-            console.log(`✅ Estudiantes cargados para mesas: ${estudiantes.length}`);
             
         } catch (error) {
             console.error('Error cargando estudiantes para mesas:', error);
         }
     }
 
-    /**
-     * Renderiza las mesas
-     */
     function renderizarMesas() {
         const container = document.getElementById('mesasContainer');
-        if (!container) {
-            console.warn('Contenedor de mesas no encontrado');
-            return;
-        }
+        if (!container) return;
 
         const cursoSeleccionado = sessionStorage.getItem('cursoMesasSeleccionado');
-        const mesas = cursoSeleccionado 
-            ? DataManager.getMesasPorCurso ? DataManager.getMesasPorCurso(cursoSeleccionado) : []
-            : DataManager.getMesas ? DataManager.getMesas() : [];
+        const mesas = cursoSeleccionado && DataManager.getMesasPorCurso ? 
+            DataManager.getMesasPorCurso(cursoSeleccionado) : [];
         
         const columnas = parseInt(document.getElementById('columnas')?.value) || 2;
         
@@ -408,7 +321,6 @@ async function cargarCursosSelectores() {
             return;
         }
 
-        // Determinar clase de columna según número de columnas
         let colClass = 'col-md-6';
         if (columnas === 1) colClass = 'col-12';
         else if (columnas === 2) colClass = 'col-md-6';
@@ -417,7 +329,6 @@ async function cargarCursosSelectores() {
         else if (columnas === 5) colClass = 'col-md-2-4';
         else colClass = 'col-md-2';
 
-        // Agrupar mesas por fila
         const mesasPorFila = {};
         mesas.forEach(mesa => {
             if (!mesasPorFila[mesa.fila]) mesasPorFila[mesa.fila] = [];
@@ -470,64 +381,58 @@ async function cargarCursosSelectores() {
 
     // ===== FUNCIONES DE EQUIPOS =====
     
-    /**
-     * Renderiza la tabla de equipos
-     */
-    function renderizarEquipos() {
-        const tbody = document.getElementById('cuerpoTablaEquipos');
-        if (!tbody) {
-            console.warn('Tabla de equipos no encontrada');
-            return;
-        }
-
-        const equipos = DataManager.getEquipos() || [];
-        
-        if (equipos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay equipos registrados</td></tr>';
-            return;
-        }
-
-        let html = '';
-        equipos.forEach((equipo, index) => {
-            html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td><span class="badge bg-info">${equipo.tipo || 'N/A'}</span></td>
-                    <td><span class="badge ${getBadgeClass(equipo.estado)}">${equipo.estado || 'N/A'}</span></td>
-                    <td><span class="badge ${getBadgeClass(equipo.estadoLimpieza)}">${equipo.estadoLimpieza || 'N/A'}</span></td>
-                    <td><small>${equipo.observaciones || ''}</small></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="editarEquipo(${index})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarEquipo(${index})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-        tbody.innerHTML = html;
+  
+function renderizarEquipos() {
+    const tbody = document.getElementById('cuerpoTablaEquipos');
+    if (!tbody) {
+        console.warn('Tabla de equipos no encontrada');
+        return;
     }
+
+    const equipos = DataManager.getEquipos ? DataManager.getEquipos() : [];
+    
+    if (equipos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay equipos registrados</td></tr>';
+        return;
+    }
+
+    let html = '';
+    equipos.forEach((equipo, index) => {
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td><span class="badge bg-info">${equipo.tipo || 'N/A'}</span></td>
+                <td><span class="badge bg-secondary">${equipo.serial || 'N/A'}</span></td>
+                <td><span class="badge ${getBadgeClass(equipo.estado)}">${equipo.estado || 'N/A'}</span></td>
+                <td><span class="badge ${getBadgeClass(equipo.estadoLimpieza)}">${equipo.estadoLimpieza || 'N/A'}</span></td>
+                <td><small>${equipo.observaciones || ''}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="editarEquipo(${index})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarEquipo(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
 
     // ===== FUNCIONES DE SILLAS =====
     
-    /**
-     * Carga los estudiantes para sillas según el curso seleccionado
-     */
     async function cargarEstudiantesParaSillas() {
         try {
             const cursoSelect = document.getElementById('cursoSillas');
             if (!cursoSelect) return;
             
             const cursoId = cursoSelect.value;
-            
             if (!cursoId) return;
             
             const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId);
             estudiantesCache[cursoId] = estudiantes;
             
-            // Actualizar estadísticas
             const estadisticas = DataManager.getEstadisticasSillas ? 
                 DataManager.getEstadisticasSillas(cursoId) : null;
             
@@ -542,15 +447,9 @@ async function cargarCursosSelectores() {
         }
     }
 
-    /**
-     * Renderiza las sillas
-     */
     function renderizarSillas() {
         const container = document.getElementById('sillasContainer');
-        if (!container) {
-            console.warn('Contenedor de sillas no encontrado');
-            return;
-        }
+        if (!container) return;
 
         const cursoSeleccionado = document.getElementById('cursoSillas')?.value;
         
@@ -597,9 +496,6 @@ async function cargarCursosSelectores() {
         container.innerHTML = html;
     }
 
-    /**
-     * Actualiza las estadísticas de sillas
-     */
     function actualizarEstadisticasSillas(estadisticas) {
         const container = document.getElementById('estadisticasSillas');
         if (!container) return;
@@ -612,29 +508,15 @@ async function cargarCursosSelectores() {
         container.innerHTML = `
             <div class="row">
                 <div class="col-6">
-                    <div class="stat-box">
-                        <strong>Total:</strong> ${estadisticas.total}
-                    </div>
-                    <div class="stat-box">
-                        <strong>Ocupadas:</strong> ${estadisticas.ocupadas}
-                    </div>
-                    <div class="stat-box">
-                        <strong>Disponibles:</strong> ${estadisticas.disponibles}
-                    </div>
+                    <div class="stat-box"><strong>Total:</strong> ${estadisticas.total}</div>
+                    <div class="stat-box"><strong>Ocupadas:</strong> ${estadisticas.ocupadas}</div>
+                    <div class="stat-box"><strong>Disponibles:</strong> ${estadisticas.disponibles}</div>
                 </div>
                 <div class="col-6">
-                    <div class="stat-box text-success">
-                        <strong>Excelente:</strong> ${estadisticas.excelente}
-                    </div>
-                    <div class="stat-box text-info">
-                        <strong>Bueno:</strong> ${estadisticas.bueno}
-                    </div>
-                    <div class="stat-box text-warning">
-                        <strong>Regular:</strong> ${estadisticas.regular}
-                    </div>
-                    <div class="stat-box text-danger">
-                        <strong>Malo:</strong> ${estadisticas.malo}
-                    </div>
+                    <div class="stat-box text-success"><strong>Excelente:</strong> ${estadisticas.excelente}</div>
+                    <div class="stat-box text-info"><strong>Bueno:</strong> ${estadisticas.bueno}</div>
+                    <div class="stat-box text-warning"><strong>Regular:</strong> ${estadisticas.regular}</div>
+                    <div class="stat-box text-danger"><strong>Malo:</strong> ${estadisticas.malo}</div>
                 </div>
             </div>
         `;
@@ -642,9 +524,6 @@ async function cargarCursosSelectores() {
 
     // ===== FUNCIONES DE ASISTENCIA =====
     
-    /**
-     * Carga la asistencia por curso
-     */
     async function cargarAsistenciaPorCurso() {
         try {
             const cursoSelect = document.getElementById('cursoAsistencia');
@@ -666,85 +545,98 @@ async function cargarCursosSelectores() {
         }
     }
 
-    /**
-     * Renderiza la tabla de asistencia
-     */
-    async function renderizarTablaAsistencia(cursoId, fecha) {
-        const tbody = document.getElementById('cuerpoTablaAsistencia');
-        if (!tbody) {
-            console.warn('Tabla de asistencia no encontrada');
+   /**
+ * Renderiza la tabla de asistencia (CON CAMPO UNIFORME)
+ */
+async function renderizarTablaAsistencia(cursoId, fecha) {
+    const tbody = document.getElementById('cuerpoTablaAsistencia');
+    if (!tbody) {
+        console.warn('Tabla de asistencia no encontrada');
+        return;
+    }
+    
+    try {
+        // Obtener estudiantes del curso
+        const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId);
+        
+        // Obtener sillas asignadas
+        const sillas = DataManager.getSillasPorCurso ? 
+            DataManager.getSillasPorCurso(cursoId) : [];
+        
+        // Obtener registro de asistencia si existe
+        const asistenciaGuardada = await AsistenciaModule?.cargarAsistenciaGuardada(cursoId, fecha);
+        
+        if (estudiantes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay estudiantes en este curso</td></tr>';
             return;
         }
         
-        try {
-            // Obtener estudiantes del curso
-            const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId);
+        let html = '';
+        estudiantes.forEach(estudiante => {
+            const sillaAsignada = sillas.find(s => s.documento === estudiante.documento);
+            const registro = asistenciaGuardada?.registros?.find(
+                r => r.documento === estudiante.documento
+            );
             
-            // Obtener sillas asignadas
-            const sillas = DataManager.getSillasPorCurso ? 
-                DataManager.getSillasPorCurso(cursoId) : [];
+            const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
+            const asistio = registro?.asistio || false;
+            const uniforme = registro?.uniforme || false;
+            const observaciones = registro?.observaciones || '';
             
-            // Obtener registro de asistencia si existe
-            const asistenciaGuardada = DataManager.getAsistencia ? 
-                DataManager.getAsistencia(cursoId, fecha) : null;
-            
-            if (estudiantes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay estudiantes en este curso</td></tr>';
-                return;
-            }
-            
-            let html = '';
-            estudiantes.forEach(estudiante => {
-                const sillaAsignada = sillas.find(s => s.documento === estudiante.documento);
-                const registroAsistencia = asistenciaGuardada?.registros?.find(
-                    r => r.documento === estudiante.documento
-                );
-                
-                const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
-                const asistio = registroAsistencia?.asistio || false;
-                const observaciones = registroAsistencia?.observaciones || '';
-                
-                html += `
-                    <tr>
-                        <td>${estudiante.documento}</td>
-                        <td>${nombreCompleto}</td>
-                        <td>${sillaAsignada ? `Silla ${sillaAsignada.numero}` : 'Sin asignar'}</td>
-                        <td>${sillaAsignada ? sillaAsignada.serial : 'N/A'}</td>
-                        <td class="text-center">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" 
-                                       id="asistencia_${estudiante.documento}" 
-                                       ${asistio ? 'checked' : ''}
-                                       onchange="marcarAsistencia('${estudiante.documento}', this.checked)">
-                                <label class="form-check-label" for="asistencia_${estudiante.documento}">
-                                    ${asistio ? 'Presente' : 'Ausente'}
-                                </label>
-                            </div>
-                        </td>
-                        <td>
-                            <input type="text" class="form-control form-control-sm" 
-                                   id="obs_${estudiante.documento}" 
-                                   value="${observaciones}"
-                                   placeholder="Observaciones"
-                                   onchange="actualizarObservacionAsistencia('${estudiante.documento}', this.value)">
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-            
-        } catch (error) {
-            console.error('Error renderizando tabla de asistencia:', error);
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error cargando datos</td></tr>';
-        }
+            html += `
+                <tr>
+                    <td>${estudiante.documento}</td>
+                    <td>${nombreCompleto}</td>
+                    <td>${sillaAsignada ? `Silla ${sillaAsignada.numero}` : 'Sin asignar'}</td>
+                    <td>${sillaAsignada ? sillaAsignada.serial : 'N/A'}</td>
+                    
+                    <!-- Campo ASISTENCIA (checkbox individual) -->
+                    <td class="text-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="asistencia_${estudiante.documento}" 
+                                   ${asistio ? 'checked' : ''}
+                                   onchange="marcarAsistencia('${estudiante.documento}', this.checked)">
+                            <label class="form-check-label" for="asistencia_${estudiante.documento}">
+                                ${asistio ? 'Presente' : 'Ausente'}
+                            </label>
+                        </div>
+                    </td>
+                    
+                    <!-- NUEVO CAMPO UNIFORME -->
+                    <td class="text-center">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="uniforme_${estudiante.documento}" 
+                                   ${uniforme ? 'checked' : ''}
+                                   onchange="marcarUniforme('${estudiante.documento}', this.checked)">
+                            <label class="form-check-label" for="uniforme_${estudiante.documento}">
+                                ${uniforme ? 'Con Uniforme' : 'Sin Uniforme'}
+                            </label>
+                        </div>
+                    </td>
+                    
+                    <td>
+                        <input type="text" class="form-control form-control-sm" 
+                               id="obs_${estudiante.documento}" 
+                               value="${observaciones}"
+                               placeholder="Observaciones"
+                               onchange="actualizarObservacionAsistencia('${estudiante.documento}', this.value)">
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error renderizando tabla de asistencia:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error cargando datos</td></tr>';
     }
+}
 
     // ===== FUNCIONES AUXILIARES =====
     
-    /**
-     * Obtiene la clase CSS según el estado
-     */
     function getBadgeClass(estado) {
         if (!estado) return 'bg-secondary';
         switch(estado.toLowerCase()) {
@@ -757,9 +649,6 @@ async function cargarCursosSelectores() {
         }
     }
 
-    /**
-     * Obtiene la clase CSS para el estado de internet
-     */
     function getInternetBadgeClass(estado) {
         if (!estado) return 'bg-secondary';
         switch(estado.toLowerCase()) {
@@ -772,78 +661,24 @@ async function cargarCursosSelectores() {
 
     // ===== API PÚBLICA =====
     return {
-        // Inicialización
         inicializarSelectores,
-        
-        // Responsables
         cargarDocentesPorCurso,
         cargarDatosDocente,
         renderizarTablaResponsables,
-        
-        // Puestos Docentes
         renderizarPuestosDocentes,
-        
-        // Mesas
         cargarEstudiantesParaMesas,
         renderizarMesas,
-        
-        // Equipos
         renderizarEquipos,
-        
-        // Sillas
         cargarEstudiantesParaSillas,
         renderizarSillas,
         actualizarEstadisticasSillas,
-        
-        // Asistencia
         cargarAsistenciaPorCurso,
         renderizarTablaAsistencia,
-        
-        // Utilidades
         getBadgeClass,
         getInternetBadgeClass
     };
 })();
 
-// Verificar que UIManager se cargó correctamente
 if (typeof UIManager !== 'undefined') {
-    console.log('✅ UIManager v0.4 cargado correctamente');
-    console.log('📋 Funciones disponibles:', Object.keys(UIManager));
-} else {
-    console.error('❌ Error cargando UIManager');
+    console.log('✅ UIManager v0.5 cargado correctamente');
 }
-
-// Función de depuración para verificar el estado
-window.depurarUI = function() {
-    console.log('=== DEPURACIÓN UI ===');
-    console.log('DataManager disponible:', typeof DataManager);
-    
-    if (typeof DataManager !== 'undefined') {
-        console.log('getCursos:', typeof DataManager.getCursos);
-        console.log('cargarCursos:', typeof DataManager.cargarCursos);
-        
-        try {
-            const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
-            console.log('Cursos actuales:', cursos);
-        } catch (e) {
-            console.error('Error obteniendo cursos:', e);
-        }
-    }
-    
-    // Verificar selectores
-    const selectores = [
-        'cursoResponsable',
-        'cursoMesas', 
-        'cursoSillas',
-        'cursoAsistencia',
-        'cursoPuestoDocente'
-    ];
-    
-    selectores.forEach(id => {
-        const el = document.getElementById(id);
-        console.log(`${id}: ${el ? '✅' : '❌'}`);
-        if (el) {
-            console.log(`  - Opciones: ${el.options.length}`);
-        }
-    });
-};
