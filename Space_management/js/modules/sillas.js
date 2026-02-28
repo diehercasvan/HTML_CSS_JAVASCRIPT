@@ -1,152 +1,199 @@
 // sillas.js - Módulo de gestión de sillas
-// VERSIÓN MEJORADA - v0.5 - Con limpieza y control de ocupación
+// VERSIÓN 0.6 - COMPLETA Y CORREGIDA
+
+console.log('🔄 Iniciando carga de sillas.js...');
+
+// Verificar dependencias
+if (typeof DataManager === 'undefined') {
+    console.error('❌ sillas.js: DataManager NO DISPONIBLE');
+} else {
+    console.log('✅ sillas.js: DataManager disponible');
+}
 
 const SillasModule = (function() {
+    console.log('📦 Ejecutando IIFE de SillasModule...');
     
-    // ===== FUNCIONES PRINCIPALES =====
+    // ===== FUNCIONES AUXILIARES =====
     
     /**
-     * Crea nuevas sillas para un curso (reemplaza las existentes)
+     * Valida que haya un curso seleccionado
      */
-    function crearSillas() {
-        console.log('🔄 Creando sillas...');
-        
-        const num = parseInt(document.getElementById('numeroSillas')?.value);
-        const curso = document.getElementById('cursoSillas')?.value;
-        
-        if (!num || num < 1) {
-            Utils.showToast('warning', 'Ingrese un número válido de sillas');
-            return;
+    function validarCursoSeleccionado() {
+        const cursoSelect = document.getElementById('cursoSillas');
+        if (!cursoSelect) {
+            console.warn('⚠️ Selector de curso no encontrado');
+            return null;
         }
-        
+        const curso = cursoSelect.value;
         if (!curso) {
-            Utils.showToast('warning', 'Seleccione un curso');
-            return;
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Debe seleccionar un curso');
+            } else {
+                alert('Debe seleccionar un curso');
+            }
+            return null;
         }
-        
-        if (num > 100) {
-            Utils.showToast('warning', 'Máximo 100 sillas por curso');
-            return;
-        }
-        
-        // Verificar si ya existen sillas para este curso
-        const sillasExistentes = DataManager.getSillasPorCurso?.(curso) || [];
-        
-        if (sillasExistentes.length > 0) {
-            // Preguntar si desea reemplazar
-            Swal.fire({
-                title: '¿Reemplazar sillas?',
-                text: `Ya existen ${sillasExistentes.length} sillas para este curso. ¿Desea reemplazarlas con ${num} sillas nuevas?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sí, reemplazar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Eliminar sillas existentes del curso
-                    eliminarSillasPorCurso(curso);
-                    // Crear nuevas sillas
-                    crearNuevasSillas(num, curso);
-                }
-            });
-        } else {
-            // No hay sillas existentes, crear directamente
-            crearNuevasSillas(num, curso);
+        return curso;
+    }
+
+    /**
+     * Obtiene los estudiantes del curso actual
+     */
+    async function obtenerEstudiantesCurso(curso) {
+        try {
+            console.log(`🔍 Buscando estudiantes para curso "${curso}"...`);
+            const estudiantes = await DataManager.getEstudiantesPorCurso(curso) || [];
+            console.log(`✅ ${estudiantes.length} estudiantes encontrados`);
+            return estudiantes;
+        } catch (error) {
+            console.error('❌ Error cargando estudiantes:', error);
+            return [];
         }
     }
 
     /**
-     * Crea nuevas sillas (función interna)
+     * Valida que la cantidad de sillas sea suficiente
      */
-    function crearNuevasSillas(num, curso) {
-        // Configurar nuevas sillas
-        DataManager.configurarSillas?.(num, curso);
+    function validarCapacidadSillas(numSillas, numEstudiantes) {
+        if (numSillas < numEstudiantes) {
+            const msg = `Capacidad insuficiente: ${numSillas} sillas para ${numEstudiantes} estudiantes`;
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', msg);
+            } else {
+                alert(msg);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Actualiza la vista de sillas y estadísticas
+     */
+    async function actualizarVistaSillas(curso) {
+        if (!curso) return;
         
-        // Actualizar vista
         if (typeof UIManager !== 'undefined') {
             UIManager.renderizarSillas();
-            actualizarEstadisticas(curso);
-        }
-        
-        Utils.showToast('success', `${num} sillas creadas para el curso ${curso}`);
-    }
-
-    /**
-     * Elimina todas las sillas de un curso específico
-     */
-    function eliminarSillasPorCurso(curso) {
-        console.log('🗑️ Eliminando sillas del curso:', curso);
-        
-        const todasLasSillas = DataManager.getSillas?.() || [];
-        const sillasAConservar = todasLasSillas.filter(s => s.curso !== curso);
-        
-        // Actualizar el estado en DataManager
-        if (DataManager.actualizarSillas) {
-            DataManager.actualizarSillas(sillasAConservar);
-        } else {
-            // Si no hay función específica, trabajar directamente
-            const state = DataManager.getState?.();
-            if (state) {
-                state.sillas = sillasAConservar;
-                DataManager.guardarEnLocalStorage?.();
+            
+            const estadisticas = DataManager.getEstadisticasSillas?.(curso);
+            if (estadisticas && typeof UIManager.actualizarEstadisticasSillas === 'function') {
+                UIManager.actualizarEstadisticasSillas(estadisticas);
             }
         }
         
-        console.log(`✅ Sillas del curso ${curso} eliminadas`);
+        const estudiantes = await obtenerEstudiantesCurso(curso);
+        const sillas = DataManager.getSillasPorCurso?.(curso) || [];
+        const asignadas = sillas.filter(s => s.documento).length;
+        
+        console.log(`📊 Curso ${curso}: ${estudiantes.length} estudiantes, ${sillas.length} sillas, ${asignadas} asignadas`);
+    }
+
+    // ===== FUNCIONES PRINCIPALES =====
+    
+    /**
+     * Crea nuevas sillas para un curso
+     */
+    async function crearSillas() {
+        console.log('🔄 Creando sillas...');
+        
+        const curso = validarCursoSeleccionado();
+        if (!curso) return;
+        
+        const numInput = document.getElementById('numeroSillas');
+        if (!numInput) {
+            console.error('❌ Input numeroSillas no encontrado');
+            return;
+        }
+        
+        const numSillas = parseInt(numInput.value);
+        
+        if (!numSillas || numSillas < 1) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Ingrese un número válido de sillas');
+            } else {
+                alert('Ingrese un número válido de sillas');
+            }
+            return;
+        }
+        
+        if (numSillas > 100) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Máximo 100 sillas por curso');
+            } else {
+                alert('Máximo 100 sillas por curso');
+            }
+            return;
+        }
+        
+        // Obtener estudiantes del curso
+        const estudiantes = await obtenerEstudiantesCurso(curso);
+        
+        // Validar capacidad
+        if (!validarCapacidadSillas(numSillas, estudiantes.length)) {
+            return;
+        }
+        
+        // Limpiar sillas existentes del curso actual
+        if (DataManager.limpiarDatosPorCurso) {
+            DataManager.limpiarDatosPorCurso(curso);
+        }
+        
+        // Crear nuevas sillas
+        DataManager.configurarSillas?.(numSillas, curso);
+        
+        // Actualizar vista
+        await actualizarVistaSillas(curso);
+        
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', `${numSillas} sillas creadas para el curso ${curso}`);
+        } else {
+            alert(`${numSillas} sillas creadas`);
+        }
     }
 
     /**
-     * Limpia todas las sillas de un curso (con confirmación)
+     * Limpia todas las sillas del curso actual
      */
-    function limpiarSillasCurso() {
-        const curso = document.getElementById('cursoSillas')?.value;
+    async function limpiarSillasCurso() {
+        console.log('🔄 Limpiando sillas del curso...');
         
-        if (!curso) {
-            Utils.showToast('warning', 'Seleccione un curso');
-            return;
-        }
+        const curso = validarCursoSeleccionado();
+        if (!curso) return;
         
         const sillasExistentes = DataManager.getSillasPorCurso?.(curso) || [];
         
         if (sillasExistentes.length === 0) {
-            Utils.showToast('info', 'No hay sillas para limpiar en este curso');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('info', 'No hay sillas para limpiar en este curso');
+            } else {
+                alert('No hay sillas para limpiar');
+            }
             return;
         }
         
-        Swal.fire({
-            title: '¿Limpiar sillas?',
-            text: `Se eliminarán todas las ${sillasExistentes.length} sillas del curso ${curso}. Esta acción no se puede deshacer.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, limpiar todo',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                eliminarSillasPorCurso(curso);
-                
-                if (typeof UIManager !== 'undefined') {
-                    UIManager.renderizarSillas();
-                    actualizarEstadisticas(curso);
-                }
-                
+        const confirmar = async () => {
+            if (typeof Utils !== 'undefined') {
+                const result = await Utils.showConfirm(
+                    '¿Limpiar sillas?', 
+                    `Se eliminarán todas las ${sillasExistentes.length} sillas del curso ${curso}`
+                );
+                return result.isConfirmed;
+            } else {
+                return confirm(`¿Eliminar ${sillasExistentes.length} sillas?`);
+            }
+        };
+        
+        if (await confirmar()) {
+            if (DataManager.limpiarDatosPorCurso) {
+                DataManager.limpiarDatosPorCurso(curso);
+            }
+            
+            await actualizarVistaSillas(curso);
+            
+            if (typeof Utils !== 'undefined') {
                 Utils.showToast('success', `Sillas del curso ${curso} eliminadas`);
             }
-        });
-    }
-
-    /**
-     * Actualiza las estadísticas de sillas
-     */
-    function actualizarEstadisticas(curso) {
-        if (!curso) return;
-        
-        const estadisticas = DataManager.getEstadisticasSillas?.(curso);
-        if (estadisticas && typeof UIManager !== 'undefined') {
-            UIManager.actualizarEstadisticasSillas(estadisticas);
         }
     }
 
@@ -161,36 +208,43 @@ const SillasModule = (function() {
         const idx = sillas.findIndex(s => s.id === sillaId);
         
         if (!silla) {
-            Utils.showToast('error', 'Silla no encontrada');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', 'Silla no encontrada');
+            } else {
+                alert('Silla no encontrada');
+            }
             return;
         }
         
-        // Marcar en el formulario si la silla está ocupada
-        const ocupada = silla.documento ? true : false;
+        const curso = silla.curso;
+        const estudiantes = await obtenerEstudiantesCurso(curso);
         
-        const estudiantes = await DataManager.getEstudiantesPorCurso(silla.curso) || [];
+        // Obtener estudiantes ya asignados a otras sillas
+        const estudiantesAsignados = sillas
+            .filter(s => s.curso === curso && s.documento && s.id !== sillaId)
+            .map(s => s.documento);
         
-        // Obtener estudiantes sin silla (excluyendo el actual si ya tiene)
-        let sinSilla = [];
-        if (DataManager.getEstudiantesSinSilla) {
-            sinSilla = DataManager.getEstudiantesSinSilla(estudiantes, silla.curso);
-        } else {
-            const ocupados = sillas.filter(s => s.curso === silla.curso && s.documento).map(s => s.documento);
-            sinSilla = estudiantes.filter(e => !ocupados.includes(e.documento));
-        }
+        // Estudiantes disponibles
+        let estudiantesDisponibles = estudiantes.filter(e => !estudiantesAsignados.includes(e.documento));
         
-        // Si la silla ya tiene estudiante, agregarlo a la lista
+        // Si la silla ya tiene estudiante, asegurar que esté en la lista
         if (silla.documento) {
             const estudianteActual = estudiantes.find(e => e.documento === silla.documento);
-            if (estudianteActual && !sinSilla.some(e => e.documento === silla.documento)) {
-                sinSilla.unshift(estudianteActual);
+            if (estudianteActual && !estudiantesDisponibles.some(e => e.documento === silla.documento)) {
+                estudiantesDisponibles.unshift(estudianteActual);
             }
         }
         
+        // Llenar select de estudiantes
         const select = document.getElementById('selectEstudianteSilla');
-        select.innerHTML = '<option value="">Seleccione estudiante</option>';
+        if (!select) {
+            console.error('❌ selectEstudianteSilla no encontrado');
+            return;
+        }
         
-        sinSilla.forEach(e => {
+        select.innerHTML = '<option value="">-- Seleccione un estudiante --</option>';
+        
+        estudiantesDisponibles.forEach(e => {
             const opt = document.createElement('option');
             opt.value = e.documento;
             opt.setAttribute('data-nombre', `${e.nombres} ${e.apellidos}`);
@@ -198,55 +252,76 @@ const SillasModule = (function() {
             select.appendChild(opt);
         });
         
+        // Seleccionar el estudiante actual si existe
         if (silla.documento) {
             for (let i = 0; i < select.options.length; i++) {
                 if (select.options[i].value === silla.documento) {
                     select.selectedIndex = i;
-                    window.cargarDatosEstudianteSilla?.();
+                    cargarDatosEstudianteSilla();
                     break;
                 }
             }
         }
         
-        // Llenar campos del formulario
-        document.getElementById('sillaIndex').value = idx;
-        document.getElementById('sillaId').value = silla.id;
-        document.getElementById('sillaSerial').value = silla.serial || '';
-        document.getElementById('sillaNumero').value = silla.numero || '';
-        document.getElementById('sillaEstado').value = silla.estado || 'Bueno';
-        document.getElementById('sillaObservaciones').value = silla.observaciones || '';
-        document.getElementById('sillaEstudianteNombre').value = silla.nombreEstudiante || '';
-        document.getElementById('sillaEstudianteDocumento').value = silla.documento || '';
+        // Llenar datos de la silla
+        const campos = [
+            'sillaIndex', 'sillaId', 'sillaSerial', 'sillaNumero',
+            'sillaEstado', 'sillaObservaciones', 'sillaEstudianteNombre', 'sillaEstudianteDocumento'
+        ];
         
-        // Marcar visualmente si está ocupada
+        campos.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === 'sillaIndex') el.value = idx;
+                else if (id === 'sillaId') el.value = silla.id;
+                else if (id === 'sillaSerial') el.value = silla.serial || '';
+                else if (id === 'sillaNumero') el.value = silla.numero || '';
+                else if (id === 'sillaEstado') el.value = silla.estado || 'Bueno';
+                else if (id === 'sillaObservaciones') el.value = silla.observaciones || '';
+                else if (id === 'sillaEstudianteNombre') el.value = silla.nombreEstudiante || '';
+                else if (id === 'sillaEstudianteDocumento') el.value = silla.documento || '';
+            }
+        });
+        
+        // Indicador visual
         const ocupadaIndicator = document.getElementById('sillaOcupadaIndicator');
         if (ocupadaIndicator) {
-            ocupadaIndicator.textContent = ocupada ? 'Silla OCUPADA' : 'Silla DISPONIBLE';
-            ocupadaIndicator.className = ocupada ? 'badge bg-success mb-2' : 'badge bg-secondary mb-2';
+            const ocupada = !!silla.documento;
+            ocupadaIndicator.textContent = ocupada ? '🪑 Silla OCUPADA' : '🪑 Silla DISPONIBLE';
+            ocupadaIndicator.className = ocupada ? 'badge bg-success mb-2 p-2' : 'badge bg-secondary mb-2 p-2';
         }
         
-        ModalManager.showModal('asignarSilla');
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.showModal('asignarSilla');
+        } else {
+            console.error('❌ ModalManager no disponible');
+        }
     }
 
     /**
-     * Carga datos del estudiante seleccionado en la silla
+     * Carga datos del estudiante seleccionado
      */
     function cargarDatosEstudianteSilla() {
         const select = document.getElementById('selectEstudianteSilla');
+        if (!select) return;
+        
+        const nombreField = document.getElementById('sillaEstudianteNombre');
+        const docField = document.getElementById('sillaEstudianteDocumento');
+        
         if (select.selectedIndex > 0) {
             const opt = select.options[select.selectedIndex];
-            document.getElementById('sillaEstudianteNombre').value = opt.getAttribute('data-nombre') || '';
-            document.getElementById('sillaEstudianteDocumento').value = opt.value;
+            if (nombreField) nombreField.value = opt.getAttribute('data-nombre') || '';
+            if (docField) docField.value = opt.value;
         } else {
-            document.getElementById('sillaEstudianteNombre').value = '';
-            document.getElementById('sillaEstudianteDocumento').value = '';
+            if (nombreField) nombreField.value = '';
+            if (docField) docField.value = '';
         }
     }
 
     /**
      * Guarda la asignación de una silla
      */
-    function guardarAsignacionSilla() {
+    async function guardarAsignacionSilla() {
         const idx = parseInt(document.getElementById('sillaIndex')?.value);
         const doc = document.getElementById('sillaEstudianteDocumento')?.value;
         const nombre = document.getElementById('sillaEstudianteNombre')?.value;
@@ -254,169 +329,174 @@ const SillasModule = (function() {
         const obs = document.getElementById('sillaObservaciones')?.value;
         
         if (isNaN(idx)) {
-            Utils.showToast('error', 'Error en los datos de la silla');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', 'Error en los datos de la silla');
+            }
             return;
         }
         
         // Actualizar estado y observaciones
         DataManager.actualizarSilla?.(idx, { estado, observaciones: obs });
         
-        // Asignar o desasignar estudiante
+        // Si hay estudiante, asignar
         if (doc && nombre) {
-            // Verificar si el estudiante ya tiene otra silla
             if (!DataManager.asignarSilla?.(idx, doc, nombre)) {
-                Utils.showToast('warning', 'Este estudiante ya tiene una silla asignada');
+                if (typeof Utils !== 'undefined') {
+                    Utils.showToast('warning', 'Este estudiante ya tiene una silla asignada');
+                }
                 return;
             }
-            console.log(`✅ Estudiante ${nombre} asignado a silla ${idx}`);
         } else {
             // Si no hay estudiante, desasignar
             DataManager.desasignarSilla?.(idx);
-            console.log(`✅ Silla ${idx} desasignada`);
         }
         
         // Actualizar vista
-        if (typeof UIManager !== 'undefined') {
-            UIManager.renderizarSillas();
-            
-            const curso = document.getElementById('cursoSillas')?.value;
-            if (curso) {
-                const estadisticas = DataManager.getEstadisticasSillas?.(curso);
-                if (estadisticas) {
-                    UIManager.actualizarEstadisticasSillas(estadisticas);
-                }
-            }
+        const curso = document.getElementById('cursoSillas')?.value;
+        await actualizarVistaSillas(curso);
+        
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.hideModal('asignarSilla');
         }
         
-        ModalManager.hideModal('asignarSilla');
-        Utils.showToast('success', 'Silla actualizada');
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', 'Silla actualizada');
+        }
     }
 
     /**
      * Desasigna una silla
      */
-    function desasignarSilla() {
+    async function desasignarSilla() {
         const idx = parseInt(document.getElementById('sillaIndex')?.value);
         
         if (isNaN(idx)) {
-            Utils.showToast('error', 'Error en los datos');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', 'Error en los datos');
+            }
             return;
         }
         
-        Swal.fire({
-            title: '¿Desasignar silla?',
-            text: 'El estudiante quedará sin silla asignada',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Sí, desasignar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                DataManager.desasignarSilla?.(idx);
-                
-                if (typeof UIManager !== 'undefined') {
-                    UIManager.renderizarSillas();
-                    
-                    const curso = document.getElementById('cursoSillas')?.value;
-                    if (curso) {
-                        const estadisticas = DataManager.getEstadisticasSillas?.(curso);
-                        if (estadisticas) {
-                            UIManager.actualizarEstadisticasSillas(estadisticas);
-                        }
-                    }
-                }
-                
+        const confirmar = async () => {
+            if (typeof Utils !== 'undefined') {
+                const result = await Utils.showConfirm(
+                    '¿Desasignar silla?',
+                    'El estudiante quedará sin silla asignada'
+                );
+                return result.isConfirmed;
+            } else {
+                return confirm('¿Desasignar silla?');
+            }
+        };
+        
+        if (await confirmar()) {
+            DataManager.desasignarSilla?.(idx);
+            
+            const curso = document.getElementById('cursoSillas')?.value;
+            await actualizarVistaSillas(curso);
+            
+            if (typeof ModalManager !== 'undefined') {
                 ModalManager.hideModal('asignarSilla');
+            }
+            
+            if (typeof Utils !== 'undefined') {
                 Utils.showToast('success', 'Silla desasignada');
             }
-        });
+        }
     }
 
     /**
-     * Carga estudiantes para el selector de sillas
+     * Carga estudiantes al cambiar curso
      */
     async function cargarEstudiantesParaSillas() {
-        const cursoSelect = document.getElementById('cursoSillas');
-        if (!cursoSelect) return;
-        
-        const cursoId = cursoSelect.value;
-        if (!cursoId) return;
-        
-        // Actualizar estadísticas
-        if (typeof UIManager !== 'undefined') {
-            const estadisticas = DataManager.getEstadisticasSillas?.(cursoId);
-            if (estadisticas) {
-                UIManager.actualizarEstadisticasSillas(estadisticas);
+        const curso = validarCursoSeleccionado();
+        if (!curso) {
+            const container = document.getElementById('sillasContainer');
+            if (container) {
+                container.innerHTML = '<p class="text-muted">Seleccione un curso para ver las sillas</p>';
             }
-            UIManager.renderizarSillas();
+            return;
         }
+        
+        await actualizarVistaSillas(curso);
     }
 
     /**
-     * Asignación automática (mejorada)
+     * Asignación automática
      */
     async function asignarSillasAutomaticamente() {
-        const curso = document.getElementById('cursoSillas')?.value;
+        console.log('🔄 Asignación automática...');
         
-        if (!curso) {
-            Utils.showToast('warning', 'Seleccione un curso');
-            return;
-        }
+        const curso = validarCursoSeleccionado();
+        if (!curso) return;
         
         const sillas = DataManager.getSillasPorCurso?.(curso) || [];
         if (sillas.length === 0) {
-            Utils.showToast('warning', 'Primero cree las sillas');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Primero cree las sillas');
+            }
             return;
         }
         
-        const estudiantes = await DataManager.getEstudiantesPorCurso(curso) || [];
-        const estudiantesSinSilla = DataManager.getEstudiantesSinSilla?.(estudiantes, curso) || estudiantes;
+        const estudiantes = await obtenerEstudiantesCurso(curso);
+        const estudiantesAsignados = sillas.filter(s => s.documento).map(s => s.documento);
+        const estudiantesSinAsignar = estudiantes.filter(e => !estudiantesAsignados.includes(e.documento));
         
-        if (estudiantesSinSilla.length === 0) {
-            Utils.showToast('info', 'Todos los estudiantes ya tienen silla');
+        if (estudiantesSinAsignar.length === 0) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('info', 'Todos los estudiantes ya tienen silla');
+            }
             return;
         }
         
         const sillasDisponibles = sillas.filter(s => !s.documento);
         
         if (sillasDisponibles.length === 0) {
-            Utils.showToast('warning', 'No hay sillas disponibles');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'No hay sillas disponibles');
+            }
             return;
         }
         
-        // Preguntar confirmación
-        Swal.fire({
-            title: '¿Asignar automáticamente?',
-            text: `Se asignarán ${Math.min(sillasDisponibles.length, estudiantesSinSilla.length)} sillas a estudiantes sin asignar`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, asignar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                let asignadas = 0;
-                for (let i = 0; i < Math.min(sillasDisponibles.length, estudiantesSinSilla.length); i++) {
-                    const sillaGlobalIndex = DataManager.getSillas().findIndex(s => s.id === sillasDisponibles[i].id);
-                    const estudiante = estudiantesSinSilla[i];
-                    const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
-                    
-                    DataManager.asignarSilla?.(sillaGlobalIndex, estudiante.documento, nombreCompleto);
+        const aAsignar = Math.min(sillasDisponibles.length, estudiantesSinAsignar.length);
+        
+        const confirmar = async () => {
+            if (typeof Utils !== 'undefined') {
+                const result = await Swal.fire({
+                    title: '¿Asignar automáticamente?',
+                    html: `
+                        <p><strong>Estudiantes sin silla:</strong> ${estudiantesSinAsignar.length}</p>
+                        <p><strong>Sillas disponibles:</strong> ${sillasDisponibles.length}</p>
+                        <p><strong>Se asignarán:</strong> ${aAsignar} estudiantes</p>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, asignar'
+                });
+                return result.isConfirmed;
+            } else {
+                return confirm(`¿Asignar ${aAsignar} estudiantes?`);
+            }
+        };
+        
+        if (await confirmar()) {
+            let asignadas = 0;
+            for (let i = 0; i < aAsignar; i++) {
+                const sillaGlobalIndex = DataManager.getSillas().findIndex(s => s.id === sillasDisponibles[i].id);
+                const estudiante = estudiantesSinAsignar[i];
+                const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
+                
+                if (DataManager.asignarSilla?.(sillaGlobalIndex, estudiante.documento, nombreCompleto)) {
                     asignadas++;
                 }
-                
-                if (typeof UIManager !== 'undefined') {
-                    UIManager.renderizarSillas();
-                    
-                    const estadisticas = DataManager.getEstadisticasSillas?.(curso);
-                    if (estadisticas) {
-                        UIManager.actualizarEstadisticasSillas(estadisticas);
-                    }
-                }
-                
+            }
+            
+            await actualizarVistaSillas(curso);
+            
+            if (typeof Utils !== 'undefined') {
                 Utils.showToast('success', `${asignadas} sillas asignadas automáticamente`);
             }
-        });
+        }
     }
 
     // Exponer funciones globalmente
@@ -429,7 +509,7 @@ const SillasModule = (function() {
     window.cargarEstudiantesParaSillas = cargarEstudiantesParaSillas;
     window.asignarSillasAutomaticamente = asignarSillasAutomaticamente;
 
-    return {
+    const api = {
         crearSillas,
         limpiarSillasCurso,
         abrirModalSilla,
@@ -438,6 +518,15 @@ const SillasModule = (function() {
         cargarEstudiantesParaSillas,
         asignarSillasAutomaticamente
     };
+    
+    console.log('✅ SillasModule: API creada');
+    return api;
 })();
 
-console.log('✅ Módulo Sillas v0.5 mejorado cargado correctamente');
+if (typeof SillasModule !== 'undefined') {
+    console.log('✅ SillasModule v0.6 cargado correctamente');
+} else {
+    console.error('❌ Error cargando SillasModule');
+}
+
+window.SillasModule = SillasModule;

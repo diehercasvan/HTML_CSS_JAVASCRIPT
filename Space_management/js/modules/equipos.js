@@ -1,7 +1,17 @@
 // equipos.js - Módulo de gestión de equipos (TV/Proyectores)
-// VERSIÓN COMPLETA - v0.5 - CON CAMPO SERIAL
+// VERSIÓN 0.6 - COMPLETA Y CORREGIDA
+
+console.log('🔄 Iniciando carga de equipos.js...');
+
+// Verificar dependencias
+if (typeof DataManager === 'undefined') {
+    console.error('❌ equipos.js: DataManager NO DISPONIBLE');
+} else {
+    console.log('✅ equipos.js: DataManager disponible');
+}
 
 const EquiposModule = (function() {
+    console.log('📦 Ejecutando IIFE de EquiposModule...');
     
     /**
      * Abre el modal para agregar un nuevo equipo
@@ -9,19 +19,24 @@ const EquiposModule = (function() {
     function agregarEquipo() {
         console.log('🔄 Abriendo modal para nuevo equipo...');
         
-        // Limpiar formulario
         const form = document.getElementById('formEquipo');
         if (form) form.reset();
         
-        document.getElementById('equipoIndex').value = '-1';
+        const indexField = document.getElementById('equipoIndex');
+        if (indexField) indexField.value = '-1';
         
-        // Limpiar campo serial específicamente
         const serialField = document.getElementById('equipoSerial');
         if (serialField) serialField.value = '';
         
-        if (!ModalManager.showModal('equipo')) {
-            console.error('❌ No se pudo abrir el modal de equipo');
-            Utils.showToast('error', 'Error al abrir el formulario');
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.showModal('equipo');
+        } else {
+            console.error('❌ ModalManager no disponible');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', 'Error al abrir el formulario');
+            } else {
+                alert('Error al abrir el formulario');
+            }
         }
     }
 
@@ -36,21 +51,37 @@ const EquiposModule = (function() {
         
         if (!eq) {
             console.error('❌ Equipo no encontrado');
-            Utils.showToast('error', 'Equipo no encontrado');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('error', 'Equipo no encontrado');
+            }
             return;
         }
         
         console.log('📝 Datos del equipo:', eq);
         
         // Asignar valores a los campos
-        document.getElementById('equipoIndex').value = index;
-        document.getElementById('equipoTipo').value = eq.tipo || '';
-        document.getElementById('equipoSerial').value = eq.serial || '';
-        document.getElementById('equipoEstado').value = eq.estado || 'Excelente';
-        document.getElementById('equipoLimpieza').value = eq.estadoLimpieza || 'Bueno';
-        document.getElementById('equipoObservaciones').value = eq.observaciones || '';
+        const campos = [
+            { id: 'equipoIndex', valor: index },
+            { id: 'equipoTipo', valor: eq.tipo || '' },
+            { id: 'equipoSerial', valor: eq.serial || '' },
+            { id: 'equipoEstado', valor: eq.estado || 'Excelente' },
+            { id: 'equipoLimpieza', valor: eq.estadoLimpieza || 'Bueno' },
+            { id: 'equipoObservaciones', valor: eq.observaciones || '' }
+        ];
         
-        ModalManager.showModal('equipo');
+        campos.forEach(campo => {
+            const el = document.getElementById(campo.id);
+            if (el) {
+                el.value = campo.valor;
+                console.log(`✅ Campo ${campo.id} asignado:`, campo.valor);
+            } else {
+                console.warn(`⚠️ Campo ${campo.id} no encontrado`);
+            }
+        });
+        
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.showModal('equipo');
+        }
     }
 
     /**
@@ -69,59 +100,49 @@ const EquiposModule = (function() {
         
         // Validaciones
         if (!tipo) {
-            Utils.showToast('warning', 'Seleccione un tipo de equipo');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione un tipo de equipo');
+            } else {
+                alert('Seleccione un tipo de equipo');
+            }
             return;
         }
         
         if (!serial) {
-            Utils.showToast('warning', 'Ingrese el serial del equipo');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Ingrese el serial del equipo');
+            } else {
+                alert('Ingrese el serial del equipo');
+            }
             return;
         }
         
-        if (!estado) {
-            Utils.showToast('warning', 'Seleccione el estado del equipo');
-            return;
-        }
-        
-        if (!estadoLimpieza) {
-            Utils.showToast('warning', 'Seleccione el estado de limpieza');
-            return;
-        }
-        
-        // Crear objeto de datos
         const data = {
             tipo,
             serial,
-            estado,
-            estadoLimpieza,
+            estado: estado || 'Excelente',
+            estadoLimpieza: estadoLimpieza || 'Bueno',
             observaciones: observaciones || ''
         };
         
         console.log('📦 Datos a guardar:', data);
         
-        // Guardar en DataManager
+        let resultado = false;
         if (idx >= 0) {
-            // Actualizar equipo existente
-            const resultado = DataManager.actualizarEquipo?.(idx, data);
-            if (resultado) {
-                console.log('✅ Equipo actualizado:', data);
+            resultado = DataManager.actualizarEquipo?.(idx, data) || false;
+            if (resultado && typeof Utils !== 'undefined') {
                 Utils.showToast('success', 'Equipo actualizado');
-            } else {
-                console.error('❌ Error al actualizar equipo');
-                Utils.showToast('error', 'Error al actualizar');
-                return;
             }
         } else {
-            // Agregar nuevo equipo
-            const nuevosEquipos = DataManager.agregarEquipo?.(data);
-            if (nuevosEquipos) {
-                console.log('✅ Nuevo equipo agregado:', data);
+            const nuevos = DataManager.agregarEquipo?.(data);
+            resultado = !!nuevos;
+            if (resultado && typeof Utils !== 'undefined') {
                 Utils.showToast('success', 'Equipo agregado');
-            } else {
-                console.error('❌ Error al agregar equipo');
-                Utils.showToast('error', 'Error al agregar');
-                return;
             }
+        }
+        
+        if (!resultado && typeof Utils !== 'undefined') {
+            Utils.showToast('error', 'Error al guardar');
         }
         
         // Actualizar tabla
@@ -129,8 +150,9 @@ const EquiposModule = (function() {
             UIManager.renderizarEquipos();
         }
         
-        // Cerrar modal
-        ModalManager.hideModal('equipo');
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.hideModal('equipo');
+        }
     }
 
     /**
@@ -139,23 +161,35 @@ const EquiposModule = (function() {
     function eliminarEquipo(index) {
         console.log('🗑️ Eliminando equipo índice:', index);
         
-        Utils.showConfirm('¿Eliminar equipo?', 'Esta acción no se puede deshacer')
-            .then(result => {
-                if (result.isConfirmed) {
-                    const eliminado = DataManager.eliminarEquipo?.(index);
-                    
+        const confirmar = async () => {
+            if (typeof Utils !== 'undefined') {
+                const result = await Utils.showConfirm(
+                    '¿Eliminar equipo?',
+                    'Esta acción no se puede deshacer'
+                );
+                return result.isConfirmed;
+            } else {
+                return confirm('¿Eliminar equipo?');
+            }
+        };
+        
+        confirmar().then(confirmed => {
+            if (confirmed) {
+                const eliminado = DataManager.eliminarEquipo?.(index);
+                
+                if (eliminado && typeof UIManager !== 'undefined') {
+                    UIManager.renderizarEquipos();
+                }
+                
+                if (typeof Utils !== 'undefined') {
                     if (eliminado) {
-                        if (typeof UIManager !== 'undefined' && UIManager.renderizarEquipos) {
-                            UIManager.renderizarEquipos();
-                        }
-                        console.log('✅ Equipo eliminado');
                         Utils.showToast('success', 'Equipo eliminado');
                     } else {
-                        console.error('❌ Error al eliminar equipo');
                         Utils.showToast('error', 'Error al eliminar');
                     }
                 }
-            });
+            }
+        });
     }
 
     /**
@@ -179,13 +213,22 @@ const EquiposModule = (function() {
     window.guardarEquipo = guardarEquipo;
     window.eliminarEquipo = eliminarEquipo;
 
-    return {
+    const api = {
         agregarEquipo,
         editarEquipo,
         guardarEquipo,
         eliminarEquipo,
         cargarEquipos
     };
+    
+    console.log('✅ EquiposModule: API creada');
+    return api;
 })();
 
-console.log('✅ Módulo Equipos v0.5 cargado correctamente (con campo serial)');
+if (typeof EquiposModule !== 'undefined') {
+    console.log('✅ EquiposModule v0.6 cargado correctamente');
+} else {
+    console.error('❌ Error cargando EquiposModule');
+}
+
+window.EquiposModule = EquiposModule;

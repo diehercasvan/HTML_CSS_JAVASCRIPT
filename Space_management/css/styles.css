@@ -305,3 +305,62 @@ body {
         width: 50%;
     }
 }
+/* Estilos adicionales para el módulo de sillas */
+.silla-card {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.silla-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.silla-card .card-header {
+    font-weight: bold;
+    padding: 8px;
+}
+
+.silla-card .card-body {
+    padding: 10px;
+    min-height: 100px;
+}
+
+.stat-box {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-box:last-child {
+    border-bottom: none;
+}
+
+/* Estilos para el indicador de ocupación */
+#sillaOcupadaIndicator {
+    font-size: 1rem;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+/* Estilos para el modal de asistencia */
+.form-switch .form-check-input {
+    width: 2.5em;
+    margin-left: -2.5em;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+/* Estilos para el diagnóstico */
+.diagnostico-panel {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    border-left: 4px solid #0d6efd;
+}

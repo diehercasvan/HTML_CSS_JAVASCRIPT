@@ -1,24 +1,47 @@
 // asistencia.js - Módulo de registro de asistencia
-// VERSIÓN CORREGIDA - v0.5 - CON FUNCIONES DE MARCAR/DESMARCAR FUNCIONALES
+// VERSIÓN 0.6 - COMPLETA Y CORREGIDA
+
+console.log('🔄 Iniciando carga de asistencia.js...');
+
+// Verificar dependencias
+if (typeof DataManager === 'undefined') {
+    console.error('❌ asistencia.js: DataManager NO DISPONIBLE');
+} else {
+    console.log('✅ asistencia.js: DataManager disponible');
+}
 
 const AsistenciaModule = (function() {
+    console.log('📦 Ejecutando IIFE de AsistenciaModule...');
     
-    // Almacenamiento temporal de asistencias y uniformes
     let asistenciasTemp = {};
 
     /**
      * Filtra la asistencia por curso y fecha
      */
     async function filtrarAsistencia() {
-        const curso = document.getElementById('cursoAsistencia')?.value;
-        const fecha = document.getElementById('fechaAsistencia')?.value;
+        console.log('🔄 Filtrando asistencia...');
         
-        if (!curso || !fecha) {
-            Utils.showToast('warning', 'Seleccione curso y fecha');
+        const cursoSelect = document.getElementById('cursoAsistencia');
+        const fechaInput = document.getElementById('fechaAsistencia');
+        
+        if (!cursoSelect || !fechaInput) {
+            console.error('❌ Elementos de filtro no encontrados');
             return;
         }
         
-        if (typeof UIManager !== 'undefined') {
+        const curso = cursoSelect.value;
+        const fecha = fechaInput.value;
+        
+        if (!curso || !fecha) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione curso y fecha');
+            } else {
+                alert('Seleccione curso y fecha');
+            }
+            return;
+        }
+        
+        if (typeof UIManager !== 'undefined' && UIManager.renderizarTablaAsistencia) {
             await UIManager.renderizarTablaAsistencia(curso, fecha);
         }
     }
@@ -37,11 +60,11 @@ const AsistenciaModule = (function() {
             label.textContent = presente ? 'Presente' : 'Ausente';
         }
         
-        console.log(`📝 Asistencia marcada para ${doc}: ${presente ? 'Presente' : 'Ausente'}`);
+        console.log(`📝 Asistencia ${doc}: ${presente ? 'Presente' : 'Ausente'}`);
     }
 
     /**
-     * Marca el uso de uniforme de un estudiante
+     * Marca el uso de uniforme
      */
     function marcarUniforme(doc, tieneUniforme) {
         if (!asistenciasTemp[doc]) {
@@ -54,23 +77,21 @@ const AsistenciaModule = (function() {
             label.textContent = tieneUniforme ? 'Con Uniforme' : 'Sin Uniforme';
         }
         
-        console.log(`👕 Uniforme marcado para ${doc}: ${tieneUniforme ? 'Con Uniforme' : 'Sin Uniforme'}`);
+        console.log(`👕 Uniforme ${doc}: ${tieneUniforme ? 'Sí' : 'No'}`);
     }
 
     /**
-     * Marca TODOS los estudiantes como presentes y con uniforme
+     * Marca TODOS los estudiantes
      */
     function marcarTodos() {
-        console.log('🔄 Marcando todos los estudiantes...');
+        console.log('🔄 Marcando todos...');
         
-        // Obtener todos los checkboxes de asistencia
-        const checkboxesAsistencia = document.querySelectorAll('[id^="asistencia_"]');
-        const checkboxesUniforme = document.querySelectorAll('[id^="uniforme_"]');
+        const asis = document.querySelectorAll('[id^="asistencia_"]');
+        const unif = document.querySelectorAll('[id^="uniforme_"]');
         
         let contador = 0;
         
-        // Marcar asistencias
-        checkboxesAsistencia.forEach(cb => {
+        asis.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = true;
                 const doc = cb.id.replace('asistencia_', '');
@@ -79,8 +100,7 @@ const AsistenciaModule = (function() {
             }
         });
         
-        // Marcar uniformes
-        checkboxesUniforme.forEach(cb => {
+        unif.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = true;
                 const doc = cb.id.replace('uniforme_', '');
@@ -88,24 +108,23 @@ const AsistenciaModule = (function() {
             }
         });
         
-        Utils.showToast('success', `${contador} estudiantes marcados como presentes y con uniforme`);
-        console.log(`✅ ${contador} estudiantes marcados`);
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', `${contador} estudiantes marcados`);
+        }
     }
 
     /**
-     * Desmarca TODOS los estudiantes (asistencia y uniforme)
+     * Desmarca TODOS los estudiantes
      */
     function desmarcarTodos() {
-        console.log('🔄 Desmarcando todos los estudiantes...');
+        console.log('🔄 Desmarcando todos...');
         
-        // Obtener todos los checkboxes de asistencia
-        const checkboxesAsistencia = document.querySelectorAll('[id^="asistencia_"]');
-        const checkboxesUniforme = document.querySelectorAll('[id^="uniforme_"]');
+        const asis = document.querySelectorAll('[id^="asistencia_"]');
+        const unif = document.querySelectorAll('[id^="uniforme_"]');
         
         let contador = 0;
         
-        // Desmarcar asistencias
-        checkboxesAsistencia.forEach(cb => {
+        asis.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = false;
                 const doc = cb.id.replace('asistencia_', '');
@@ -114,8 +133,7 @@ const AsistenciaModule = (function() {
             }
         });
         
-        // Desmarcar uniformes
-        checkboxesUniforme.forEach(cb => {
+        unif.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = false;
                 const doc = cb.id.replace('uniforme_', '');
@@ -123,46 +141,52 @@ const AsistenciaModule = (function() {
             }
         });
         
-        Utils.showToast('info', `${contador} estudiantes desmarcados`);
-        console.log(`✅ ${contador} estudiantes desmarcados`);
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('info', `${contador} estudiantes desmarcados`);
+        }
     }
 
     /**
-     * Marca asistencia y uniforme a la vez (para checkbox principal)
-     */
-    function marcarTodo(doc, checked) {
-        marcarAsistencia(doc, checked);
-        marcarUniforme(doc, checked);
-    }
-
-    /**
-     * Actualiza la observación de un estudiante
+     * Actualiza observación
      */
     function actualizarObservacionAsistencia(doc, obs) {
         if (!asistenciasTemp[doc]) {
             asistenciasTemp[doc] = {};
         }
         asistenciasTemp[doc].observaciones = obs;
-        
-        console.log(`📝 Observación actualizada para ${doc}: ${obs}`);
+        console.log(`📝 Obs ${doc}: ${obs}`);
     }
 
     /**
-     * Guarda el registro de asistencia
+     * Guarda la asistencia
      */
     async function guardarAsistencia() {
-        const curso = document.getElementById('cursoAsistencia')?.value;
-        const fecha = document.getElementById('fechaAsistencia')?.value;
+        console.log('💾 Guardando asistencia...');
+        
+        const cursoSelect = document.getElementById('cursoAsistencia');
+        const fechaInput = document.getElementById('fechaAsistencia');
+        
+        if (!cursoSelect || !fechaInput) {
+            console.error('❌ Elementos no encontrados');
+            return;
+        }
+        
+        const curso = cursoSelect.value;
+        const fecha = fechaInput.value;
         
         if (!curso || !fecha) {
-            Utils.showToast('warning', 'Seleccione curso y fecha');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione curso y fecha');
+            }
             return;
         }
         
         const estudiantes = await DataManager.getEstudiantesPorCurso(curso) || [];
         
         if (estudiantes.length === 0) {
-            Utils.showToast('warning', 'No hay estudiantes en este curso');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'No hay estudiantes en este curso');
+            }
             return;
         }
         
@@ -174,43 +198,40 @@ const AsistenciaModule = (function() {
             observaciones: asistenciasTemp[e.documento]?.observaciones || ''
         }));
         
-        // Contar estadísticas para mostrar
         const totalAsistencia = registros.filter(r => r.asistio).length;
         const totalUniforme = registros.filter(r => r.uniforme).length;
         
         DataManager.guardarAsistencia?.(curso, fecha, registros);
         
-        // Limpiar temporales SOLO si se guardó exitosamente
         if (DataManager.getAsistencia?.(curso, fecha)) {
             asistenciasTemp = {};
-            Utils.showToast('success', `Asistencia guardada: ${totalAsistencia} presentes, ${totalUniforme} con uniforme`);
-        } else {
-            Utils.showToast('error', 'Error al guardar la asistencia');
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('success', `Guardado: ${totalAsistencia} presentes, ${totalUniforme} uniforme`);
+            }
+        } else if (typeof Utils !== 'undefined') {
+            Utils.showToast('error', 'Error al guardar');
         }
     }
 
     /**
-     * Carga un registro de asistencia guardado previamente
+     * Carga asistencia guardada
      */
     async function cargarAsistenciaGuardada(curso, fecha) {
-        const asistenciaGuardada = DataManager.getAsistencia?.(curso, fecha);
-        
-        if (asistenciaGuardada?.registros) {
-            asistenciaGuardada.registros.forEach(r => {
+        const guardada = DataManager.getAsistencia?.(curso, fecha);
+        if (guardada?.registros) {
+            guardada.registros.forEach(r => {
                 asistenciasTemp[r.documento] = {
                     asistio: r.asistio || false,
                     uniforme: r.uniforme || false,
                     observaciones: r.observaciones || ''
                 };
             });
-            console.log(`📋 Asistencia cargada para ${fecha}:`, asistenciasTemp);
         }
-        
-        return asistenciaGuardada;
+        return guardada;
     }
 
     /**
-     * Carga la asistencia por curso (wrapper para UIManager)
+     * Carga asistencia por curso
      */
     function cargarAsistenciaPorCurso() {
         if (typeof UIManager !== 'undefined' && UIManager.cargarAsistenciaPorCurso) {
@@ -222,18 +243,16 @@ const AsistenciaModule = (function() {
     window.filtrarAsistencia = filtrarAsistencia;
     window.marcarAsistencia = marcarAsistencia;
     window.marcarUniforme = marcarUniforme;
-    window.marcarTodo = marcarTodo;
     window.actualizarObservacionAsistencia = actualizarObservacionAsistencia;
     window.guardarAsistencia = guardarAsistencia;
     window.cargarAsistenciaPorCurso = cargarAsistenciaPorCurso;
     window.marcarTodos = marcarTodos;
     window.desmarcarTodos = desmarcarTodos;
 
-    return {
+    const api = {
         filtrarAsistencia,
         marcarAsistencia,
         marcarUniforme,
-        marcarTodo,
         actualizarObservacionAsistencia,
         guardarAsistencia,
         cargarAsistenciaPorCurso,
@@ -241,6 +260,15 @@ const AsistenciaModule = (function() {
         marcarTodos,
         desmarcarTodos
     };
+    
+    console.log('✅ AsistenciaModule: API creada');
+    return api;
 })();
 
-console.log('✅ Módulo Asistencia v0.5 corregido - Funciones de marcar/desmarcar funcionando');
+if (typeof AsistenciaModule !== 'undefined') {
+    console.log('✅ AsistenciaModule v0.6 cargado correctamente');
+} else {
+    console.error('❌ Error cargando AsistenciaModule');
+}
+
+window.AsistenciaModule = AsistenciaModule;

@@ -1,260 +1,538 @@
-// reportes.js - Módulo profesional de reportes v0.5
-// CON GENERACIÓN DE PDF Y TABLAS ESTILIZADAS
+// reportes.js - Módulo profesional de reportes v0.6
+// VERSIÓN MEJORADA - CON INFORMACIÓN COMPLETA DE SALONES, MESAS Y EQUIPOS
 
-const Reportes = (function() {
-    
+console.log('🔄 Iniciando carga de reportes.js...');
+
+// Verificar dependencias
+if (typeof DataManager === 'undefined') {
+    console.error('❌ reportes.js: DataManager NO DISPONIBLE');
+} else {
+    console.log('✅ reportes.js: DataManager disponible');
+}
+
+const Reportes = (function () {
+    console.log('📦 Ejecutando IIFE de Reportes...');
+
     /**
-     * Genera un reporte profesional con tablas estilizadas
-     */
+  * Genera un reporte profesional completo con todos los datos
+  */
     function generarReporteProfesional() {
-        console.log('🔄 Generando reporte profesional...');
-        
+        console.log('📊 Generando reporte profesional...');
+
         try {
             const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
-            
+
             if (!datos) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Sin datos',
-                    text: 'No hay datos para generar el reporte'
-                });
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Sin datos',
+                        text: 'No hay datos para generar el reporte'
+                    });
+                } else {
+                    alert('No hay datos');
+                }
                 return;
             }
 
-            const fechaActual = new Date().toLocaleString();
-            const titulo = `📊 REPORTE DE GESTIÓN DE SALONES - ${fechaActual}`;
+            // MOSTRAR TODOS LOS DATOS DISPONIBLES PARA DEPURACIÓN
+            console.log('📦 Datos completos:', datos);
+            console.log('📦 Mesas en datos:', datos.mesas);
+            console.log('📦 Sillas en datos:', datos.sillas);
 
-            // Crear contenido HTML profesional
+            // Obtener curso actual - PRIORIZAR EL CURSO SELECCIONADO EN MESAS O SILLAS
+            let cursoActual = sessionStorage.getItem('cursoMesasSeleccionado') ||
+                document.getElementById('cursoSillas')?.value ||
+                document.getElementById('cursoAsistencia')?.value;
+
+            // Si no hay curso seleccionado, tomar el primer curso con datos
+            if (!cursoActual || cursoActual === '') {
+                // Buscar si hay mesas de algún curso
+                if (datos.mesas && datos.mesas.length > 0) {
+                    cursoActual = datos.mesas[0].curso;
+                    console.log(`📌 Usando curso de mesas: ${cursoActual}`);
+                }
+                // Si no hay mesas, buscar sillas
+                else if (datos.sillas && datos.sillas.length > 0) {
+                    cursoActual = datos.sillas[0].curso;
+                    console.log(`📌 Usando curso de sillas: ${cursoActual}`);
+                }
+                // Si no hay nada, usar TODOS
+                else {
+                    cursoActual = 'TODOS';
+                }
+            }
+
+            console.log(`📌 Curso seleccionado para reporte: ${cursoActual}`);
+
+            // Obtener responsable del curso (el primero que encuentre)
+            let responsable = null;
+            if (cursoActual !== 'TODOS') {
+                responsable = datos.responsables?.find(r => r.numeroCurso === cursoActual);
+            }
+            // Si no hay responsable para el curso específico, tomar el primero
+            if (!responsable && datos.responsables && datos.responsables.length > 0) {
+                responsable = datos.responsables[0];
+            }
+
+            // Obtener horario de la clase
+            const horarioClase = responsable ?
+                `${responsable.horarioInicio || 'N/A'} - ${responsable.horarioFin || 'N/A'}` :
+                'No registrado';
+
+            // Filtrar datos por curso
+            let datosFiltrados = { ...datos };
+
+            if (cursoActual !== 'TODOS') {
+                datosFiltrados = {
+                    ...datos,
+                    responsables: datos.responsables?.filter(r => r.numeroCurso === cursoActual) || [],
+                    mesas: datos.mesas?.filter(m => m.curso === cursoActual) || [],
+                    sillas: datos.sillas?.filter(s => s.curso === cursoActual) || [],
+                    asistencia: datos.asistencia?.filter(a => a.curso === cursoActual) || []
+                };
+            }
+
+            console.log('📦 Datos filtrados:', datosFiltrados);
+            console.log('📦 Mesas filtradas:', datosFiltrados.mesas);
+            console.log('📦 Sillas filtradas:', datosFiltrados.sillas);
+
+            const fechaActual = new Date();
+            const fechaReporte = fechaActual.toLocaleDateString();
+            const horaReporte = fechaActual.toLocaleTimeString();
+
+            const titulo = cursoActual !== 'TODOS' ?
+                `REPORTE DEL CURSO ${cursoActual}` :
+                `REPORTE GENERAL`;
+
+            // Calcular estadísticas de mesas y PCs
+            const totalMesas = datosFiltrados.mesas?.length || 0;
+            let totalPCs = 0;
+            let PCsAsignados = 0;
+            let PCsExcelente = 0;
+            let PCsBueno = 0;
+            let PCsRegular = 0;
+            let PCsDanado = 0;
+
+            console.log(`📊 Procesando ${totalMesas} mesas...`);
+
+            datosFiltrados.mesas?.forEach((mesa, idx) => {
+                console.log(`Mesa ${idx + 1}:`, mesa);
+                totalPCs += mesa.pcs?.length || 0;
+                PCsAsignados += mesa.pcs?.filter(pc => pc.estudiante).length || 0;
+
+                mesa.pcs?.forEach(pc => {
+                    switch (pc.estado?.toLowerCase()) {
+                        case 'excelente': PCsExcelente++; break;
+                        case 'bueno': PCsBueno++; break;
+                        case 'regular': PCsRegular++; break;
+                        case 'dañado': PCsDanado++; break;
+                    }
+                });
+            });
+
+            console.log(`📊 Total PCs: ${totalPCs}, Asignados: ${PCsAsignados}`);
+
+            // Calcular estadísticas de sillas
+            const totalSillas = datosFiltrados.sillas?.length || 0;
+            const sillasOcupadas = datosFiltrados.sillas?.filter(s => s.documento).length || 0;
+
+            // Calcular estadísticas de equipos
+            const totalEquipos = datosFiltrados.equipos?.length || 0;
+            let equiposExcelente = 0, equiposBueno = 0, equiposRegular = 0, equiposDanado = 0;
+
+            datosFiltrados.equipos?.forEach(e => {
+                switch (e.estado?.toLowerCase()) {
+                    case 'excelente': equiposExcelente++; break;
+                    case 'bueno': equiposBueno++; break;
+                    case 'regular': equiposRegular++; break;
+                    case 'dañado': equiposDanado++; break;
+                }
+            });
+
+            // Generar el HTML con los datos calculados
             const contenidoHTML = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Reporte Gestión de Salones</title>
-                    <style>
-                        body { 
-                            font-family: 'Segoe UI', Arial, sans-serif; 
-                            margin: 40px; 
-                            color: #333;
-                            background: #fff;
-                        }
-                        h1 { 
-                            color: #0d6efd; 
-                            border-bottom: 3px solid #0d6efd; 
-                            padding-bottom: 10px;
-                            text-align: center;
-                        }
-                        h2 { 
-                            color: #0d6efd; 
-                            margin-top: 30px;
-                            border-left: 4px solid #0d6efd;
-                            padding-left: 10px;
-                        }
-                        .fecha { 
-                            text-align: center; 
-                            color: #6c757d; 
-                            margin-bottom: 30px;
-                        }
-                        .stats-grid {
-                            display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                            gap: 20px;
-                            margin: 30px 0;
-                        }
-                        .stat-card {
-                            background: #f8f9fa;
-                            border-radius: 10px;
-                            padding: 20px;
-                            text-align: center;
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                            border-left: 4px solid #0d6efd;
-                        }
-                        .stat-card h3 {
-                            font-size: 2rem;
-                            margin: 0;
-                            color: #0d6efd;
-                        }
-                        .stat-card p {
-                            margin: 5px 0 0;
-                            color: #6c757d;
-                        }
-                        table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin: 20px 0;
-                            font-size: 14px;
-                        }
-                        th {
-                            background: #343a40;
-                            color: white;
-                            padding: 12px;
-                            text-align: left;
-                        }
-                        td {
-                            padding: 10px;
-                            border-bottom: 1px solid #dee2e6;
-                        }
-                        tr:hover {
-                            background: #f8f9fa;
-                        }
-                        .badge {
-                            padding: 4px 8px;
-                            border-radius: 4px;
-                            font-size: 12px;
-                            font-weight: bold;
-                        }
-                        .badge-excelente { background: #198754; color: white; }
-                        .badge-bueno { background: #0dcaf0; color: black; }
-                        .badge-regular { background: #ffc107; color: black; }
-                        .badge-danado { background: #dc3545; color: white; }
-                        .footer {
-                            text-align: center;
-                            margin-top: 50px;
-                            color: #6c757d;
-                            font-size: 12px;
-                            border-top: 1px solid #dee2e6;
-                            padding-top: 20px;
-                        }
-                    </style>
-                </head>
-                <body>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Reporte ${cursoActual !== 'TODOS' ? `Curso ${cursoActual}` : 'General'}</title>
+                <style>
+                    body { 
+                        font-family: 'Segoe UI', Arial, sans-serif; 
+                        margin: 40px; 
+                        color: #333;
+                        background: #fff;
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 3px solid #0d6efd;
+                    }
+                    .header h1 { 
+                        color: #0d6efd; 
+                        margin: 0;
+                        font-size: 28px;
+                    }
+                    .header h2 {
+                        color: #6c757d;
+                        font-size: 18px;
+                        margin: 5px 0 0;
+                        font-weight: normal;
+                    }
+                    .info-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 15px;
+                        margin: 30px 0;
+                        background: #f8f9fa;
+                        padding: 20px;
+                        border-radius: 10px;
+                    }
+                    .info-item {
+                        text-align: center;
+                    }
+                    .info-label {
+                        font-weight: bold;
+                        color: #0d6efd;
+                        margin-bottom: 5px;
+                    }
+                    .info-value {
+                        font-size: 16px;
+                    }
+                    .observaciones-box {
+                        grid-column: span 4;
+                        background: #e9ecef;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-top: 10px;
+                    }
+                    .observaciones-box .info-label {
+                        text-align: left;
+                    }
+                    .stats-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 20px;
+                        margin: 30px 0;
+                    }
+                    .stat-card {
+                        background: #f8f9fa;
+                        border-radius: 10px;
+                        padding: 20px;
+                        text-align: center;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        border-left: 4px solid #0d6efd;
+                    }
+                    .stat-card h3 { 
+                        font-size: 2rem; 
+                        margin: 0; 
+                        color: #0d6efd; 
+                    }
+                    .stat-card p { 
+                        margin: 5px 0 0; 
+                        color: #6c757d; 
+                    }
+                    .stat-card .sub-stats {
+                        margin-top: 10px;
+                        font-size: 14px;
+                        color: #6c757d;
+                    }
+                    .indicador-estado {
+                        display: flex;
+                        justify-content: space-around;
+                        margin-top: 15px;
+                        padding: 10px;
+                        background: white;
+                        border-radius: 8px;
+                    }
+                    .indicador-item {
+                        text-align: center;
+                    }
+                    .indicador-color {
+                        width: 20px;
+                        height: 20px;
+                        border-radius: 50%;
+                        margin: 0 auto 5px;
+                    }
+                    .color-excelente { background-color: #198754; }
+                    .color-bueno { background-color: #0dcaf0; }
+                    .color-regular { background-color: #ffc107; }
+                    .color-danado { background-color: #dc3545; }
+                    .section-title {
+                        color: #0d6efd;
+                        font-size: 20px;
+                        margin: 30px 0 15px;
+                        padding-bottom: 5px;
+                        border-bottom: 2px solid #0d6efd;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin: 20px 0;
+                        font-size: 14px;
+                    }
+                    th {
+                        background: #343a40;
+                        color: white;
+                        padding: 12px;
+                        text-align: left;
+                    }
+                    td {
+                        padding: 10px;
+                        border-bottom: 1px solid #dee2e6;
+                    }
+                    tr:hover {
+                        background: #f8f9fa;
+                    }
+                    .badge {
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                    .badge-excelente { background: #198754; color: white; }
+                    .badge-bueno { background: #0dcaf0; color: black; }
+                    .badge-regular { background: #ffc107; color: black; }
+                    .badge-danado { background: #dc3545; color: white; }
+                    .resumen-tabla {
+                        margin-top: 20px;
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                    }
+                    .resumen-tabla table {
+                        margin: 0;
+                        background: white;
+                    }
+                    .footer {
+                        text-align: center;
+                        margin-top: 50px;
+                        color: #6c757d;
+                        font-size: 12px;
+                        border-top: 1px solid #dee2e6;
+                        padding-top: 20px;
+                    }
+                    @media print {
+                        body { margin: 20px; }
+                        .no-print { display: none; }
+                    }
+                        .print-button {
+                text-align: center;
+                margin: 20px 0;
+            }
+            .print-button button {
+                background: #0d6efd;
+                color: white;
+                border: none;
+                padding: 12px 30px;
+                border-radius: 5px;
+                font-size: 16px;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                transition: background 0.3s;
+            }
+            .print-button button:hover {
+                background: #0b5ed7;
+            }
+            @media print {
+                .no-print {
+                    display: none !important;
+                }
+            }
+                </style>
+            </head>
+            <body>
+                <div class="header">
                     <h1>📊 GESTIÓN DE SALONES DE CLASE</h1>
-                    <div class="fecha">Reporte generado: ${fechaActual}</div>
-                    
-                    ${generarResumenProfesional(datos)}
-                    ${generarTablaResponsables(datos)}
-                    ${generarTablaPuestosDocentes(datos)}
-                    ${generarTablaMesas(datos)}
-                    ${generarTablaSillas(datos)}
-                    ${generarTablaEquipos(datos)}
-                    ${generarTablaAsistencia(datos)}
-                    
-                    <div class="footer">
-                        Reporte generado automáticamente - Sistema de Gestión de Salones v0.5<br>
-                        Total de registros: ${calcularTotalRegistros(datos)}
-                    </div>
-                </body>
-                </html>
-            `;
+                    <h2>${titulo}</h2>
+                </div>
 
-            // Abrir en nueva ventana para impresión/PDF
+                <!-- Información del Reporte y Responsable -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Fecha del Reporte</div>
+                        <div class="info-value">${fechaReporte}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Hora del Reporte</div>
+                        <div class="info-value">${horaReporte}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Responsable</div>
+                        <div class="info-value">${responsable?.nombre || 'No asignado'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Documento</div>
+                        <div class="info-value">${responsable?.documento || 'N/A'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Salón</div>
+                        <div class="info-value">${responsable?.numeroSalon || 'No asignado'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Horario de Clase</div>
+                        <div class="info-value">${horarioClase}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Fecha de Clase</div>
+                        <div class="info-value">${responsable?.fecha || 'N/A'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Estado del Salón</div>
+                        <div class="info-value">
+                            <span class="badge badge-${(responsable?.estadoEquipo || '').toLowerCase()}">
+                                ${responsable?.estadoEquipo || 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                    ${responsable?.observaciones ? `
+                    <div class="observaciones-box">
+                        <div class="info-label">Observaciones del Responsable</div>
+                        <div class="info-value">${responsable.observaciones}</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- Estadísticas Generales -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>${totalMesas}</h3>
+                        <p>Total Mesas</p>
+                        <div class="sub-stats">Configuración del salón</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${totalPCs}</h3>
+                        <p>Total PCs</p>
+                        <div class="sub-stats">Asignados: ${PCsAsignados} | Disponibles: ${totalPCs - PCsAsignados}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${datosFiltrados.puestosDocentes?.length || 0}</h3>
+                        <p>Puestos Docentes</p>
+                        <div class="sub-stats">Equipos de computo docente</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${totalSillas}</h3>
+                        <p>Total Sillas</p>
+                        <div class="sub-stats">Ocupadas: ${sillasOcupadas} | Disponibles: ${totalSillas - sillasOcupadas}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${totalEquipos}</h3>
+                        <p>Equipos Audiovisuales</p>
+                        <div class="sub-stats">TV, Proyectores, etc.</div>
+                    </div>
+                </div>
+
+                <!-- Indicador de Estado de PCs -->
+                <div class="indicador-estado">
+                    <div class="indicador-item">
+                        <div class="indicador-color color-excelente"></div>
+                        <div>Excelente: ${PCsExcelente}</div>
+                    </div>
+                    <div class="indicador-item">
+                        <div class="indicador-color color-bueno"></div>
+                        <div>Bueno: ${PCsBueno}</div>
+                    </div>
+                    <div class="indicador-item">
+                        <div class="indicador-color color-regular"></div>
+                        <div>Regular: ${PCsRegular}</div>
+                    </div>
+                    <div class="indicador-item">
+                        <div class="indicador-color color-danado"></div>
+                        <div>Dañado: ${PCsDanado}</div>
+                    </div>
+                </div>
+
+                ${generarTablaPuestosDocentes(datosFiltrados.puestosDocentes)}
+                ${generarTablaMesas(datosFiltrados.mesas)}
+                ${generarTablaSillas(datosFiltrados.sillas)}
+                ${generarTablaEquipos(datosFiltrados.equipos)}
+                
+                <!-- Resumen de Asignaciones -->
+                <div class="resumen-tabla">
+                    <h3>📋 Resumen de Asignaciones</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Total</th>
+                                <th>Asignados/Ocupados</th>
+                                <th>Disponibles/Libres</th>
+                                <th>% Ocupación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PCs</td>
+                                <td>${totalPCs}</td>
+                                <td>${PCsAsignados}</td>
+                                <td>${totalPCs - PCsAsignados}</td>
+                                <td>${totalPCs > 0 ? Math.round((PCsAsignados / totalPCs) * 100) : 0}%</td>
+                            </tr>
+                            <tr>
+                                <td>Sillas</td>
+                                <td>${totalSillas}</td>
+                                <td>${sillasOcupadas}</td>
+                                <td>${totalSillas - sillasOcupadas}</td>
+                                <td>${totalSillas > 0 ? Math.round((sillasOcupadas / totalSillas) * 100) : 0}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="footer no-print">
+                    <p>Reporte generado automáticamente - Sistema de Gestión de Salones v0.6</p>
+                    <p>Total de registros: ${calcularTotalRegistros(datosFiltrados)}</p>
+                </div>
+                <!-- Botón para imprimir -->
+<div style="text-align: center; margin: 20px 0;" class="no-print">
+    <button onclick="window.print()" style="background: #0d6efd; color: white; border: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        <i class="fas fa-print"></i> Imprimir / Guardar PDF
+    </button>
+</div>
+
+            </body>
+            </html>
+        `;
+
             const ventana = window.open('', '_blank');
             ventana.document.write(contenidoHTML);
             ventana.document.close();
             ventana.focus();
-            
-            // Ofrecer guardar como PDF
-            setTimeout(() => {
-                if (confirm('¿Desea guardar este reporte como PDF?')) {
-                    ventana.print();
-                }
-            }, 500);
 
-            console.log('✅ Reporte profesional generado');
+            console.log('✅ Reporte generado');
 
         } catch (error) {
             console.error('❌ Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo generar el reporte'
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo generar el reporte'
+                });
+            }
         }
     }
 
-    function generarResumenProfesional(datos) {
-        const totalCursos = datos.cursos?.length || 0;
-        const totalResponsables = datos.responsables?.length || 0;
-        const totalPuestos = datos.puestosDocentes?.length || 0;
-        const totalMesas = datos.mesas?.length || 0;
-        const totalSillas = datos.sillas?.length || 0;
-        const totalEquipos = datos.equipos?.length || 0;
+    function generarTablaPuestosDocentes(puestos) {
+        if (!puestos || puestos.length === 0) return '';
 
-        let totalPCs = 0;
-        let PCsAsignados = 0;
-        datos.mesas?.forEach(m => {
-            totalPCs += m.pcs?.length || 0;
-            PCsAsignados += m.pcs?.filter(p => p.estudiante).length || 0;
-        });
+        let html = '<div class="section-title">👨‍🏫 Puestos Docentes (Equipos de Cómputo)</div>';
+        html += '<table><thead><tr><th>Nombre</th><th>Documento</th><th>Serial PC</th><th>Estado PC</th><th>Mouse</th><th>Teclado</th><th>Pantalla</th><th>Internet</th><th>Limpieza</th></tr></thead><tbody>';
 
-        const sillasOcupadas = datos.sillas?.filter(s => s.documento).length || 0;
-
-        return `
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>${totalCursos}</h3>
-                    <p>Cursos</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${totalResponsables}</h3>
-                    <p>Responsables</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${totalPuestos}</h3>
-                    <p>Puestos Docentes</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${totalPCs}</h3>
-                    <p>Total PCs</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${PCsAsignados}</h3>
-                    <p>PCs Asignados</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${totalSillas}</h3>
-                    <p>Total Sillas</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${sillasOcupadas}</h3>
-                    <p>Sillas Ocupadas</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${totalEquipos}</h3>
-                    <p>Equipos</p>
-                </div>
-            </div>
-        `;
-    }
-
-    function generarTablaResponsables(datos) {
-        if (!datos.responsables?.length) return '';
-
-        let html = '<h2>👤 Responsables Registrados</h2>';
-        html += '<table><thead><tr><th>Curso</th><th>Nombre</th><th>Documento</th><th>Salón</th><th>Fecha</th><th>Horario</th></tr></thead><tbody>';
-
-        datos.responsables.forEach(r => {
-            html += `
-                <tr>
-                    <td>${r.numeroCurso || ''}</td>
-                    <td>${r.nombre || ''}</td>
-                    <td>${r.documento || ''}</td>
-                    <td>${r.numeroSalon || ''}</td>
-                    <td>${r.fecha || ''}</td>
-                    <td>${r.horarioInicio || ''} - ${r.horarioFin || ''}</td>
-                </tr>
-            `;
-        });
-
-        html += '</tbody></table>';
-        return html;
-    }
-
-    function generarTablaPuestosDocentes(datos) {
-        if (!datos.puestosDocentes?.length) return '';
-
-        let html = '<h2>👨‍🏫 Puestos Docentes</h2>';
-        html += '<table><thead><tr><th>Nombre</th><th>Documento</th><th>Serial PC</th><th>Estado PC</th><th>Mouse</th><th>Teclado</th></tr></thead><tbody>';
-
-        datos.puestosDocentes.forEach(p => {
+        puestos.forEach(p => {
             html += `
                 <tr>
                     <td>${p.nombre || ''}</td>
                     <td>${p.documento || ''}</td>
                     <td>${p.serial || ''}</td>
-                    <td><span class="badge badge-${p.estado?.toLowerCase()}">${p.estado || ''}</span></td>
-                    <td><span class="badge badge-${p.mouse?.toLowerCase()}">${p.mouse || ''}</span></td>
-                    <td><span class="badge badge-${p.teclado?.toLowerCase()}">${p.teclado || ''}</span></td>
+                    <td><span class="badge badge-${(p.estado || '').toLowerCase()}">${p.estado || ''}</span></td>
+                    <td><span class="badge badge-${(p.mouse || '').toLowerCase()}">${p.mouse || ''}</span></td>
+                    <td><span class="badge badge-${(p.teclado || '').toLowerCase()}">${p.teclado || ''}</span></td>
+                    <td><span class="badge badge-${(p.pantalla || '').toLowerCase()}">${p.pantalla || ''}</span></td>
+                    <td><span class="badge badge-${(p.internet || '').toLowerCase()}">${p.internet || ''}</span></td>
+                    <td><span class="badge badge-${(p.estadoLimpieza || '').toLowerCase()}">${p.estadoLimpieza || ''}</span></td>
                 </tr>
             `;
         });
@@ -263,14 +541,17 @@ const Reportes = (function() {
         return html;
     }
 
-    function generarTablaMesas(datos) {
-        if (!datos.mesas?.length) return '';
+    function generarTablaMesas(mesas) {
+        if (!mesas || mesas.length === 0) return '';
 
-        let html = '<h2>🖥️ Configuración de Mesas</h2>';
-        
-        datos.mesas.forEach((mesa, idx) => {
-            html += `<h3>Mesa ${idx + 1} - Curso ${mesa.curso}</h3>`;
-            html += '<table><thead><tr><th>PC</th><th>Serial</th><th>Estudiante</th><th>Estado</th></tr></thead><tbody>';
+        let html = '<div class="section-title">🖥️ Mesas y Equipos de Cómputo</div>';
+
+        mesas.forEach((mesa, idx) => {
+            const PCsMesa = mesa.pcs?.length || 0;
+            const PCsAsignadosMesa = mesa.pcs?.filter(pc => pc.estudiante).length || 0;
+
+            html += `<h3>Mesa ${idx + 1} (Fila ${mesa.fila + 1}, Columna ${mesa.columna + 1}) - ${PCsMesa} PCs (${PCsAsignadosMesa} asignados)</h3>`;
+            html += '<table><thead><tr><th>PC</th><th>Serial</th><th>Estudiante</th><th>Documento</th><th>Estado PC</th><th>Mouse</th><th>Teclado</th><th>Pantalla</th><th>Internet</th><th>Limpieza</th></tr></thead><tbody>';
 
             mesa.pcs?.forEach((pc, i) => {
                 html += `
@@ -278,7 +559,13 @@ const Reportes = (function() {
                         <td>PC ${i + 1}</td>
                         <td>${pc.serial || ''}</td>
                         <td>${pc.estudiante || 'Sin asignar'}</td>
-                        <td><span class="badge badge-${pc.estado?.toLowerCase()}">${pc.estado || ''}</span></td>
+                        <td>${pc.documento || ''}</td>
+                        <td><span class="badge badge-${(pc.estado || '').toLowerCase()}">${pc.estado || ''}</span></td>
+                        <td><span class="badge badge-${(pc.mouse || '').toLowerCase()}">${pc.mouse || ''}</span></td>
+                        <td><span class="badge badge-${(pc.teclado || '').toLowerCase()}">${pc.teclado || ''}</span></td>
+                        <td><span class="badge badge-${(pc.pantalla || '').toLowerCase()}">${pc.pantalla || ''}</span></td>
+                        <td><span class="badge badge-${(pc.internet || '').toLowerCase()}">${pc.internet || ''}</span></td>
+                        <td><span class="badge badge-${(pc.estadoLimpieza || '').toLowerCase()}">${pc.estadoLimpieza || ''}</span></td>
                     </tr>
                 `;
             });
@@ -289,21 +576,20 @@ const Reportes = (function() {
         return html;
     }
 
-    function generarTablaSillas(datos) {
-        if (!datos.sillas?.length) return '';
+    function generarTablaSillas(sillas) {
+        if (!sillas || sillas.length === 0) return '';
 
-        let html = '<h2>🪑 Asignación de Sillas</h2>';
-        html += '<table><thead><tr><th>Curso</th><th>Silla</th><th>Serial</th><th>Estudiante</th><th>Documento</th><th>Estado</th></tr></thead><tbody>';
+        let html = '<div class="section-title">🪑 Asignación de Sillas</div>';
+        html += '<table><thead><tr><th>Silla</th><th>Serial</th><th>Estudiante</th><th>Documento</th><th>Estado</th></tr></thead><tbody>';
 
-        datos.sillas.forEach(s => {
+        sillas.forEach(s => {
             html += `
                 <tr>
-                    <td>${s.curso || ''}</td>
-                    <td>${s.numero || ''}</td>
+                    <td>Silla ${s.numero || ''}</td>
                     <td>${s.serial || ''}</td>
                     <td>${s.nombreEstudiante || 'Disponible'}</td>
                     <td>${s.documento || ''}</td>
-                    <td><span class="badge badge-${s.estado?.toLowerCase()}">${s.estado || ''}</span></td>
+                    <td><span class="badge badge-${(s.estado || '').toLowerCase()}">${s.estado || ''}</span></td>
                 </tr>
             `;
         });
@@ -312,19 +598,19 @@ const Reportes = (function() {
         return html;
     }
 
-    function generarTablaEquipos(datos) {
-        if (!datos.equipos?.length) return '';
+    function generarTablaEquipos(equipos) {
+        if (!equipos || equipos.length === 0) return '';
 
-        let html = '<h2>📺 TV y Proyectores</h2>';
+        let html = '<div class="section-title">📺 TV y Proyectores</div>';
         html += '<table><thead><tr><th>Tipo</th><th>Serial</th><th>Estado</th><th>Limpieza</th><th>Observaciones</th></tr></thead><tbody>';
 
-        datos.equipos.forEach(e => {
+        equipos.forEach(e => {
             html += `
                 <tr>
                     <td>${e.tipo || ''}</td>
                     <td>${e.serial || ''}</td>
-                    <td><span class="badge badge-${e.estado?.toLowerCase()}">${e.estado || ''}</span></td>
-                    <td><span class="badge badge-${e.estadoLimpieza?.toLowerCase()}">${e.estadoLimpieza || ''}</span></td>
+                    <td><span class="badge badge-${(e.estado || '').toLowerCase()}">${e.estado || ''}</span></td>
+                    <td><span class="badge badge-${(e.estadoLimpieza || '').toLowerCase()}">${e.estadoLimpieza || ''}</span></td>
                     <td>${e.observaciones || ''}</td>
                 </tr>
             `;
@@ -334,67 +620,31 @@ const Reportes = (function() {
         return html;
     }
 
-    function generarTablaAsistencia(datos) {
-        if (!datos.asistencia?.length) return '';
-
-        // Ordenar por fecha descendente
-        const asistencias = [...datos.asistencia].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
-        let html = '<h2>📅 Registro de Asistencia</h2>';
-        
-        asistencias.slice(0, 5).forEach(asist => {
-            html += `<h3>Fecha: ${new Date(asist.fecha).toLocaleDateString()} - Curso ${asist.curso}</h3>`;
-            html += '<table><thead><tr><th>Documento</th><th>Estudiante</th><th>Asistencia</th><th>Uniforme</th><th>Observaciones</th></tr></thead><tbody>';
-
-            asist.registros?.forEach(r => {
-                html += `
-                    <tr>
-                        <td>${r.documento || ''}</td>
-                        <td>${r.nombre || ''}</td>
-                        <td>${r.asistio ? '✅ Presente' : '❌ Ausente'}</td>
-                        <td>${r.uniforme ? '👕 Sí' : '👕 No'}</td>
-                        <td>${r.observaciones || ''}</td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table>';
-        });
-
-        if (asistencias.length > 5) {
-            html += `<p>... y ${asistencias.length - 5} registros más</p>`;
-        }
-
-        return html;
-    }
-
     function calcularTotalRegistros(datos) {
         let total = 0;
         total += datos.responsables?.length || 0;
         total += datos.puestosDocentes?.length || 0;
         total += datos.equipos?.length || 0;
         total += datos.sillas?.length || 0;
-        
+
         datos.mesas?.forEach(m => total += m.pcs?.length || 0);
         datos.asistencia?.forEach(a => total += a.registros?.length || 0);
-        
+
         return total;
     }
 
     // ===== FUNCIONES DE HISTORIAL =====
-
-    /**
-     * Muestra el historial de snapshots guardados
-     */
     function mostrarHistorial() {
         const historial = DataManager.getHistorial ? DataManager.getHistorial() : [];
-        
+
         if (historial.length === 0) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Sin historial',
-                text: 'No hay snapshots guardados'
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sin historial',
+                    text: 'No hay snapshots guardados'
+                });
+            }
             return;
         }
 
@@ -421,22 +671,21 @@ const Reportes = (function() {
 
         html += '</tbody></table></div>';
 
-        Swal.fire({
-            title: '📚 Historial de Snapshots',
-            html: html,
-            width: '800px',
-            showConfirmButton: true,
-            confirmButtonText: 'Cerrar'
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '📚 Historial de Snapshots',
+                html: html,
+                width: '800px',
+                showConfirmButton: true,
+                confirmButtonText: 'Cerrar'
+            });
+        }
     }
 
-    /**
-     * Guarda un snapshot con la fecha actual
-     */
     function guardarSnapshot() {
         const snapshot = DataManager.guardarSnapshot ? DataManager.guardarSnapshot() : null;
-        
-        if (snapshot) {
+
+        if (snapshot && typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'success',
                 title: 'Snapshot guardado',
@@ -444,7 +693,7 @@ const Reportes = (function() {
                 timer: 2000,
                 showConfirmButton: false
             });
-        } else {
+        } else if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
@@ -453,64 +702,56 @@ const Reportes = (function() {
         }
     }
 
-    /**
-     * Carga un snapshot específico
-     */
-    window.cargarSnapshot = function(id) {
-        Swal.fire({
-            title: '¿Cargar snapshot?',
-            text: 'Los datos actuales serán reemplazados',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Sí, cargar',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const cargado = DataManager.cargarSnapshot ? DataManager.cargarSnapshot(id) : false;
-                
-                if (cargado) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Snapshot cargado',
-                        text: 'Recargando página...',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo cargar el snapshot'
-                    });
+    window.cargarSnapshot = function (id) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Cargar snapshot?',
+                text: 'Los datos actuales serán reemplazados',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sí, cargar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const cargado = DataManager.cargarSnapshot ? DataManager.cargarSnapshot(id) : false;
+
+                    if (cargado) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Snapshot cargado',
+                            text: 'Recargando página...',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo cargar el snapshot'
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     };
 
-    /**
-     * Ver un snapshot sin cargarlo
-     */
-    window.verSnapshot = function(id) {
+    window.verSnapshot = function (id) {
         const historial = DataManager.getHistorial ? DataManager.getHistorial() : [];
         const snapshot = historial.find(h => h.id === id);
-        
-        if (snapshot) {
-            const datos = snapshot.datos;
-            const totalRegistros = calcularTotalRegistros(datos);
-            
+
+        if (snapshot && typeof Swal !== 'undefined') {
             Swal.fire({
                 title: `Snapshot ${snapshot.fecha} ${snapshot.hora}`,
                 html: `
-                    <p><strong>Total registros:</strong> ${totalRegistros}</p>
-                    <p><strong>Responsables:</strong> ${datos.responsables?.length || 0}</p>
-                    <p><strong>Puestos Docentes:</strong> ${datos.puestosDocentes?.length || 0}</p>
-                    <p><strong>Mesas:</strong> ${datos.mesas?.length || 0}</p>
-                    <p><strong>Sillas:</strong> ${datos.sillas?.length || 0}</p>
-                    <p><strong>Equipos:</strong> ${datos.equipos?.length || 0}</p>
-                    <p><strong>Asistencias:</strong> ${datos.asistencia?.length || 0}</p>
+                    <p><strong>Responsables:</strong> ${snapshot.datos.responsables?.length || 0}</p>
+                    <p><strong>Puestos Docentes:</strong> ${snapshot.datos.puestosDocentes?.length || 0}</p>
+                    <p><strong>Mesas:</strong> ${snapshot.datos.mesas?.length || 0}</p>
+                    <p><strong>Sillas:</strong> ${snapshot.datos.sillas?.length || 0}</p>
+                    <p><strong>Equipos:</strong> ${snapshot.datos.equipos?.length || 0}</p>
+                    <p><strong>Asistencias:</strong> ${snapshot.datos.asistencia?.length || 0}</p>
                 `,
                 icon: 'info',
                 confirmButtonText: 'Cerrar'
@@ -518,18 +759,17 @@ const Reportes = (function() {
         }
     };
 
-    /**
-     * Exporta todo el historial a JSON
-     */
     function exportarHistorialCompleto() {
         const datos = DataManager.exportarHistorialCompleto ? DataManager.exportarHistorialCompleto() : null;
-        
+
         if (!datos) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'No se pudo exportar el historial'
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo exportar el historial'
+                });
+            }
             return;
         }
 
@@ -544,31 +784,34 @@ const Reportes = (function() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        Swal.fire({
-            icon: 'success',
-            title: 'Historial exportado',
-            text: `Archivo: historial-completo-${fecha}.json`,
-            timer: 2000,
-            showConfirmButton: false
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Historial exportado',
+                text: `Archivo: historial-completo-${fecha}.json`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
     }
 
-    // ===== API PÚBLICA =====
-    return {
+    // API pública
+    const api = {
         generarReporteProfesional,
         mostrarHistorial,
         guardarSnapshot,
         exportarHistorialCompleto
     };
+
+    console.log('✅ Reportes: API creada');
+    return api;
 })();
 
-// Verificar carga
 if (typeof Reportes !== 'undefined') {
-    console.log('✅ Reportes Profesional v0.5 cargado correctamente');
+    console.log('✅ Reportes v0.6 cargado correctamente');
+} else {
+    console.error('❌ Error cargando Reportes');
 }
 
-// Exponer funciones globalmente
+window.Reportes = Reportes;
 window.generarReporteCompleto = () => Reportes.generarReporteProfesional();
-window.mostrarHistorial = () => Reportes.mostrarHistorial();
-window.guardarSnapshot = () => Reportes.guardarSnapshot();
-window.exportarHistorialCompleto = () => Reportes.exportarHistorialCompleto();
