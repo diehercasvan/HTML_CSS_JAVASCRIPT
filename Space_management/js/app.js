@@ -77,15 +77,67 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// ===== FUNCIÓN DE FORZAR GUARDADO =====
+
+/**
+ * Fuerza el guardado de todos los datos en localStorage
+ */
+window.forzarGuardado = function() {
+    console.log('💾 Forzando guardado de datos...');
+    
+    // Verificar estado actual
+    const mesas = DataManager.getMesas?.() || [];
+    const sillas = DataManager.getSillas?.() || [];
+    
+    console.log('📊 Estado antes del guardado:');
+    console.log('- Mesas:', mesas.length);
+    console.log('- Sillas:', sillas.length);
+    
+    // Forzar guardado
+    DataManager.guardarEnLocalStorage();
+    
+    // Verificar que se guardó
+    const saved = localStorage.getItem('gestionSalones');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('✅ Datos guardados en localStorage:');
+        console.log('- Mesas guardadas:', parsed.mesas?.length || 0);
+        console.log('- Sillas guardadas:', parsed.sillas?.length || 0);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Datos guardados',
+            html: `
+                <p>✅ Mesas: ${parsed.mesas?.length || 0}</p>
+                <p>✅ Sillas: ${parsed.sillas?.length || 0}</p>
+                <p>✅ Responsables: ${parsed.responsables?.length || 0}</p>
+                <p>✅ Equipos: ${parsed.equipos?.length || 0}</p>
+            `,
+            timer: 3000,
+            showConfirmButton: false
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudieron guardar los datos'
+        });
+    }
+};
 // ===== FUNCIONES DE EXPORTACIÓN/IMPORTACIÓN =====
 
 /**
  * Exporta los datos actuales a JSON
  */
+// ===== FUNCIONES DE EXPORTACIÓN/IMPORTACIÓN =====
+
 window.exportarDatos = function() {
     console.log('📤 Exportando datos...');
     
     try {
+        // Forzar guardado antes de exportar
+        DataManager.guardarEnLocalStorage();
+        
         const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
         
         if (!datos) {
@@ -123,6 +175,7 @@ window.exportarDatos = function() {
     }
 };
 
+
 /**
  * Importa datos desde un archivo JSON
  */
@@ -147,42 +200,87 @@ window.importarDatos = function(event) {
         try {
             const datos = JSON.parse(e.target.result);
             
-            const confirmar = async () => {
-                if (typeof Utils !== 'undefined') {
-                    const result = await Swal.fire({
-                        title: '¿Importar datos?',
-                        text: 'Esta acción reemplazará todos los datos actuales',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        confirmButtonText: 'Sí, importar',
-                        cancelButtonText: 'Cancelar'
-                    });
-                    return result.isConfirmed;
-                }
-                return confirm('¿Importar datos? Se reemplazarán todos los datos actuales');
-            };
+            // Mostrar resumen de datos a importar
+            console.log('📦 Datos a importar:', {
+                responsables: datos.responsables?.length || 0,
+                puestos: datos.puestosDocentes?.length || 0,
+                mesas: datos.mesas?.length || 0,
+                equipos: datos.equipos?.length || 0,
+                sillas: datos.sillas?.length || 0,
+                asistencia: datos.asistencia?.length || 0
+            });
             
-            confirmar().then(ok => {
-                if (ok) {
-                    if (DataManager.importarDatos && DataManager.importarDatos(datos)) {
-                        if (typeof Utils !== 'undefined') {
-                            Utils.showToast('success', 'Datos importados, recargando...');
+            Swal.fire({
+                title: '¿Importar datos?',
+                html: `
+                    <p>Esta acción reemplazará todos los datos actuales:</p>
+                    <ul style="text-align: left;">
+                        <li>📋 Responsables: ${datos.responsables?.length || 0}</li>
+                        <li>👨‍🏫 Puestos Docentes: ${datos.puestosDocentes?.length || 0}</li>
+                        <li>🖥️ Mesas: ${datos.mesas?.length || 0}</li>
+                        <li>📺 Equipos: ${datos.equipos?.length || 0}</li>
+                        <li>🪑 Sillas: ${datos.sillas?.length || 0}</li>
+                        <li>📅 Asistencias: ${datos.asistencia?.length || 0}</li>
+                    </ul>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Sí, importar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Importar datos
+                    const importado = DataManager.importarDatos ? DataManager.importarDatos(datos) : false;
+                    
+                    if (importado) {
+                        // Forzar guardado en localStorage
+                        DataManager.guardarEnLocalStorage();
+                        
+                        // Actualizar todas las vistas
+                        if (typeof UIManager !== 'undefined') {
+                            UIManager.renderizarTablaResponsables();
+                            UIManager.renderizarPuestosDocentes();
+                            UIManager.renderizarMesas();
+                            UIManager.renderizarEquipos();
+                            UIManager.renderizarSillas();
+                            
+                            // Si hay un curso seleccionado en sillas, actualizar estadísticas
+                            const cursoSillas = document.getElementById('cursoSillas')?.value;
+                            if (cursoSillas) {
+                                const estadisticas = DataManager.getEstadisticasSillas?.(cursoSillas);
+                                if (estadisticas && UIManager.actualizarEstadisticasSillas) {
+                                    UIManager.actualizarEstadisticasSillas(estadisticas);
+                                }
+                            }
                         }
-                        setTimeout(() => location.reload(), 1500);
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Datos importados',
+                            text: 'Los datos se han cargado correctamente',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        console.log('✅ Datos importados y vistas actualizadas');
                     } else {
-                        if (typeof Utils !== 'undefined') {
-                            Utils.showToast('error', 'Error al importar');
-                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudieron importar los datos'
+                        });
                     }
                 }
             });
             
         } catch (error) {
             console.error('❌ Error importando:', error);
-            if (typeof Utils !== 'undefined') {
-                Utils.showToast('error', 'Archivo inválido');
-            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Archivo JSON inválido'
+            });
         }
         event.target.value = '';
     };
@@ -291,6 +389,175 @@ window.generarReporteCompleto = function() {
         }
     }
 };
+/**
+ * Fuerza la actualización de todas las vistas después de importar
+ */
+window.actualizarVistasDespuesDeImportar = function() {
+    console.log('🔄 Actualizando vistas después de importar...');
+    
+    if (typeof UIManager !== 'undefined') {
+        UIManager.renderizarTablaResponsables();
+        UIManager.renderizarPuestosDocentes();
+        UIManager.renderizarMesas();
+        UIManager.renderizarEquipos();
+        UIManager.renderizarSillas();
+        
+        // Actualizar selector de cursos
+        const cursoSillas = document.getElementById('cursoSillas');
+        if (cursoSillas && cursoSillas.value) {
+            const estadisticas = DataManager.getEstadisticasSillas?.(cursoSillas.value);
+            if (estadisticas && UIManager.actualizarEstadisticasSillas) {
+                UIManager.actualizarEstadisticasSillas(estadisticas);
+            }
+        }
+    }
+    
+    console.log('✅ Vistas actualizadas');
+};
+/**
+ * Actualiza el panel de validación con el estado de los módulos
+ */
+window.actualizarPanelValidacion = function() {
+    console.log('🔄 Actualizando panel de validación...');
+    
+    const panel = document.getElementById('contenidoValidacion');
+    if (!panel) return;
+    
+    // Verificar módulos core
+    const modulos = [
+        { nombre: 'DataManager', objeto: window.DataManager, dependencias: [] },
+        { nombre: 'Utils', objeto: window.Utils, dependencias: [] },
+        { nombre: 'ModalManager', objeto: window.ModalManager, dependencias: ['bootstrap'] },
+        { nombre: 'UIManager', objeto: window.UIManager, dependencias: ['DataManager', 'Utils'] },
+        { nombre: 'ResponsablesModule', objeto: window.ResponsablesModule, dependencias: ['DataManager', 'UIManager'] },
+        { nombre: 'PuestosModule', objeto: window.PuestosModule, dependencias: ['DataManager', 'UIManager'] },
+        { nombre: 'EquiposModule', objeto: window.EquiposModule, dependencias: ['DataManager', 'UIManager'] },
+        { nombre: 'SillasModule', objeto: window.SillasModule, dependencias: ['DataManager', 'UIManager'] },
+        { nombre: 'AsistenciaModule', objeto: window.AsistenciaModule, dependencias: ['DataManager', 'UIManager'] },
+        { nombre: 'Reportes', objeto: window.Reportes, dependencias: ['DataManager', 'Utils'] }
+    ];
+    
+    // Verificar datos en localStorage
+    let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0 };
+    try {
+        const saved = localStorage.getItem('gestionSalones');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            datosGuardados = {
+                responsables: parsed.responsables?.length || 0,
+                puestos: parsed.puestosDocentes?.length || 0,
+                mesas: parsed.mesas?.length || 0,
+                equipos: parsed.equipos?.length || 0,
+                sillas: parsed.sillas?.length || 0
+            };
+        }
+    } catch (e) {
+        console.error('Error leyendo localStorage:', e);
+    }
+    
+    // Verificar datos en memoria
+    let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0 };
+    if (window.DataManager) {
+        datosMemoria = {
+            responsables: DataManager.getResponsables?.().length || 0,
+            puestos: DataManager.getPuestosDocentes?.().length || 0,
+            mesas: DataManager.getMesas?.().length || 0,
+            equipos: DataManager.getEquipos?.().length || 0,
+            sillas: DataManager.getSillas?.().length || 0
+        };
+    }
+    
+    // Generar HTML
+    let html = '<table style="width:100%; border-collapse: collapse;">';
+    
+    // Módulos
+    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">📦 MÓDULOS</th></tr>';
+    modulos.forEach(mod => {
+        const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
+        const titulo = mod.nombre.replace('Module', '');
+        html += `<tr><td style="padding: 3px;">${titulo}</td><td style="text-align: right;">${estado}</td></tr>`;
+    });
+    
+    // Datos en memoria
+    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">💾 DATOS EN MEMORIA</th></tr>';
+    html += `<tr><td>Responsables</td><td style="text-align: right;">${datosMemoria.responsables}</td></tr>`;
+    html += `<tr><td>Puestos Docentes</td><td style="text-align: right;">${datosMemoria.puestos}</td></tr>`;
+    html += `<tr><td>Mesas</td><td style="text-align: right;">${datosMemoria.mesas}</td></tr>`;
+    html += `<tr><td>Equipos</td><td style="text-align: right;">${datosMemoria.equipos}</td></tr>`;
+    html += `<tr><td>Sillas</td><td style="text-align: right;">${datosMemoria.sillas}</td></tr>`;
+    
+    // Datos en localStorage
+    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">💿 LOCALSTORAGE</th></tr>';
+    html += `<tr><td>Responsables</td><td style="text-align: right;">${datosGuardados.responsables}</td></tr>`;
+    html += `<tr><td>Puestos Docentes</td><td style="text-align: right;">${datosGuardados.puestos}</td></tr>`;
+    html += `<tr><td>Mesas</td><td style="text-align: right;">${datosGuardados.mesas}</td></tr>`;
+    html += `<tr><td>Equipos</td><td style="text-align: right;">${datosGuardados.equipos}</td></tr>`;
+    html += `<tr><td>Sillas</td><td style="text-align: right;">${datosGuardados.sillas}</td></tr>`;
+    
+    html += '</table>';
+    
+    panel.innerHTML = html;
+    console.log('✅ Panel de validación actualizado');
+};
+
+// Actualizar panel cada 3 segundos
+setInterval(actualizarPanelValidacion, 3000);
+
+// Actualizar al cargar la página
+setTimeout(actualizarPanelValidacion, 1000);
+
+/**
+ * Muestra un resumen completo en consola
+ */
+window.validarSistema = function() {
+    console.log('=== VALIDACIÓN COMPLETA DEL SISTEMA ===');
+    
+    // 1. Verificar archivos JS cargados
+    console.log('\n📁 ARCHIVOS JS CARGADOS:');
+    document.querySelectorAll('script[src]').forEach((s, i) => {
+        console.log(`${i+1}. ${s.src.split('/').pop()}`);
+    });
+    
+    // 2. Verificar módulos
+    console.log('\n📦 MÓDULOS:');
+    const modulos = ['DataManager', 'Utils', 'ModalManager', 'UIManager', 
+                    'ResponsablesModule', 'PuestosModule', 'EquiposModule', 
+                    'SillasModule', 'AsistenciaModule', 'Reportes'];
+    
+    modulos.forEach(m => {
+        console.log(`${m}:`, typeof window[m] !== 'undefined' ? '✅' : '❌');
+    });
+    
+    // 3. Verificar datos
+    console.log('\n💾 DATOS:');
+    if (window.DataManager) {
+        console.log('Responsables:', DataManager.getResponsables?.().length || 0);
+        console.log('Puestos Docentes:', DataManager.getPuestosDocentes?.().length || 0);
+        console.log('Mesas:', DataManager.getMesas?.().length || 0);
+        console.log('Equipos:', DataManager.getEquipos?.().length || 0);
+        console.log('Sillas:', DataManager.getSillas?.().length || 0);
+    }
+    
+    // 4. Verificar localStorage
+    console.log('\n💿 LOCALSTORAGE:');
+    try {
+        const saved = localStorage.getItem('gestionSalones');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            console.log('Responsables:', parsed.responsables?.length || 0);
+            console.log('Puestos Docentes:', parsed.puestosDocentes?.length || 0);
+            console.log('Mesas:', parsed.mesas?.length || 0);
+            console.log('Equipos:', parsed.equipos?.length || 0);
+            console.log('Sillas:', parsed.sillas?.length || 0);
+        } else {
+            console.log('No hay datos guardados');
+        }
+    } catch (e) {
+        console.error('Error leyendo localStorage:', e);
+    }
+};
+
+window.validarSistema = validarSistema;
 
 // ===== DIAGNÓSTICO =====
 
@@ -309,15 +576,24 @@ window.diagnosticarSistema = function() {
     console.log('- AsistenciaModule:', typeof AsistenciaModule);
     console.log('- Reportes:', typeof Reportes);
     
-    console.log('\n💾 localStorage:');
-    console.log('- gestionSalones:', localStorage.getItem('gestionSalones') ? '✅' : '❌');
+   console.log('\n💾 localStorage:');
+    const saved = localStorage.getItem('gestionSalones');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('- gestionSalones: ✅');
+        console.log('  • Mesas:', parsed.mesas?.length || 0);
+        console.log('  • Sillas:', parsed.sillas?.length || 0);
+    } else {
+        console.log('- gestionSalones: ❌');
+    }
+    
     console.log('- gestionSalonesHistorial:', localStorage.getItem('gestionSalonesHistorial') ? '✅' : '❌');
     
     console.log('\n📋 Funciones globales:');
     const funciones = [
         'exportarDatos', 'importarDatos', 'limpiarTodosLosDatos',
         'generarReporteCompleto', 'mostrarHistorial', 'guardarSnapshot',
-        'exportarHistorialCompleto'
+        'exportarHistorialCompleto', 'forzarGuardado'
     ];
     funciones.forEach(f => console.log(`- ${f}:`, typeof window[f] === 'function' ? '✅' : '❌'));
 };

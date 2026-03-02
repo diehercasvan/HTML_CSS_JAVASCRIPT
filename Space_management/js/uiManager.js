@@ -1,5 +1,5 @@
-// uiManager.js - Módulo para manejar la interfaz de usuario v0.6
-// VERSIÓN COMPLETA Y CORREGIDA
+// uiManager.js - Módulo para manejar la interfaz de usuario v0.7
+// VERSIÓN COMPLETA Y DEPURADA
 
 console.log('🔄 Iniciando carga de uiManager.js...');
 
@@ -39,10 +39,15 @@ const UIManager = (function() {
                 return;
             }
             
-            let cursosData = DataManager.getCursos ? DataManager.getCursos() : [];
+            let cursosData = [];
+            if (DataManager.getCursos) {
+                cursosData = DataManager.getCursos() || [];
+            }
             
             if (cursosData.length === 0) {
-                cursosData = await DataManager.cargarCursos ? await DataManager.cargarCursos() : [];
+                if (DataManager.cargarCursos) {
+                    cursosData = await DataManager.cargarCursos() || [];
+                }
             }
             
             if (cursosData.length === 0) {
@@ -107,7 +112,11 @@ const UIManager = (function() {
                 return;
             }
             
-            responsables = await DataManager.cargarResponsables ? await DataManager.cargarResponsables() : [];
+            if (DataManager.cargarResponsables) {
+                responsables = await DataManager.cargarResponsables() || [];
+            } else {
+                responsables = [];
+            }
             
             console.log(`✅ Responsables cargados: ${responsables.length}`);
             if (responsables.length > 0) {
@@ -129,7 +138,10 @@ const UIManager = (function() {
             return;
         }
 
-        const responsablesList = DataManager.getResponsables ? DataManager.getResponsables() : [];
+        let responsablesList = [];
+        if (DataManager.getResponsables) {
+            responsablesList = DataManager.getResponsables() || [];
+        }
         
         if (responsablesList.length === 0) {
             tbody.innerHTML = '<tr><td colspan="11" class="text-center">No hay responsables registrados</td></tr>';
@@ -225,17 +237,19 @@ const UIManager = (function() {
             return;
         }
 
-        const mesas = DataManager.getMesasPorCurso ? 
-            DataManager.getMesasPorCurso(cursoSeleccionado) : [];
+        let mesas = [];
+        if (DataManager.getMesasPorCurso) {
+            mesas = DataManager.getMesasPorCurso(cursoSeleccionado) || [];
+        }
         
         console.log(`📊 Renderizando ${mesas.length} mesas para curso ${cursoSeleccionado}`);
+        
+        const columnas = parseInt(document.getElementById('columnas')?.value) || 2;
         
         if (mesas.length === 0) {
             container.innerHTML = `<p class="text-muted">No hay mesas configuradas para el curso ${cursoSeleccionado}</p>`;
             return;
         }
-
-        const columnas = parseInt(document.getElementById('columnas')?.value) || 2;
 
         let colClass = 'col-md-6';
         if (columnas === 1) colClass = 'col-12';
@@ -257,13 +271,13 @@ const UIManager = (function() {
             html += `<div class="row mb-4">`;
             
             mesasFila.forEach(mesa => {
-                const pcsAsignados = mesa.pcs.filter(pc => pc.estudiante).length;
-                const pcsTotales = mesa.pcs.length;
+                const pcsAsignados = mesa.pcs ? mesa.pcs.filter(pc => pc.estudiante).length : 0;
+                const pcsTotales = mesa.pcs ? mesa.pcs.length : 0;
                 
-                const excelentes = mesa.pcs.filter(pc => pc.estado === 'Excelente').length;
-                const buenos = mesa.pcs.filter(pc => pc.estado === 'Bueno').length;
-                const regulares = mesa.pcs.filter(pc => pc.estado === 'Regular').length;
-                const danados = mesa.pcs.filter(pc => pc.estado === 'Dañado').length;
+                const excelentes = mesa.pcs ? mesa.pcs.filter(pc => pc.estado === 'Excelente').length : 0;
+                const buenos = mesa.pcs ? mesa.pcs.filter(pc => pc.estado === 'Bueno').length : 0;
+                const regulares = mesa.pcs ? mesa.pcs.filter(pc => pc.estado === 'Regular').length : 0;
+                const danados = mesa.pcs ? mesa.pcs.filter(pc => pc.estado === 'Dañado').length : 0;
                 
                 html += `
                     <div class="${colClass} mb-3">
@@ -338,100 +352,89 @@ const UIManager = (function() {
     // ===== FUNCIONES DE SILLAS =====
     
     function renderizarSillas() {
-        const container = document.getElementById('sillasContainer');
-        if (!container) {
-            console.warn('⚠️ Contenedor de sillas no encontrado');
-            return;
-        }
+    const container = document.getElementById('sillasContainer');
+    if (!container) {
+        console.warn('⚠️ Contenedor de sillas no encontrado');
+        return;
+    }
 
-        const cursoSeleccionado = document.getElementById('cursoSillas')?.value;
+    const cursoSeleccionado = document.getElementById('cursoSillas')?.value;
+    
+    if (!cursoSeleccionado) {
+        container.innerHTML = '<p class="text-muted">Seleccione un curso para ver las sillas</p>';
+        // También limpiar estadísticas
+        const statsContainer = document.getElementById('estadisticasSillas');
+        if (statsContainer) {
+            statsContainer.innerHTML = '<p class="text-muted">Seleccione un curso para ver estadísticas</p>';
+        }
+        return;
+    }
+
+    const sillas = DataManager.getSillasPorCurso ? 
+        DataManager.getSillasPorCurso(cursoSeleccionado) : [];
+    
+    console.log(`📊 Renderizando ${sillas.length} sillas para curso ${cursoSeleccionado}`);
+    
+    // Actualizar estadísticas
+    const estadisticas = DataManager.getEstadisticasSillas ? 
+        DataManager.getEstadisticasSillas(cursoSeleccionado) : null;
+    
+    if (estadisticas && typeof actualizarEstadisticasSillas === 'function') {
+        actualizarEstadisticasSillas(estadisticas);
+    }
+    
+    if (sillas.length === 0) {
+        container.innerHTML = `<p class="text-muted">No hay sillas configuradas para el curso ${cursoSeleccionado}</p>`;
+        return;
+    }
+
+    const total = sillas.length;
+    const ocupadas = sillas.filter(s => s.documento).length;
+    const disponibles = total - ocupadas;
+
+    let html = `
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <strong>Resumen:</strong> ${total} sillas | 
+                    <span class="text-success">${ocupadas} ocupadas</span> | 
+                    <span class="text-secondary">${disponibles} disponibles</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+    `;
+    
+    sillas.forEach(silla => {
+        const estadoClass = getBadgeClass(silla.estado);
+        const asignadoClass = silla.documento ? 'bg-success' : 'bg-secondary';
+        const asignadoText = silla.documento ? silla.nombreEstudiante : 'Disponible';
         
-        if (!cursoSeleccionado) {
-            container.innerHTML = '<p class="text-muted">Seleccione un curso para ver las sillas</p>';
-            return;
-        }
-
-        const sillas = DataManager.getSillasPorCurso ? 
-            DataManager.getSillasPorCurso(cursoSeleccionado) : [];
-        
-        if (sillas.length === 0) {
-            container.innerHTML = `<p class="text-muted">No hay sillas configuradas para el curso ${cursoSeleccionado}</p>`;
-            return;
-        }
-
-        const total = sillas.length;
-        const ocupadas = sillas.filter(s => s.documento).length;
-        const disponibles = total - ocupadas;
-
-        let html = `
-            <div class="row mb-3">
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        <strong>Resumen:</strong> ${total} sillas | 
-                        <span class="text-success">${ocupadas} ocupadas</span> | 
-                        <span class="text-secondary">${disponibles} disponibles</span>
+        html += `
+            <div class="col-md-3 col-sm-4 col-6 mb-3">
+                <div class="card silla-card" onclick="abrirModalSilla('${silla.id}')">
+                    <div class="card-header text-center ${silla.documento ? 'bg-success text-white' : 'bg-light'}">
+                        <i class="fas fa-chair"></i> Silla ${silla.numero}
+                    </div>
+                    <div class="card-body">
+                        <p class="small mb-1"><strong>Serial:</strong> ${silla.serial}</p>
+                        <p class="small mb-1">
+                            <span class="badge ${asignadoClass}">
+                                <i class="fas fa-user"></i> ${asignadoText}
+                            </span>
+                        </p>
+                        <p class="small mb-1">
+                            <span class="badge ${estadoClass}">${silla.estado}</span>
+                        </p>
                     </div>
                 </div>
             </div>
-            <div class="row">
         `;
-        
-        sillas.forEach(silla => {
-            const estadoClass = getBadgeClass(silla.estado);
-            const asignadoClass = silla.documento ? 'bg-success' : 'bg-secondary';
-            const asignadoText = silla.documento ? silla.nombreEstudiante : 'Disponible';
-            
-            html += `
-                <div class="col-md-3 col-sm-4 col-6 mb-3">
-                    <div class="card silla-card" onclick="abrirModalSilla('${silla.id}')">
-                        <div class="card-header text-center ${silla.documento ? 'bg-success text-white' : 'bg-light'}">
-                            <i class="fas fa-chair"></i> Silla ${silla.numero}
-                        </div>
-                        <div class="card-body">
-                            <p class="small mb-1"><strong>Serial:</strong> ${silla.serial}</p>
-                            <p class="small mb-1">
-                                <span class="badge ${asignadoClass}">
-                                    <i class="fas fa-user"></i> ${asignadoText}
-                                </span>
-                            </p>
-                            <p class="small mb-1">
-                                <span class="badge ${estadoClass}">${silla.estado}</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    function actualizarEstadisticasSillas(estadisticas) {
-        const container = document.getElementById('estadisticasSillas');
-        if (!container) return;
-        
-        if (!estadisticas || estadisticas.total === 0) {
-            container.innerHTML = '<p class="text-muted">No hay sillas para mostrar estadísticas</p>';
-            return;
-        }
-        
-        container.innerHTML = `
-            <div class="row">
-                <div class="col-6">
-                    <div class="stat-box"><strong>Total:</strong> ${estadisticas.total}</div>
-                    <div class="stat-box"><strong>Ocupadas:</strong> ${estadisticas.ocupadas}</div>
-                    <div class="stat-box"><strong>Disponibles:</strong> ${estadisticas.disponibles}</div>
-                </div>
-                <div class="col-6">
-                    <div class="stat-box text-success"><strong>Excelente:</strong> ${estadisticas.excelente || 0}</div>
-                    <div class="stat-box text-info"><strong>Bueno:</strong> ${estadisticas.bueno || 0}</div>
-                    <div class="stat-box text-warning"><strong>Regular:</strong> ${estadisticas.regular || 0}</div>
-                    <div class="stat-box text-danger"><strong>Malo:</strong> ${estadisticas.malo || 0}</div>
-                </div>
-            </div>
-        `;
-    }
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
 
     // ===== FUNCIONES DE ASISTENCIA =====
     
@@ -458,13 +461,10 @@ const UIManager = (function() {
 
     async function renderizarTablaAsistencia(cursoId, fecha) {
         const tbody = document.getElementById('cuerpoTablaAsistencia');
-        if (!tbody) {
-            console.warn('⚠️ Tabla de asistencia no encontrada');
-            return;
-        }
+        if (!tbody) return;
         
         try {
-            const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId);
+            const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId) || [];
             const sillas = DataManager.getSillasPorCurso ? 
                 DataManager.getSillasPorCurso(cursoId) : [];
             
@@ -540,9 +540,6 @@ const UIManager = (function() {
     // ===== FUNCIONES AUXILIARES =====
     
     function getBadgeClass(estado) {
-        if (typeof Utils !== 'undefined' && Utils.getBadgeClass) {
-            return Utils.getBadgeClass(estado);
-        }
         if (!estado) return 'bg-secondary';
         switch(estado.toLowerCase()) {
             case 'excelente': return 'bg-success';
@@ -555,9 +552,6 @@ const UIManager = (function() {
     }
 
     function getInternetBadgeClass(estado) {
-        if (typeof Utils !== 'undefined' && Utils.getInternetBadgeClass) {
-            return Utils.getInternetBadgeClass(estado);
-        }
         if (!estado) return 'bg-secondary';
         switch(estado.toLowerCase()) {
             case 'funciona': return 'bg-success';
@@ -575,7 +569,6 @@ const UIManager = (function() {
         renderizarMesas,
         renderizarEquipos,
         renderizarSillas,
-        actualizarEstadisticasSillas,
         cargarAsistenciaPorCurso,
         renderizarTablaAsistencia,
         getBadgeClass,
@@ -587,7 +580,7 @@ const UIManager = (function() {
 })();
 
 if (typeof UIManager !== 'undefined') {
-    console.log('✅ UIManager v0.6 cargado correctamente');
+    console.log('✅ UIManager v0.7 cargado correctamente');
 } else {
     console.error('❌ Error cargando UIManager');
 }
