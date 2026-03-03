@@ -417,6 +417,9 @@ window.actualizarVistasDespuesDeImportar = function() {
 /**
  * Actualiza el panel de validación con el estado de los módulos
  */
+/**
+ * Actualiza el panel de validación con el estado de los módulos
+ */
 window.actualizarPanelValidacion = function() {
     console.log('🔄 Actualizando panel de validación...');
     
@@ -425,20 +428,27 @@ window.actualizarPanelValidacion = function() {
     
     // Verificar módulos core
     const modulos = [
-        { nombre: 'DataManager', objeto: window.DataManager, dependencias: [] },
-        { nombre: 'Utils', objeto: window.Utils, dependencias: [] },
-        { nombre: 'ModalManager', objeto: window.ModalManager, dependencias: ['bootstrap'] },
-        { nombre: 'UIManager', objeto: window.UIManager, dependencias: ['DataManager', 'Utils'] },
-        { nombre: 'ResponsablesModule', objeto: window.ResponsablesModule, dependencias: ['DataManager', 'UIManager'] },
-        { nombre: 'PuestosModule', objeto: window.PuestosModule, dependencias: ['DataManager', 'UIManager'] },
-        { nombre: 'EquiposModule', objeto: window.EquiposModule, dependencias: ['DataManager', 'UIManager'] },
-        { nombre: 'SillasModule', objeto: window.SillasModule, dependencias: ['DataManager', 'UIManager'] },
-        { nombre: 'AsistenciaModule', objeto: window.AsistenciaModule, dependencias: ['DataManager', 'UIManager'] },
-        { nombre: 'Reportes', objeto: window.Reportes, dependencias: ['DataManager', 'Utils'] }
+        { nombre: 'DataManager', objeto: window.DataManager, grupo: 'core' },
+        { nombre: 'Utils', objeto: window.Utils, grupo: 'core' },
+        { nombre: 'ModalManager', objeto: window.ModalManager, grupo: 'core' },
+        { nombre: 'UIManager', objeto: window.UIManager, grupo: 'core' },
+        { nombre: 'ResponsablesModule', objeto: window.ResponsablesModule, grupo: 'modulos' },
+        { nombre: 'PuestosModule', objeto: window.PuestosModule, grupo: 'modulos' },
+        { nombre: 'EquiposModule', objeto: window.EquiposModule, grupo: 'modulos' },
+        { nombre: 'SillasModule', objeto: window.SillasModule, grupo: 'modulos' },
+        { nombre: 'Reportes', objeto: window.Reportes, grupo: 'modulos' }
+    ];
+    
+    // NUEVOS MÓDULOS DE ASISTENCIA
+    const modulosAsistencia = [
+        { nombre: 'AsistenciaData', objeto: window.AsistenciaData, grupo: 'asistencia' },
+        { nombre: 'AsistenciaDiaria', objeto: window.AsistenciaDiaria, grupo: 'asistencia' },
+        { nombre: 'ExportarAsistencia', objeto: window.ExportarAsistencia, grupo: 'asistencia' },
+        { nombre: 'HistorialAsistencia', objeto: window.HistorialAsistencia, grupo: 'asistencia' }
     ];
     
     // Verificar datos en localStorage
-    let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0 };
+    let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0 };
     try {
         const saved = localStorage.getItem('gestionSalones');
         if (saved) {
@@ -448,7 +458,8 @@ window.actualizarPanelValidacion = function() {
                 puestos: parsed.puestosDocentes?.length || 0,
                 mesas: parsed.mesas?.length || 0,
                 equipos: parsed.equipos?.length || 0,
-                sillas: parsed.sillas?.length || 0
+                sillas: parsed.sillas?.length || 0,
+                asistencias: parsed.asistencia?.length || 0
             };
         }
     } catch (e) {
@@ -456,43 +467,59 @@ window.actualizarPanelValidacion = function() {
     }
     
     // Verificar datos en memoria
-    let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0 };
+    let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0 };
     if (window.DataManager) {
         datosMemoria = {
             responsables: DataManager.getResponsables?.().length || 0,
             puestos: DataManager.getPuestosDocentes?.().length || 0,
             mesas: DataManager.getMesas?.().length || 0,
             equipos: DataManager.getEquipos?.().length || 0,
-            sillas: DataManager.getSillas?.().length || 0
+            sillas: DataManager.getSillas?.().length || 0,
+            asistencias: DataManager.getTodasAsistencias?.().length || 0
         };
     }
     
     // Generar HTML
-    let html = '<table style="width:100%; border-collapse: collapse;">';
+    let html = '<table style="width:100%; border-collapse: collapse; font-size: 11px;">';
     
-    // Módulos
-    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">📦 MÓDULOS</th></tr>';
-    modulos.forEach(mod => {
+    // Módulos Core
+    html += '<tr style="background: #0d6efd; color: white;"><th colspan="2" style="padding: 5px;">📦 MÓDULOS CORE</th></tr>';
+    modulos.filter(m => m.grupo === 'core').forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
-        const titulo = mod.nombre.replace('Module', '');
-        html += `<tr><td style="padding: 3px;">${titulo}</td><td style="text-align: right;">${estado}</td></tr>`;
+        html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
+    });
+    
+    // Módulos Funcionales
+    html += '<tr style="background: #198754; color: white;"><th colspan="2" style="padding: 5px;">🔧 MÓDULOS FUNCIONALES</th></tr>';
+    modulos.filter(m => m.grupo === 'modulos').forEach(mod => {
+        const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
+        html += `<tr><td style="padding: 3px;">${mod.nombre.replace('Module', '')}</td><td style="text-align: right;">${estado}</td></tr>`;
+    });
+    
+    // NUEVO: Módulos de Asistencia
+    html += '<tr style="background: #6f42c1; color: white;"><th colspan="2" style="padding: 5px;">📅 MÓDULOS ASISTENCIA</th></tr>';
+    modulosAsistencia.forEach(mod => {
+        const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
+        html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
     
     // Datos en memoria
-    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">💾 DATOS EN MEMORIA</th></tr>';
+    html += '<tr style="background: #fd7e14; color: white;"><th colspan="2" style="padding: 5px;">💾 DATOS EN MEMORIA</th></tr>';
     html += `<tr><td>Responsables</td><td style="text-align: right;">${datosMemoria.responsables}</td></tr>`;
     html += `<tr><td>Puestos Docentes</td><td style="text-align: right;">${datosMemoria.puestos}</td></tr>`;
     html += `<tr><td>Mesas</td><td style="text-align: right;">${datosMemoria.mesas}</td></tr>`;
     html += `<tr><td>Equipos</td><td style="text-align: right;">${datosMemoria.equipos}</td></tr>`;
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosMemoria.sillas}</td></tr>`;
+    html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosMemoria.asistencias}</td></tr>`;
     
     // Datos en localStorage
-    html += '<tr style="background: #f8f9fa;"><th colspan="2" style="padding: 5px;">💿 LOCALSTORAGE</th></tr>';
+    html += '<tr style="background: #6c757d; color: white;"><th colspan="2" style="padding: 5px;">💿 LOCALSTORAGE</th></tr>';
     html += `<tr><td>Responsables</td><td style="text-align: right;">${datosGuardados.responsables}</td></tr>`;
     html += `<tr><td>Puestos Docentes</td><td style="text-align: right;">${datosGuardados.puestos}</td></tr>`;
     html += `<tr><td>Mesas</td><td style="text-align: right;">${datosGuardados.mesas}</td></tr>`;
     html += `<tr><td>Equipos</td><td style="text-align: right;">${datosGuardados.equipos}</td></tr>`;
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosGuardados.sillas}</td></tr>`;
+    html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosGuardados.asistencias}</td></tr>`;
     
     html += '</table>';
     
@@ -556,9 +583,33 @@ window.validarSistema = function() {
         console.error('Error leyendo localStorage:', e);
     }
 };
+// Exponer módulos nuevos
+// Exponer módulos de asistencia globalmente
+window.AsistenciaDiaria = AsistenciaDiaria;
+window.AsistenciaData = AsistenciaData;
+window.ExportarAsistencia = ExportarAsistencia;
+window.HistorialAsistencia = HistorialAsistencia;
 
-window.validarSistema = validarSistema;
+// Funciones de acceso rápido
+window.filtrarAsistencia = () => AsistenciaDiaria.filtrarAsistencia();
+window.marcarAsistencia = (doc, val) => AsistenciaDiaria.marcarAsistencia(doc, val);
+window.marcarUniforme = (doc, val) => AsistenciaDiaria.marcarUniforme(doc, val);
+window.actualizarObservacionAsistencia = (doc, obs) => AsistenciaDiaria.actualizarObservacion(doc, obs);
+window.guardarAsistencia = () => AsistenciaDiaria.guardarAsistencia();
+window.cargarAsistenciaPorCurso = () => AsistenciaDiaria.cargarAsistenciaPorCurso();
+window.marcarTodos = () => AsistenciaDiaria.marcarTodos();
+window.desmarcarTodos = () => AsistenciaDiaria.desmarcarTodos();
+window.exportarTodo = function() {
+    const asistencias = AsistenciaData.obtenerTodasAsistencias();
+    AsistenciaData.exportarParaUnificar(asistencias);
+};
 
+// Inicializar historial al cargar la página
+setTimeout(() => {
+    if (typeof HistorialAsistencia !== 'undefined') {
+        HistorialAsistencia.renderizarHistorial();
+    }
+}, 1000);
 // ===== DIAGNÓSTICO =====
 
 window.diagnosticarSistema = function() {

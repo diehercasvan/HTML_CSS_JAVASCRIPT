@@ -137,6 +137,12 @@
                         class="fas fa-chair"></i> Sillas</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#asistencia"><i
                         class="fas fa-calendar-check"></i> Asistencia</button></li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial"
+                    type="button" role="tab">
+                    <i class="fas fa-history"></i> Historial Asistencias
+                </button>
+            </li>
         </ul>
 
         <!-- Contenido de pestañas -->
@@ -404,25 +410,52 @@
                 </div>
 
                 <!-- Filtros -->
+                <!-- En la pestaña Asistencia, después de los botones existentes -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
-                        <label for="cursoAsistencia" class="form-label">Seleccionar Curso <span
-                                class="text-danger">*</span></label>
-                        <select class="form-select" id="cursoAsistencia" onchange="cargarAsistenciaPorCurso()">
+                    <div class="col-md-3">
+                        <label for="cursoAsistencia" class="form-label">Curso <span class="text-danger">*</span></label>
+                        <select class="form-select" id="cursoAsistencia"
+                            onchange="AsistenciaDiaria.cargarAsistenciaPorCurso()">
                             <option value="">Seleccione un curso</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label for="fechaAsistencia" class="form-label">Fecha <span class="text-danger">*</span></label>
+                    <div class="col-md-2">
+                        <label for="fechaAsistencia" class="form-label">Fecha</label>
                         <input type="date" class="form-control" id="fechaAsistencia" value="">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button class="btn btn-primary me-2" onclick="filtrarAsistencia()">
+                    <div class="col-md-2">
+                        <label for="semanaAsistencia" class="form-label">Semana (para exportar)</label>
+                        <input type="week" class="form-control" id="semanaAsistencia">
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end gap-2">
+                        <!-- Botón Filtrar -->
+                        <button class="btn btn-primary" onclick="AsistenciaDiaria.filtrarAsistencia()"
+                            title="Cargar asistencia de la fecha seleccionada">
                             <i class="fas fa-search"></i> Filtrar
                         </button>
-                        <button class="btn btn-success" onclick="guardarAsistencia()">
+
+                        <!-- NUEVO BOTÓN GUARDAR ASISTENCIA -->
+                        <button class="btn btn-success" onclick="AsistenciaDiaria.guardarAsistencia()"
+                            title="Guardar la asistencia del día">
                             <i class="fas fa-save"></i> Guardar Asistencia
                         </button>
+
+                        <!-- Botones de exportación -->
+                        <div class="btn-group">
+                            <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download"></i> Exportar
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#"
+                                        onclick="ExportarAsistencia.exportarRegistroDiario()">
+                                        <i class="fas fa-calendar-day"></i> Por día
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#"
+                                        onclick="ExportarAsistencia.exportarRegistroSemanal()">
+                                        <i class="fas fa-calendar-week"></i> Por semana
+                                    </a></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
@@ -461,7 +494,41 @@
                     </table>
                 </div>
             </div>
+            <!-- Pestaña Historial de Asistencias -->
+            <div class="tab-pane fade" id="historial" role="tabpanel">
+                <h4><i class="fas fa-history"></i> Historial de Asistencias</h4>
 
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <button class="btn btn-danger" onclick="AsistenciaData.limpiarTodasAsistencias(true)">
+                            <i class="fas fa-trash"></i> Limpiar Todo (con backup)
+                        </button>
+                        <button class="btn btn-success" onclick="exportarTodo()">
+                            <i class="fas fa-download"></i> Exportar Todo
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered" id="tablaHistorial">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Curso</th>
+                                <th>Docente</th>
+                                <th>Total</th>
+                                <th>Resumen</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTablaHistorial">
+                            <tr>
+                                <td colspan="6" class="text-center">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1060,30 +1127,36 @@
         </div>
     </div>
 
-    <!-- SCRIPTS - ORDEN CRÍTICO -->
-    <!-- 1. Bootstrap y SweetAlert -->
+    <!-- Scripts - ORDEN CORRECTO v0.8 -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- 2. Core -->
+    <!-- 1. CORE -->
     <script src="js/core/dataManager.js"></script>
     <script src="js/core/utils.js"></script>
 
-    <!-- 3. Modales -->
+    <!-- 2. MODALES -->
     <script src="js/modals/modalManager.js"></script>
 
-    <!-- 4. UI Manager (DESPUÉS de modales) -->
+    <!-- 3. UI MANAGER -->
     <script src="js/uiManager.js"></script>
 
-    <!-- 5. Módulos -->
+    <!-- 4. MÓDULOS BASE -->
     <script src="js/modules/responsables.js"></script>
     <script src="js/modules/puestos.js"></script>
     <script src="js/modules/equipos.js"></script>
     <script src="js/modules/sillas.js"></script>
-    <script src="js/modules/asistencia.js"></script>
+
+    <!-- 5. MÓDULOS DE ASISTENCIA (NUEVOS) - ORDEN IMPORTANTE -->
+    <script src="js/modules/asistencia/asistenciaData.js"></script>
+    <script src="js/modules/asistencia/asistenciaDiaria.js"></script>
+    <script src="js/modules/asistencia/exportarAsistencia.js"></script>
+    <script src="js/modules/asistencia/historialAsistencia.js"></script>
+
+    <!-- 6. REPORTES -->
     <script src="js/reportes.js"></script>
 
-    <!-- 6. App -->
+    <!-- 7. APP (SIEMPRE AL FINAL) -->
     <script src="js/app.js"></script>
 </body>
 
