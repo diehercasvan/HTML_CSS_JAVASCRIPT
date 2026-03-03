@@ -1,0 +1,33 @@
+{
+  "plantillas": {
+    "academico": {
+      "nivel1": {
+        "nombre": "Primer Llamado Académico",
+        "asunto": "PRIMER LLAMADO DE ATENCIÓN ACADÉMICO - {{estudiante.nombre}}",
+        "contenido": "Por medio de la presente, se realiza PRIMER LLAMADO DE ATENCIÓN ACADÉMICO al estudiante {{estudiante.nombre}} del curso {{estudiante.curso}}.\n\nMotivo: {{motivo}}\n\nCompromisos:\n{{compromisos}}\n\nFecha: {{fecha}}\nDocente: {{docente.nombre}}"
+      },
+      "nivel2": {
+        "nombre": "Segundo Llamado Académico",
+        "asunto": "SEGUNDO LLAMADO DE ATENCIÓN ACADÉMICO - {{estudiante.nombre}}",
+        "contenido": "Por medio de la presente, se realiza SEGUNDO LLAMADO DE ATENCIÓN ACADÉMICO al estudiante {{estudiante.nombre}} del curso {{estudiante.curso}}.\n\nMotivo: {{motivo}}\n\nCompromisos:\n{{compromisos}}\n\nFecha: {{fecha}}\nDocente: {{docente.nombre}}"
+      },
+      "nivel3": {
+        "nombre": "Tercer Llamado Académico - CITACIÓN ACUDIENTE",
+        "asunto": "CITACIÓN POR LLAMADOS ACADÉMICOS - {{estudiante.nombre}}",
+        "contenido": "Por medio de la presente, se cita al acudiente del estudiante {{estudiante.nombre}} del curso {{estudiante.curso}} a una reunión para tratar los múltiples llamados académicos.\n\nMotivo: {{motivo}}\n\nCompromisos:\n{{compromisos}}\n\nFecha reunión: {{fecha_reunion}}\nHora: {{hora_reunion}}\nLugar: Coordinación Académica\n\nDocente: {{docente.nombre}}"
+      }
+    },
+    "disciplinario": {
+      "nivel1": {
+        "nombre": "Llamado de Atención Disciplinario",
+        "asunto": "LLAMADO DE ATENCIÓN DISCIPLINARIO - {{estudiante.nombre}}",
+        "contenido": "Por medio de la presente, se realiza LLAMADO DE ATENCIÓN DISCIPLINARIO al estudiante {{estudiante.nombre}} del curso {{estudiante.curso}}.\n\nMotivo: {{motivo}}\n\nCompromisos:\n{{compromisos}}\n\nFecha: {{fecha}}\nDocente: {{docente.nombre}}"
+      },
+      "nivel2": {
+        "nombre": "Llamado de Atención Disciplinario - COMPROMISO",
+        "asunto": "COMPROMISO DISCIPLINARIO - {{estudiante.nombre}}",
+        "contenido": "Por medio de la presente, el estudiante {{estudiante.nombre}} del curso {{estudiante.curso}} se compromete a:\n\n{{compromisos}}\n\nEn caso de reincidir, se aplicarán las sanciones correspondientes.\n\nFecha: {{fecha}}\nDocente: {{docente.nombre}}"
+      }
+    }
+  }
+}

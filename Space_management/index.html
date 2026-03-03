@@ -143,6 +143,12 @@
                     <i class="fas fa-history"></i> Historial Asistencias
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="llamados-tab" data-bs-toggle="tab" data-bs-target="#llamados" type="button"
+                    role="tab">
+                    <i class="fas fa-exclamation-triangle"></i> Llamados
+                </button>
+            </li>
         </ul>
 
         <!-- Contenido de pestañas -->
@@ -529,6 +535,43 @@
                     </table>
                 </div>
             </div>
+            <!-- Pestaña Llamados de Atención -->
+            <div class="tab-pane fade" id="llamados" role="tabpanel">
+                <h4><i class="fas fa-exclamation-triangle"></i> Llamados de Atención</h4>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> Gestione llamados académicos y disciplinarios con compromisos.
+                </div>
+
+                <!-- Selector de curso y estudiante -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Curso</label>
+                        <select class="form-select" id="cursoLlamados" onchange="cargarEstudiantesLlamados()">
+                            <option value="">Seleccione un curso</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estudiante</label>
+                        <select class="form-select" id="estudianteLlamados">
+                            <option value="">Primero seleccione un curso</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-primary me-2" onclick="cargarLlamadosEstudiante()">
+                            <i class="fas fa-search"></i> Ver Llamados
+                        </button>
+                        <button class="btn btn-danger" onclick="mostrarModalNuevoLlamado()">
+                            <i class="fas fa-plus"></i> Nuevo Llamado
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de llamados -->
+                <div id="contenedorLlamados">
+                    <p class="text-muted">Seleccione un estudiante para ver sus llamados</p>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1147,16 +1190,20 @@
     <script src="js/modules/equipos.js"></script>
     <script src="js/modules/sillas.js"></script>
 
-    <!-- 5. MÓDULOS DE ASISTENCIA (NUEVOS) - ORDEN IMPORTANTE -->
+    <!-- 5. MÓDULOS DE ASISTENCIA -->
     <script src="js/modules/asistencia/asistenciaData.js"></script>
     <script src="js/modules/asistencia/asistenciaDiaria.js"></script>
     <script src="js/modules/asistencia/exportarAsistencia.js"></script>
     <script src="js/modules/asistencia/historialAsistencia.js"></script>
 
-    <!-- 6. REPORTES -->
+    <!-- 6. MÓDULOS DE LLAMADOS (NUEVO) -->
+    <script src="js/modules/llamados/llamadosData.js"></script>
+    <script src="js/modules/llamados/llamadosUI.js"></script>
+
+    <!-- 7. REPORTES -->
     <script src="js/reportes.js"></script>
 
-    <!-- 7. APP (SIEMPRE AL FINAL) -->
+    <!-- 8. APP (SIEMPRE AL FINAL) -->
     <script src="js/app.js"></script>
 </body>
 

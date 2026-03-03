@@ -4,9 +4,9 @@
 console.log('🔄 Iniciando carga de app.js...');
 
 // ===== INICIALIZACIÓN =====
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     console.log('🚀 DOMContentLoaded disparado - Iniciando aplicación v0.6...');
-    
+
     // Verificar dependencias críticas
     const dependencias = [
         { nombre: 'DataManager', obj: window.DataManager },
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         { nombre: 'ModalManager', obj: window.ModalManager },
         { nombre: 'UIManager', obj: window.UIManager }
     ];
-    
+
     let todasOk = true;
     dependencias.forEach(dep => {
         if (typeof dep.obj === 'undefined') {
@@ -24,24 +24,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log(`✅ ${dep.nombre} disponible`);
         }
     });
-    
+
     if (!todasOk) {
         console.error('❌ Faltan dependencias críticas. No se puede continuar.');
         document.body.innerHTML += '<div style="color:red; padding:20px; background:#ffeeee; border:2px solid red; margin:20px;">❌ Error: Faltan módulos esenciales. Revise la consola.</div>';
         return;
     }
-    
+
     try {
         // Cargar datos guardados
         console.log('🔄 Cargando datos desde localStorage...');
         await DataManager.cargarDeLocalStorage();
         console.log('✅ Datos cargados correctamente');
-        
+
         // Inicializar UI
         if (typeof UIManager !== 'undefined') {
             console.log('🔄 Inicializando selectores UI...');
             await UIManager.inicializarSelectores();
-            
+
             console.log('🔄 Renderizando tablas...');
             UIManager.renderizarTablaResponsables();
             UIManager.renderizarPuestosDocentes();
@@ -49,29 +49,39 @@ document.addEventListener('DOMContentLoaded', async function() {
             UIManager.renderizarEquipos();
             UIManager.renderizarSillas();
         }
-        
+         // ===== INICIALIZAR MÓDULO DE LLAMADOS =====
+        console.log('🔄 Inicializando módulo de llamados...');
+        if (typeof LlamadosUI !== 'undefined') {
+            // Pequeño retraso para asegurar que el DOM está listo
+            setTimeout(() => {
+                LlamadosUI.inicializarSelectores();
+            }, 1000);
+        } else {
+            console.warn('⚠️ Módulo LlamadosUI no disponible');
+        }
+
         // Configurar fecha actual
-        const hoy = (typeof Utils !== 'undefined' && Utils.fechaActual) ? 
-                    Utils.fechaActual() : 
-                    new Date().toISOString().split('T')[0];
-        
+        const hoy = (typeof Utils !== 'undefined' && Utils.fechaActual) ?
+            Utils.fechaActual() :
+            new Date().toISOString().split('T')[0];
+
         const fechaInput = document.getElementById('fecha');
         if (fechaInput) {
             fechaInput.value = hoy;
             console.log('✅ Fecha actual establecida:', hoy);
         }
-        
+
         const fechaAsistencia = document.getElementById('fechaAsistencia');
         if (fechaAsistencia) {
             fechaAsistencia.value = hoy;
         }
-        
+
         // Configurar texto del toggle
         const toggleText = document.getElementById('toggleConfigText');
         if (toggleText) toggleText.textContent = 'Ocultar';
-        
+
         console.log('✅ Aplicación v0.6 inicializada correctamente');
-        
+
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
     }
@@ -82,20 +92,20 @@ document.addEventListener('DOMContentLoaded', async function() {
 /**
  * Fuerza el guardado de todos los datos en localStorage
  */
-window.forzarGuardado = function() {
+window.forzarGuardado = function () {
     console.log('💾 Forzando guardado de datos...');
-    
+
     // Verificar estado actual
     const mesas = DataManager.getMesas?.() || [];
     const sillas = DataManager.getSillas?.() || [];
-    
+
     console.log('📊 Estado antes del guardado:');
     console.log('- Mesas:', mesas.length);
     console.log('- Sillas:', sillas.length);
-    
+
     // Forzar guardado
     DataManager.guardarEnLocalStorage();
-    
+
     // Verificar que se guardó
     const saved = localStorage.getItem('gestionSalones');
     if (saved) {
@@ -103,7 +113,7 @@ window.forzarGuardado = function() {
         console.log('✅ Datos guardados en localStorage:');
         console.log('- Mesas guardadas:', parsed.mesas?.length || 0);
         console.log('- Sillas guardadas:', parsed.sillas?.length || 0);
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Datos guardados',
@@ -131,15 +141,15 @@ window.forzarGuardado = function() {
  */
 // ===== FUNCIONES DE EXPORTACIÓN/IMPORTACIÓN =====
 
-window.exportarDatos = function() {
+window.exportarDatos = function () {
     console.log('📤 Exportando datos...');
-    
+
     try {
         // Forzar guardado antes de exportar
         DataManager.guardarEnLocalStorage();
-        
+
         const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
-        
+
         if (!datos) {
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('error', 'No se pudieron exportar los datos');
@@ -148,11 +158,11 @@ window.exportarDatos = function() {
             }
             return;
         }
-        
-        const fecha = (typeof Utils !== 'undefined' && Utils.fechaActual) ? 
-                      Utils.fechaActual() : 
-                      new Date().toISOString().split('T')[0];
-        
+
+        const fecha = (typeof Utils !== 'undefined' && Utils.fechaActual) ?
+            Utils.fechaActual() :
+            new Date().toISOString().split('T')[0];
+
         const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -162,11 +172,11 @@ window.exportarDatos = function() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         if (typeof Utils !== 'undefined') {
             Utils.showToast('success', 'Datos exportados');
         }
-        
+
     } catch (error) {
         console.error('❌ Error exportando:', error);
         if (typeof Utils !== 'undefined') {
@@ -179,12 +189,12 @@ window.exportarDatos = function() {
 /**
  * Importa datos desde un archivo JSON
  */
-window.importarDatos = function(event) {
+window.importarDatos = function (event) {
     console.log('📥 Importando datos...');
-    
+
     const file = event.target.files[0];
     if (!file) return;
-    
+
     if (!file.name.endsWith('.json')) {
         if (typeof Utils !== 'undefined') {
             Utils.showToast('error', 'Seleccione un archivo JSON');
@@ -194,12 +204,12 @@ window.importarDatos = function(event) {
         event.target.value = '';
         return;
     }
-    
+
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const datos = JSON.parse(e.target.result);
-            
+
             // Mostrar resumen de datos a importar
             console.log('📦 Datos a importar:', {
                 responsables: datos.responsables?.length || 0,
@@ -209,7 +219,7 @@ window.importarDatos = function(event) {
                 sillas: datos.sillas?.length || 0,
                 asistencia: datos.asistencia?.length || 0
             });
-            
+
             Swal.fire({
                 title: '¿Importar datos?',
                 html: `
@@ -232,11 +242,11 @@ window.importarDatos = function(event) {
                 if (result.isConfirmed) {
                     // Importar datos
                     const importado = DataManager.importarDatos ? DataManager.importarDatos(datos) : false;
-                    
+
                     if (importado) {
                         // Forzar guardado en localStorage
                         DataManager.guardarEnLocalStorage();
-                        
+
                         // Actualizar todas las vistas
                         if (typeof UIManager !== 'undefined') {
                             UIManager.renderizarTablaResponsables();
@@ -244,7 +254,7 @@ window.importarDatos = function(event) {
                             UIManager.renderizarMesas();
                             UIManager.renderizarEquipos();
                             UIManager.renderizarSillas();
-                            
+
                             // Si hay un curso seleccionado en sillas, actualizar estadísticas
                             const cursoSillas = document.getElementById('cursoSillas')?.value;
                             if (cursoSillas) {
@@ -254,7 +264,7 @@ window.importarDatos = function(event) {
                                 }
                             }
                         }
-                        
+
                         Swal.fire({
                             icon: 'success',
                             title: 'Datos importados',
@@ -262,7 +272,7 @@ window.importarDatos = function(event) {
                             timer: 2000,
                             showConfirmButton: false
                         });
-                        
+
                         console.log('✅ Datos importados y vistas actualizadas');
                     } else {
                         Swal.fire({
@@ -273,7 +283,7 @@ window.importarDatos = function(event) {
                     }
                 }
             });
-            
+
         } catch (error) {
             console.error('❌ Error importando:', error);
             Swal.fire({
@@ -290,9 +300,9 @@ window.importarDatos = function(event) {
 /**
  * Limpia todos los datos
  */
-window.limpiarTodosLosDatos = function() {
+window.limpiarTodosLosDatos = function () {
     console.log('🗑️ Limpiando todos los datos...');
-    
+
     const confirmar = async () => {
         if (typeof Utils !== 'undefined') {
             const result = await Swal.fire({
@@ -308,14 +318,14 @@ window.limpiarTodosLosDatos = function() {
         }
         return confirm('¿Limpiar todos los datos? Esta acción no se puede deshacer');
     };
-    
+
     confirmar().then(ok => {
         if (ok) {
             try {
                 if (DataManager.limpiarTodosLosDatos) {
                     DataManager.limpiarTodosLosDatos();
                 }
-                
+
                 if (typeof UIManager !== 'undefined') {
                     UIManager.renderizarTablaResponsables();
                     UIManager.renderizarPuestosDocentes();
@@ -323,13 +333,13 @@ window.limpiarTodosLosDatos = function() {
                     UIManager.renderizarEquipos();
                     UIManager.renderizarSillas();
                 }
-                
+
                 if (typeof Utils !== 'undefined') {
                     Utils.showToast('success', 'Datos limpiados');
                 }
-                
+
                 console.log('✅ Todos los datos limpiados');
-                
+
             } catch (error) {
                 console.error('❌ Error limpiando datos:', error);
                 if (typeof Utils !== 'undefined') {
@@ -342,7 +352,7 @@ window.limpiarTodosLosDatos = function() {
 
 // ===== FUNCIONES DE SNAPSHOTS =====
 
-window.guardarSnapshot = function() {
+window.guardarSnapshot = function () {
     console.log('📸 Guardando snapshot...');
     if (typeof Reportes !== 'undefined' && Reportes.guardarSnapshot) {
         Reportes.guardarSnapshot();
@@ -354,7 +364,7 @@ window.guardarSnapshot = function() {
     }
 };
 
-window.mostrarHistorial = function() {
+window.mostrarHistorial = function () {
     console.log('📚 Mostrando historial...');
     if (typeof Reportes !== 'undefined' && Reportes.mostrarHistorial) {
         Reportes.mostrarHistorial();
@@ -366,7 +376,7 @@ window.mostrarHistorial = function() {
     }
 };
 
-window.exportarHistorialCompleto = function() {
+window.exportarHistorialCompleto = function () {
     console.log('📦 Exportando historial completo...');
     if (typeof Reportes !== 'undefined' && Reportes.exportarHistorialCompleto) {
         Reportes.exportarHistorialCompleto();
@@ -378,7 +388,7 @@ window.exportarHistorialCompleto = function() {
     }
 };
 
-window.generarReporteCompleto = function() {
+window.generarReporteCompleto = function () {
     console.log('📊 Generando reporte...');
     if (typeof Reportes !== 'undefined' && Reportes.generarReporteProfesional) {
         Reportes.generarReporteProfesional();
@@ -392,16 +402,16 @@ window.generarReporteCompleto = function() {
 /**
  * Fuerza la actualización de todas las vistas después de importar
  */
-window.actualizarVistasDespuesDeImportar = function() {
+window.actualizarVistasDespuesDeImportar = function () {
     console.log('🔄 Actualizando vistas después de importar...');
-    
+
     if (typeof UIManager !== 'undefined') {
         UIManager.renderizarTablaResponsables();
         UIManager.renderizarPuestosDocentes();
         UIManager.renderizarMesas();
         UIManager.renderizarEquipos();
         UIManager.renderizarSillas();
-        
+
         // Actualizar selector de cursos
         const cursoSillas = document.getElementById('cursoSillas');
         if (cursoSillas && cursoSillas.value) {
@@ -411,9 +421,12 @@ window.actualizarVistasDespuesDeImportar = function() {
             }
         }
     }
-    
+
     console.log('✅ Vistas actualizadas');
 };
+/**
+ * Actualiza el panel de validación con el estado de los módulos
+ */
 /**
  * Actualiza el panel de validación con el estado de los módulos
  */
@@ -439,7 +452,7 @@ window.actualizarPanelValidacion = function() {
         { nombre: 'Reportes', objeto: window.Reportes, grupo: 'modulos' }
     ];
     
-    // NUEVOS MÓDULOS DE ASISTENCIA
+    // Módulos de asistencia
     const modulosAsistencia = [
         { nombre: 'AsistenciaData', objeto: window.AsistenciaData, grupo: 'asistencia' },
         { nombre: 'AsistenciaDiaria', objeto: window.AsistenciaDiaria, grupo: 'asistencia' },
@@ -447,8 +460,14 @@ window.actualizarPanelValidacion = function() {
         { nombre: 'HistorialAsistencia', objeto: window.HistorialAsistencia, grupo: 'asistencia' }
     ];
     
+    // Módulos de llamados
+    const modulosLlamados = [
+        { nombre: 'LlamadosData', objeto: window.LlamadosData, grupo: 'llamados' },
+        { nombre: 'LlamadosUI', objeto: window.LlamadosUI, grupo: 'llamados' }
+    ];
+    
     // Verificar datos en localStorage
-    let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0 };
+    let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0, llamados: 0 };
     try {
         const saved = localStorage.getItem('gestionSalones');
         if (saved) {
@@ -462,12 +481,20 @@ window.actualizarPanelValidacion = function() {
                 asistencias: parsed.asistencia?.length || 0
             };
         }
+        
+        // Verificar llamados en localStorage aparte
+        const savedLlamados = localStorage.getItem('gestionLlamados');
+        if (savedLlamados) {
+            const parsed = JSON.parse(savedLlamados);
+            datosGuardados.llamados = parsed.length || 0;
+        }
+        
     } catch (e) {
         console.error('Error leyendo localStorage:', e);
     }
     
     // Verificar datos en memoria
-    let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0 };
+    let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0, llamados: 0 };
     if (window.DataManager) {
         datosMemoria = {
             responsables: DataManager.getResponsables?.().length || 0,
@@ -479,7 +506,11 @@ window.actualizarPanelValidacion = function() {
         };
     }
     
-    // Generar HTML
+    if (window.LlamadosData) {
+        datosMemoria.llamados = LlamadosData.cargarLlamados?.().length || 0;
+    }
+    
+    // ⚠️ IMPORTANTE: Declarar html ANTES de usarlo
     let html = '<table style="width:100%; border-collapse: collapse; font-size: 11px;">';
     
     // Módulos Core
@@ -496,9 +527,16 @@ window.actualizarPanelValidacion = function() {
         html += `<tr><td style="padding: 3px;">${mod.nombre.replace('Module', '')}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
     
-    // NUEVO: Módulos de Asistencia
+    // Módulos de Asistencia
     html += '<tr style="background: #6f42c1; color: white;"><th colspan="2" style="padding: 5px;">📅 MÓDULOS ASISTENCIA</th></tr>';
     modulosAsistencia.forEach(mod => {
+        const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
+        html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
+    });
+    
+    // Módulos de Llamados
+    html += '<tr style="background: #dc3545; color: white;"><th colspan="2" style="padding: 5px;">⚠️ MÓDULOS LLAMADOS</th></tr>';
+    modulosLlamados.forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
         html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
@@ -511,6 +549,7 @@ window.actualizarPanelValidacion = function() {
     html += `<tr><td>Equipos</td><td style="text-align: right;">${datosMemoria.equipos}</td></tr>`;
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosMemoria.sillas}</td></tr>`;
     html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosMemoria.asistencias}</td></tr>`;
+    html += `<tr><td>Llamados</td><td style="text-align: right; font-weight: bold; color: #dc3545;">${datosMemoria.llamados}</td></tr>`;
     
     // Datos en localStorage
     html += '<tr style="background: #6c757d; color: white;"><th colspan="2" style="padding: 5px;">💿 LOCALSTORAGE</th></tr>';
@@ -520,6 +559,7 @@ window.actualizarPanelValidacion = function() {
     html += `<tr><td>Equipos</td><td style="text-align: right;">${datosGuardados.equipos}</td></tr>`;
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosGuardados.sillas}</td></tr>`;
     html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosGuardados.asistencias}</td></tr>`;
+    html += `<tr><td>Llamados</td><td style="text-align: right; font-weight: bold; color: #dc3545;">${datosGuardados.llamados}</td></tr>`;
     
     html += '</table>';
     
@@ -527,34 +567,29 @@ window.actualizarPanelValidacion = function() {
     console.log('✅ Panel de validación actualizado');
 };
 
-// Actualizar panel cada 3 segundos
 setInterval(actualizarPanelValidacion, 3000);
-
-// Actualizar al cargar la página
-setTimeout(actualizarPanelValidacion, 1000);
-
 /**
  * Muestra un resumen completo en consola
  */
-window.validarSistema = function() {
+window.validarSistema = function () {
     console.log('=== VALIDACIÓN COMPLETA DEL SISTEMA ===');
-    
+
     // 1. Verificar archivos JS cargados
     console.log('\n📁 ARCHIVOS JS CARGADOS:');
     document.querySelectorAll('script[src]').forEach((s, i) => {
-        console.log(`${i+1}. ${s.src.split('/').pop()}`);
+        console.log(`${i + 1}. ${s.src.split('/').pop()}`);
     });
-    
+
     // 2. Verificar módulos
     console.log('\n📦 MÓDULOS:');
-    const modulos = ['DataManager', 'Utils', 'ModalManager', 'UIManager', 
-                    'ResponsablesModule', 'PuestosModule', 'EquiposModule', 
-                    'SillasModule', 'AsistenciaModule', 'Reportes'];
-    
+    const modulos = ['DataManager', 'Utils', 'ModalManager', 'UIManager',
+        'ResponsablesModule', 'PuestosModule', 'EquiposModule',
+        'SillasModule', 'AsistenciaModule', 'Reportes'];
+
     modulos.forEach(m => {
         console.log(`${m}:`, typeof window[m] !== 'undefined' ? '✅' : '❌');
     });
-    
+
     // 3. Verificar datos
     console.log('\n💾 DATOS:');
     if (window.DataManager) {
@@ -564,7 +599,7 @@ window.validarSistema = function() {
         console.log('Equipos:', DataManager.getEquipos?.().length || 0);
         console.log('Sillas:', DataManager.getSillas?.().length || 0);
     }
-    
+
     // 4. Verificar localStorage
     console.log('\n💿 LOCALSTORAGE:');
     try {
@@ -583,7 +618,45 @@ window.validarSistema = function() {
         console.error('Error leyendo localStorage:', e);
     }
 };
-// Exponer módulos nuevos
+
+// Funciones para la pestaña de llamados
+window.cargarEstudiantesLlamados = async function() {
+    console.log('🔄 cargarEstudiantesLlamados llamado');
+    if (typeof LlamadosUI !== 'undefined') {
+        await LlamadosUI.cargarEstudiantes();
+    } else {
+        console.error('❌ LlamadosUI no está disponible');
+    }
+};
+
+window.cargarLlamadosEstudiante = function() {
+    console.log('🔄 cargarLlamadosEstudiante llamado');
+    if (typeof LlamadosUI !== 'undefined') {
+        LlamadosUI.cargarLlamadosEstudiante();
+    } else {
+        console.error('❌ LlamadosUI no está disponible');
+        Swal.fire('Error', 'Módulo de llamados no disponible', 'error');
+    }
+};
+
+window.mostrarModalNuevoLlamado = function() {
+    console.log('🔄 mostrarModalNuevoLlamado llamado');
+    if (typeof LlamadosUI !== 'undefined') {
+        LlamadosUI.mostrarModalNuevoLlamado();
+    } else {
+        console.error('❌ LlamadosUI no está disponible');
+        Swal.fire('Error', 'Módulo de llamados no disponible', 'error');
+    }
+};
+
+// Inicializar módulo de llamados
+if (typeof LlamadosUI !== 'undefined' && LlamadosUI.inicializarSelectores) {
+    console.log('🔄 Inicializando módulo de llamados...');
+    LlamadosUI.inicializarSelectores();
+} else {
+    console.warn('⚠️ Módulo de llamados no disponible');
+}
+
 // Exponer módulos de asistencia globalmente
 window.AsistenciaDiaria = AsistenciaDiaria;
 window.AsistenciaData = AsistenciaData;
@@ -599,7 +672,7 @@ window.guardarAsistencia = () => AsistenciaDiaria.guardarAsistencia();
 window.cargarAsistenciaPorCurso = () => AsistenciaDiaria.cargarAsistenciaPorCurso();
 window.marcarTodos = () => AsistenciaDiaria.marcarTodos();
 window.desmarcarTodos = () => AsistenciaDiaria.desmarcarTodos();
-window.exportarTodo = function() {
+window.exportarTodo = function () {
     const asistencias = AsistenciaData.obtenerTodasAsistencias();
     AsistenciaData.exportarParaUnificar(asistencias);
 };
@@ -612,13 +685,13 @@ setTimeout(() => {
 }, 1000);
 // ===== DIAGNÓSTICO =====
 
-window.diagnosticarSistema = function() {
+window.diagnosticarSistema = function () {
     console.log('=== DIAGNÓSTICO DEL SISTEMA v0.6 ===');
     console.log('DataManager:', typeof DataManager);
     console.log('Utils:', typeof Utils);
     console.log('ModalManager:', typeof ModalManager);
     console.log('UIManager:', typeof UIManager);
-    
+
     console.log('\n📊 Módulos:');
     console.log('- ResponsablesModule:', typeof ResponsablesModule);
     console.log('- PuestosModule:', typeof PuestosModule);
@@ -626,8 +699,8 @@ window.diagnosticarSistema = function() {
     console.log('- SillasModule:', typeof SillasModule);
     console.log('- AsistenciaModule:', typeof AsistenciaModule);
     console.log('- Reportes:', typeof Reportes);
-    
-   console.log('\n💾 localStorage:');
+
+    console.log('\n💾 localStorage:');
     const saved = localStorage.getItem('gestionSalones');
     if (saved) {
         const parsed = JSON.parse(saved);
@@ -637,9 +710,9 @@ window.diagnosticarSistema = function() {
     } else {
         console.log('- gestionSalones: ❌');
     }
-    
+
     console.log('- gestionSalonesHistorial:', localStorage.getItem('gestionSalonesHistorial') ? '✅' : '❌');
-    
+
     console.log('\n📋 Funciones globales:');
     const funciones = [
         'exportarDatos', 'importarDatos', 'limpiarTodosLosDatos',
