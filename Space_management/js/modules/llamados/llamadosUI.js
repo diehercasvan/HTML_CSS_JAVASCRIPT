@@ -350,59 +350,67 @@ const LlamadosUI = (function() {
     /**
      * Renderiza la tabla de llamados de un estudiante
      */
-    function renderizarTablaLlamados(estudiante) {
-        const llamados = LlamadosData.getLlamadosPorEstudiante(estudiante.documento);
+function renderizarTablaLlamados(estudiante) {
+    const llamados = LlamadosData.getLlamadosPorEstudiante(estudiante.documento);
+    
+    if (llamados.length === 0) {
+        return '<p class="text-muted">No hay llamados registrados para este estudiante</p>';
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <h6 class="mt-3">📋 Historial de Llamados</h6>
+            <table class="table table-striped table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Nivel</th>
+                        <th>Motivo</th>
+                        <th>Compromisos</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    llamados.forEach(l => {
+        const compromisos = l.compromisos?.map(c => 
+            `<span class="badge ${c.estado === 'cumplido' ? 'bg-success' : 'bg-warning'} me-1">${c.descripcion}</span>`
+        ).join(' ') || 'Sin compromisos';
         
-        if (llamados.length === 0) {
-            return '<p class="text-muted">No hay llamados registrados para este estudiante</p>';
-        }
+        const badgeTipo = l.tipo === 'academico' ? 'bg-info' : 'bg-danger';
+        const badgeEstado = l.estado === 'activo' ? 'bg-warning' : 'bg-success';
         
-        let html = `
-            <div class="table-responsive">
-                <h6 class="mt-3">📋 Historial de Llamados</h6>
-                <table class="table table-striped table-hover table-bordered">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Tipo</th>
-                            <th>Nivel</th>
-                            <th>Motivo</th>
-                            <th>Compromisos</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        
-        llamados.forEach(l => {
-            const compromisos = l.compromisos?.map(c => 
-                `<span class="badge ${c.estado === 'cumplido' ? 'bg-success' : 'bg-warning'} me-1">${c.descripcion}</span>`
-            ).join(' ') || 'Sin compromisos';
-            
-            const badgeTipo = l.tipo === 'academico' ? 'bg-info' : 'bg-danger';
-            const badgeEstado = l.estado === 'activo' ? 'bg-warning' : 'bg-success';
-            
-            html += `
-                <tr>
-                    <td>${l.fecha}</td>
-                    <td><span class="badge ${badgeTipo}">${l.tipo}</span></td>
-                    <td><span class="badge bg-secondary">${l.nivel || 1}</span></td>
-                    <td>${l.motivo}</td>
-                    <td>${compromisos}</td>
-                    <td><span class="badge ${badgeEstado}">${l.estado}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="LlamadosUI.verDetalle('${l.id}')">
+        html += `
+            <tr>
+                <td>${l.fecha}</td>
+                <td><span class="badge ${badgeTipo}">${l.tipo}</span></td>
+                <td><span class="badge bg-secondary">${l.nivel || 1}</span></td>
+                <td>${l.motivo}</td>
+                <td>${compromisos}</td>
+                <td><span class="badge ${badgeEstado}">${l.estado}</span></td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-primary" onclick="LlamadosUI.verDetalle('${l.id}')" title="Ver detalle">
                             <i class="fas fa-eye"></i>
                         </button>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += '</tbody></table></div>';
-        return html;
-    }
+                        <button class="btn btn-sm btn-danger" onclick="GeneradorPDF.generarPDFLlamado('${l.id}')" title="Generar PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="Notificaciones.mostrarOpciones('${l.id}')" title="Enviar notificación">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    return html;
+}
 
     /**
      * Muestra detalle de un llamado

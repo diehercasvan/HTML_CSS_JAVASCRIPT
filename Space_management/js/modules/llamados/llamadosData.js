@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo llamadosData.js...');
 
-const LlamadosData = (function() {
-    
+const LlamadosData = (function () {
+
     // Estructura de datos para llamados
     let llamados = [];
 
@@ -56,12 +56,12 @@ const LlamadosData = (function() {
                     }
                 ]
             };
-            
+
             llamados.push(nuevoLlamado);
             guardarLlamados();
             console.log('✅ Llamado agregado:', nuevoLlamado.id);
             return nuevoLlamado;
-            
+
         } catch (error) {
             console.error('❌ Error agregando llamado:', error);
             return null;
@@ -73,7 +73,7 @@ const LlamadosData = (function() {
      */
     function getLlamadosPorEstudiante(documento) {
         return llamados.filter(l => l.estudiante?.documento === documento)
-                      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     }
 
     /**
@@ -81,7 +81,7 @@ const LlamadosData = (function() {
      */
     function getLlamadosPorCurso(cursoId) {
         return llamados.filter(l => l.curso === cursoId)
-                      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     }
 
     /**
@@ -91,7 +91,7 @@ const LlamadosData = (function() {
         try {
             const index = llamados.findIndex(l => l.id === id);
             if (index === -1) return false;
-            
+
             llamados[index].estado = nuevoEstado;
             llamados[index].historial.push({
                 fecha: new Date().toISOString(),
@@ -99,10 +99,10 @@ const LlamadosData = (function() {
                 valor: nuevoEstado,
                 observacion: observacion
             });
-            
+
             guardarLlamados();
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando estado:', error);
             return false;
@@ -116,22 +116,22 @@ const LlamadosData = (function() {
         try {
             const index = llamados.findIndex(l => l.id === llamadoId);
             if (index === -1) return false;
-            
+
             if (!llamados[index].compromisos) {
                 llamados[index].compromisos = [];
             }
-            
+
             const nuevoCompromiso = {
                 id: Date.now(),
                 ...compromiso,
                 fechaCreacion: new Date().toISOString(),
                 estado: 'pendiente'
             };
-            
+
             llamados[index].compromisos.push(nuevoCompromiso);
             guardarLlamados();
             return nuevoCompromiso;
-            
+
         } catch (error) {
             console.error('❌ Error agregando compromiso:', error);
             return false;
@@ -145,17 +145,17 @@ const LlamadosData = (function() {
         try {
             const llamado = llamados.find(l => l.id === llamadoId);
             if (!llamado) return false;
-            
+
             const compromiso = llamado.compromisos?.find(c => c.id === compromisoId);
             if (!compromiso) return false;
-            
+
             compromiso.estado = 'cumplido';
             compromiso.fechaCumplimiento = new Date().toISOString();
             compromiso.observacion = observacion;
-            
+
             guardarLlamados();
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando compromiso:', error);
             return false;
@@ -178,6 +178,12 @@ const LlamadosData = (function() {
     setTimeout(() => {
         cargarLlamados();
     }, 200);
+    /**
+ * Obtiene un llamado por su ID
+ */
+    function getLlamadoPorId(id) {
+        return llamados.find(l => l.id == id) || null;
+    }
 
     // API pública
     return {
@@ -191,7 +197,8 @@ const LlamadosData = (function() {
         contarLlamadosPorEstudiante,
         cargarLlamados,
         agregarLlamado,
-        getLlamadosPorEstudiante
+        getLlamadosPorEstudiante,
+        getLlamadoPorId
     };
 })();
 
