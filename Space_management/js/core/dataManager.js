@@ -19,31 +19,31 @@ const DataManager = (function () {
 
     // ===== FUNCIONES DE CURSOS =====
 
-  async function cargarCursos() {
-    try {
-        console.log('📚 DataManager.cargarCursos() llamado');
-        const response = await fetch('data/cursos.json');
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        state.cursos = data.cursos || [];
-        console.log(`✅ ${state.cursos.length} cursos cargados`);
-        return state.cursos;
-        
-    } catch (error) {
-        console.error('❌ Error cargando cursos:', error);
-        state.cursos = [];
-        return [];
-    }
-}
+    async function cargarCursos() {
+        try {
+            console.log('📚 DataManager.cargarCursos() llamado');
+            const response = await fetch('data/cursos.json');
 
-   function getCursos() {
-    console.log('📚 DataManager.getCursos() llamado, retornando:', state.cursos?.length || 0, 'cursos');
-    return state.cursos || [];
-}
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            state.cursos = data.cursos || [];
+            console.log(`✅ ${state.cursos.length} cursos cargados`);
+            return state.cursos;
+
+        } catch (error) {
+            console.error('❌ Error cargando cursos:', error);
+            state.cursos = [];
+            return [];
+        }
+    }
+
+    function getCursos() {
+        console.log('📚 DataManager.getCursos() llamado, retornando:', state.cursos?.length || 0, 'cursos');
+        return state.cursos || [];
+    }
     // ===== FUNCIONES DE RESPONSABLES =====
 
     async function cargarResponsables() {
@@ -65,13 +65,13 @@ const DataManager = (function () {
         return state.responsables || [];
     }
 
-   function getResponsablesPorCurso(numeroCurso) {
-    if (!state.responsables) return [];
-    console.log(`🔍 Buscando responsables para curso ${numeroCurso}`);
-    const filtrados = state.responsables.filter(r => r.numeroCurso === numeroCurso);
-    console.log(`✅ Encontrados: ${filtrados.length}`);
-    return filtrados;
-}
+    function getResponsablesPorCurso(numeroCurso) {
+        if (!state.responsables) return [];
+        console.log(`🔍 Buscando responsables para curso ${numeroCurso}`);
+        const filtrados = state.responsables.filter(r => r.numeroCurso === numeroCurso);
+        console.log(`✅ Encontrados: ${filtrados.length}`);
+        return filtrados;
+    }
 
     function guardarResponsable(data) {
         try {
@@ -621,6 +621,8 @@ const DataManager = (function () {
             regular: sillas.filter(s => s.estado === 'Regular').length,
             malo: sillas.filter(s => s.estado === 'Malo').length
         };
+        console.log('📊 Estadísticas calculadas:', estadisticas);
+        return estadisticas;
     }
 
     // ===== FUNCIONES DE ASISTENCIA =====
