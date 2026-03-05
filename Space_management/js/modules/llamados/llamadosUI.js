@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo llamadosUI.js...');
 
-const LlamadosUI = (function() {
-    
+const LlamadosUI = (function () {
+
     let plantillas = {};
     let estudiantesCache = {};
 
@@ -13,30 +13,30 @@ const LlamadosUI = (function() {
      */
     async function inicializarSelectores() {
         console.log('🔄 Inicializando selectores de llamados...');
-        
+
         const cursoSelect = document.getElementById('cursoLlamados');
         if (!cursoSelect) {
             console.warn('⚠️ Selector de cursos no encontrado en el DOM');
             return;
         }
-        
+
         // Cargar cursos desde DataManager
         const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
         console.log(`📚 Cursos disponibles: ${cursos.length}`);
-        
+
         cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
-        
+
         cursos.forEach(curso => {
             const option = document.createElement('option');
             option.value = curso.id;
             option.textContent = `${curso.id} - ${curso.nombre}`;
             cursoSelect.appendChild(option);
         });
-        
+
         console.log(`✅ Selector de cursos inicializado con ${cursos.length} cursos`);
-        
+
         // Agregar evento change al selector de curso
-        cursoSelect.addEventListener('change', function() {
+        cursoSelect.addEventListener('change', function () {
             console.log('📌 Curso cambiado a:', this.value);
             cargarEstudiantes();
         });
@@ -47,34 +47,34 @@ const LlamadosUI = (function() {
      */
     async function cargarEstudiantes() {
         console.log('🔄 Cargando estudiantes para llamados...');
-        
+
         const cursoSelect = document.getElementById('cursoLlamados');
         const estudianteSelect = document.getElementById('estudianteLlamados');
         const contenedor = document.getElementById('contenedorLlamados');
-        
+
         if (!cursoSelect || !estudianteSelect || !contenedor) {
             console.warn('⚠️ Elementos del DOM no encontrados');
             return;
         }
-        
+
         const cursoId = cursoSelect.value;
-        
+
         // Limpiar select de estudiantes
         estudianteSelect.innerHTML = '<option value="">Cargando estudiantes...</option>';
         contenedor.innerHTML = '<p class="text-muted">Seleccione un estudiante para ver sus llamados</p>';
-        
+
         if (!cursoId) {
             estudianteSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
             return;
         }
-        
+
         try {
             // Cargar estudiantes del curso
             const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId) || [];
             estudiantesCache[cursoId] = estudiantes;
-            
+
             estudianteSelect.innerHTML = '<option value="">Seleccione un estudiante</option>';
-            
+
             estudiantes.forEach(est => {
                 const option = document.createElement('option');
                 option.value = est.documento;
@@ -83,9 +83,9 @@ const LlamadosUI = (function() {
                 option.textContent = `${est.documento} - ${est.nombres} ${est.apellidos}`;
                 estudianteSelect.appendChild(option);
             });
-            
+
             console.log(`✅ ${estudiantes.length} estudiantes cargados para curso ${cursoId}`);
-            
+
         } catch (error) {
             console.error('❌ Error cargando estudiantes:', error);
             estudianteSelect.innerHTML = '<option value="">Error cargando estudiantes</option>';
@@ -97,15 +97,15 @@ const LlamadosUI = (function() {
      */
     function mostrarModalNuevoLlamado() {
         console.log('📝 Mostrando modal nuevo llamado...');
-        
+
         const cursoSelect = document.getElementById('cursoLlamados');
         const estudianteSelect = document.getElementById('estudianteLlamados');
-        
+
         if (!cursoSelect || !estudianteSelect) {
             console.error('❌ Selectores no encontrados');
             return;
         }
-        
+
         if (!cursoSelect.value) {
             Swal.fire({
                 icon: 'warning',
@@ -114,7 +114,7 @@ const LlamadosUI = (function() {
             });
             return;
         }
-        
+
         if (!estudianteSelect.value) {
             Swal.fire({
                 icon: 'warning',
@@ -123,10 +123,10 @@ const LlamadosUI = (function() {
             });
             return;
         }
-        
+
         const cursoId = cursoSelect.value;
         const cursoNombre = cursoSelect.options[cursoSelect.selectedIndex]?.textContent || cursoId;
-        
+
         const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
         const estudiante = {
             documento: estudianteSelect.value,
@@ -134,9 +134,9 @@ const LlamadosUI = (function() {
             apellidos: selectedOption.getAttribute('data-apellidos'),
             nombreCompleto: selectedOption.textContent.split(' - ')[1] || selectedOption.textContent
         };
-        
+
         console.log('📝 Estudiante seleccionado:', estudiante);
-        
+
         Swal.fire({
             title: '📢 Nuevo Llamado de Atención',
             width: '700px',
@@ -202,7 +202,7 @@ const LlamadosUI = (function() {
                     if (val && val.trim()) compromisos.push(val.trim());
                     i++;
                 }
-                
+
                 return {
                     tipo: document.getElementById('llamadoTipo').value,
                     motivo: document.getElementById('llamadoMotivo').value,
@@ -223,7 +223,7 @@ const LlamadosUI = (function() {
     function agregarCampoCompromiso() {
         const container = document.getElementById('compromisosContainer');
         const count = container.children.length;
-        
+
         const div = document.createElement('div');
         div.className = 'input-group mb-2';
         div.innerHTML = `
@@ -240,7 +240,7 @@ const LlamadosUI = (function() {
      */
     async function guardarLlamado(estudiante, curso, datos) {
         console.log('💾 Guardando llamado...', datos);
-        
+
         if (!datos.motivo || !datos.motivo.trim()) {
             Swal.fire({
                 icon: 'warning',
@@ -249,9 +249,9 @@ const LlamadosUI = (function() {
             });
             return;
         }
-        
+
         const docenteActual = obtenerDocenteActual(curso);
-        
+
         const nuevoLlamado = {
             estudiante: {
                 documento: estudiante.documento,
@@ -262,8 +262,8 @@ const LlamadosUI = (function() {
             curso: curso,
             tipo: datos.tipo,
             motivo: datos.motivo,
-            compromisos: datos.compromisos.map(c => ({ 
-                descripcion: c, 
+            compromisos: datos.compromisos.map(c => ({
+                descripcion: c,
                 estado: 'pendiente',
                 fechaCreacion: new Date().toISOString()
             })),
@@ -273,9 +273,9 @@ const LlamadosUI = (function() {
             estado: 'activo',
             nivel: calcularNivelLlamado(estudiante.documento, datos.tipo)
         };
-        
+
         const resultado = LlamadosData.agregarLlamado(nuevoLlamado);
-        
+
         if (resultado) {
             Swal.fire({
                 icon: 'success',
@@ -284,7 +284,7 @@ const LlamadosUI = (function() {
                 timer: 2000,
                 showConfirmButton: false
             });
-            
+
             // Actualizar la tabla de llamados
             cargarLlamadosEstudiante();
         }
@@ -305,8 +305,8 @@ const LlamadosUI = (function() {
     function obtenerDocenteActual(curso) {
         const responsables = DataManager.getResponsables?.() || [];
         const docente = responsables.find(r => r.numeroCurso === curso);
-        return docente ? { 
-            nombre: docente.nombre, 
+        return docente ? {
+            nombre: docente.nombre,
             documento: docente.documento,
             materia: docente.materia || 'No especificada'
         } : null;
@@ -317,16 +317,16 @@ const LlamadosUI = (function() {
      */
     function cargarLlamadosEstudiante() {
         console.log('🔄 Cargando llamados del estudiante...');
-        
+
         const estudianteSelect = document.getElementById('estudianteLlamados');
         const cursoSelect = document.getElementById('cursoLlamados');
         const contenedor = document.getElementById('contenedorLlamados');
-        
+
         if (!estudianteSelect || !cursoSelect || !contenedor) {
             console.warn('⚠️ Elementos no encontrados');
             return;
         }
-        
+
         if (!estudianteSelect.value || !cursoSelect.value) {
             Swal.fire({
                 icon: 'warning',
@@ -335,14 +335,14 @@ const LlamadosUI = (function() {
             });
             return;
         }
-        
+
         const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
         const estudiante = {
             documento: estudianteSelect.value,
             nombres: selectedOption.getAttribute('data-nombres'),
             apellidos: selectedOption.getAttribute('data-apellidos')
         };
-        
+
         const html = renderizarTablaLlamados(estudiante);
         contenedor.innerHTML = html;
     }
@@ -350,14 +350,14 @@ const LlamadosUI = (function() {
     /**
      * Renderiza la tabla de llamados de un estudiante
      */
-function renderizarTablaLlamados(estudiante) {
-    const llamados = LlamadosData.getLlamadosPorEstudiante(estudiante.documento);
-    
-    if (llamados.length === 0) {
-        return '<p class="text-muted">No hay llamados registrados para este estudiante</p>';
-    }
-    
-    let html = `
+    function renderizarTablaLlamados(estudiante) {
+        const llamados = LlamadosData.getLlamadosPorEstudiante(estudiante.documento);
+
+        if (llamados.length === 0) {
+            return '<p class="text-muted">No hay llamados registrados para este estudiante</p>';
+        }
+
+        let html = `
         <div class="table-responsive">
             <h6 class="mt-3">📋 Historial de Llamados</h6>
             <table class="table table-striped table-hover table-bordered">
@@ -374,16 +374,16 @@ function renderizarTablaLlamados(estudiante) {
                 </thead>
                 <tbody>
     `;
-    
-    llamados.forEach(l => {
-        const compromisos = l.compromisos?.map(c => 
-            `<span class="badge ${c.estado === 'cumplido' ? 'bg-success' : 'bg-warning'} me-1">${c.descripcion}</span>`
-        ).join(' ') || 'Sin compromisos';
-        
-        const badgeTipo = l.tipo === 'academico' ? 'bg-info' : 'bg-danger';
-        const badgeEstado = l.estado === 'activo' ? 'bg-warning' : 'bg-success';
-        
-        html += `
+
+        llamados.forEach(l => {
+            const compromisos = l.compromisos?.map(c =>
+                `<span class="badge ${c.estado === 'cumplido' ? 'bg-success' : 'bg-warning'} me-1">${c.descripcion}</span>`
+            ).join(' ') || 'Sin compromisos';
+
+            const badgeTipo = l.tipo === 'academico' ? 'bg-info' : 'bg-danger';
+            const badgeEstado = l.estado === 'activo' ? 'bg-warning' : 'bg-success';
+
+            html += `
             <tr>
                 <td>${l.fecha}</td>
                 <td><span class="badge ${badgeTipo}">${l.tipo}</span></td>
@@ -406,18 +406,105 @@ function renderizarTablaLlamados(estudiante) {
                 </td>
             </tr>
         `;
-    });
-    
-    html += '</tbody></table></div>';
-    return html;
-}
+        });
+
+        html += '</tbody></table></div>';
+        return html;
+    }
 
     /**
      * Muestra detalle de un llamado
      */
+    /**
+ * Muestra detalle completo de un llamado
+ */
     function verDetalle(id) {
-        // Implementar vista detalle
-        console.log('Ver detalle:', id);
+        console.log('🔍 Ver detalle del llamado:', id);
+
+        const llamados = LlamadosData.getLlamadosPorEstudiante(''); // Esto debería mejorarse
+        const llamado = llamados.find(l => l.id == id);
+
+        if (!llamado) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Llamado no encontrado'
+            });
+            return;
+        }
+
+        // Formatear compromisos
+        const compromisosHtml = llamado.compromisos?.map((c, idx) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+            <span>${idx + 1}. ${c.descripcion}</span>
+            <span class="badge ${c.estado === 'cumplido' ? 'bg-success' : 'bg-warning'}">
+                ${c.estado === 'cumplido' ? '✅ Cumplido' : '⏳ Pendiente'}
+            </span>
+        </div>
+    `).join('') || '<p class="text-muted">No hay compromisos</p>';
+
+        Swal.fire({
+            title: '📋 Detalle del Llamado',
+            width: '700px',
+            html: `
+            <div class="text-start">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Fecha:</strong> ${llamado.fecha}</p>
+                        <p><strong>Tipo:</strong> 
+                            <span class="badge ${llamado.tipo === 'academico' ? 'bg-info' : 'bg-danger'}">
+                                ${llamado.tipo === 'academico' ? '📚 Académico' : '⚠️ Disciplinario'}
+                            </span>
+                        </p>
+                        <p><strong>Nivel:</strong> <span class="badge bg-secondary">${llamado.nivel || 1}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Estudiante:</strong> ${llamado.estudiante.nombre}</p>
+                        <p><strong>Documento:</strong> ${llamado.estudiante.documento}</p>
+                        <p><strong>Curso:</strong> ${llamado.curso}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="fw-bold">Motivo:</h6>
+                    <div class="p-3 bg-light rounded">
+                        ${llamado.motivo}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="fw-bold">Compromisos:</h6>
+                    <div class="p-3 bg-light rounded">
+                        ${compromisosHtml}
+                    </div>
+                </div>
+                
+                ${llamado.observaciones ? `
+                <div class="mb-3">
+                    <h6 class="fw-bold">Observaciones:</h6>
+                    <div class="p-3 bg-light rounded">
+                        ${llamado.observaciones}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="mb-3">
+                    <h6 class="fw-bold">Docente:</h6>
+                    <p>${llamado.docente?.nombre || 'No especificado'}</p>
+                </div>
+            </div>
+        `,
+            showCancelButton: true,
+            confirmButtonText: '📄 Generar PDF',
+            cancelButtonText: 'Cerrar',
+            confirmButtonColor: '#dc3545'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (typeof GeneradorPDF !== 'undefined') {
+                    GeneradorPDF.generarPDFLlamado(llamado.id);
+                }
+            }
+        });
     }
 
     // Auto-inicializar cuando el DOM esté listo

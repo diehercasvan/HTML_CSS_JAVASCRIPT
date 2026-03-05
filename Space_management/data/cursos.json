@@ -2,33 +2,29 @@
     "cursos": [
         {
             "id": "101",
-            "nombre": "Matemáticas 10°",
+            "nombre": "Tecnólogo en Análisis y Desarrollo de Software",
             "grado": "10",
-            "jornada": "Mañana"
-        },
-        {
-            "id": "102",
-            "nombre": "Español 10°",
-            "grado": "10",
-            "jornada": "Mañana"
-        },
-        {
-            "id": "103",
-            "nombre": "Ciencias 10°",
-            "grado": "10",
-            "jornada": "Mañana"
-        },
-        {
-            "id": "201",
-            "nombre": "Inglés 11°",
-            "grado": "11",
-            "jornada": "Tarde"
-        },
-        {
-            "id": "202",
-            "nombre": "Sociales 11°",
-            "grado": "11",
-            "jornada": "Tarde"
+            "jornada": "Mañana",
+            "competencias": [
+                {
+                    "id": "COMP_101_1",
+                    "nombre": "Construir software que cumpla con los requisitos",
+                    "resultados": [
+                        "Aplicar estructuras de control en la solución de problemas",
+                        "Implementar algoritmos de búsqueda y ordenamiento",
+                        "Desarrollar interfaces de usuario funcionales"
+                    ]
+                },
+                {
+                    "id": "COMP_101_2",
+                    "nombre": "Aplicar buenas prácticas de programación",
+                    "resultados": [
+                        "Documentar el código fuente",
+                        "Aplicar principios SOLID",
+                        "Realizar pruebas unitarias"
+                    ]
+                }
+            ]
         }
     ]
 }

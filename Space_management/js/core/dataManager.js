@@ -3,9 +3,9 @@
 
 console.log('🔄 Iniciando carga de dataManager.js...');
 
-const DataManager = (function() {
+const DataManager = (function () {
     console.log('📦 Ejecutando IIFE de DataManager...');
-    
+
     // ===== ESTADO DE LA APLICACIÓN =====
     let state = {
         cursos: [],
@@ -18,29 +18,34 @@ const DataManager = (function() {
     };
 
     // ===== FUNCIONES DE CURSOS =====
-    
-    async function cargarCursos() {
+
+  async function cargarCursos() {
+    try {
         console.log('📚 DataManager.cargarCursos() llamado');
-        try {
-            const response = await fetch('data/cursos.json');
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            state.cursos = data.cursos || [];
-            console.log(`✅ Cursos cargados: ${state.cursos.length}`);
-            return state.cursos;
-        } catch (error) {
-            console.error('❌ Error cargando cursos:', error);
-            state.cursos = [];
-            return [];
+        const response = await fetch('data/cursos.json');
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+        
+        const data = await response.json();
+        state.cursos = data.cursos || [];
+        console.log(`✅ ${state.cursos.length} cursos cargados`);
+        return state.cursos;
+        
+    } catch (error) {
+        console.error('❌ Error cargando cursos:', error);
+        state.cursos = [];
+        return [];
     }
+}
 
-    function getCursos() {
-        return state.cursos || [];
-    }
-
+   function getCursos() {
+    console.log('📚 DataManager.getCursos() llamado, retornando:', state.cursos?.length || 0, 'cursos');
+    return state.cursos || [];
+}
     // ===== FUNCIONES DE RESPONSABLES =====
-    
+
     async function cargarResponsables() {
         console.log('👤 DataManager.cargarResponsables() llamado');
         try {
@@ -60,27 +65,30 @@ const DataManager = (function() {
         return state.responsables || [];
     }
 
-    function getResponsablesPorCurso(numeroCurso) {
-        if (!state.responsables) return [];
-        return state.responsables.filter(r => r.numeroCurso === numeroCurso);
-    }
+   function getResponsablesPorCurso(numeroCurso) {
+    if (!state.responsables) return [];
+    console.log(`🔍 Buscando responsables para curso ${numeroCurso}`);
+    const filtrados = state.responsables.filter(r => r.numeroCurso === numeroCurso);
+    console.log(`✅ Encontrados: ${filtrados.length}`);
+    return filtrados;
+}
 
     function guardarResponsable(data) {
         try {
             if (!state.responsables) state.responsables = [];
-            
+
             const nuevoResponsable = {
                 ...data,
                 numeroCurso: data.numeroCurso,
                 id: Date.now(),
                 fechaRegistro: new Date().toISOString()
             };
-            
+
             state.responsables.push(nuevoResponsable);
             guardarEnLocalStorage();
             console.log('✅ Responsable guardado:', nuevoResponsable.id);
             return nuevoResponsable;
-            
+
         } catch (error) {
             console.error('❌ Error guardando responsable:', error);
             return null;
@@ -90,10 +98,10 @@ const DataManager = (function() {
     function actualizarResponsable(index, data) {
         try {
             if (!state.responsables) state.responsables = [];
-            
+
             if (index >= 0 && index < state.responsables.length) {
-                state.responsables[index] = { 
-                    ...state.responsables[index], 
+                state.responsables[index] = {
+                    ...state.responsables[index],
                     ...data,
                     numeroCurso: data.numeroCurso || state.responsables[index].numeroCurso,
                     fechaModificacion: new Date().toISOString()
@@ -103,7 +111,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando responsable:', error);
             return false;
@@ -113,21 +121,21 @@ const DataManager = (function() {
     function eliminarResponsable(id) {
         try {
             if (!state.responsables) state.responsables = [];
-            
+
             const idNum = typeof id === 'string' ? parseInt(id) : id;
             const longitudInicial = state.responsables.length;
-            
+
             state.responsables = state.responsables.filter(r => r.id !== idNum);
-            
+
             if (state.responsables.length < longitudInicial) {
                 guardarEnLocalStorage();
                 console.log('✅ Responsable eliminado:', id);
                 return true;
             }
-            
+
             console.warn('⚠️ Responsable no encontrado:', id);
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error eliminando responsable:', error);
             return false;
@@ -135,22 +143,22 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE PUESTOS DOCENTES =====
-    
+
     function agregarPuestoDocente(puesto) {
         try {
             if (!state.puestosDocentes) state.puestosDocentes = [];
-            
+
             const nuevoPuesto = {
                 ...puesto,
                 id: Date.now(),
                 fechaCreacion: new Date().toISOString()
             };
-            
+
             state.puestosDocentes.push(nuevoPuesto);
             guardarEnLocalStorage();
             console.log('✅ Puesto docente agregado:', nuevoPuesto.id);
             return state.puestosDocentes;
-            
+
         } catch (error) {
             console.error('❌ Error agregando puesto docente:', error);
             return state.puestosDocentes || [];
@@ -164,7 +172,7 @@ const DataManager = (function() {
     function eliminarPuestoDocente(index) {
         try {
             if (!state.puestosDocentes) state.puestosDocentes = [];
-            
+
             if (index >= 0 && index < state.puestosDocentes.length) {
                 state.puestosDocentes.splice(index, 1);
                 guardarEnLocalStorage();
@@ -172,7 +180,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error eliminando puesto docente:', error);
             return false;
@@ -180,22 +188,22 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE EQUIPOS =====
-    
+
     function agregarEquipo(equipo) {
         try {
             if (!state.equipos) state.equipos = [];
-            
+
             const nuevoEquipo = {
                 ...equipo,
                 id: Date.now(),
                 fechaCreacion: new Date().toISOString()
             };
-            
+
             state.equipos.push(nuevoEquipo);
             guardarEnLocalStorage();
             console.log('✅ Equipo agregado:', nuevoEquipo);
             return state.equipos;
-            
+
         } catch (error) {
             console.error('❌ Error agregando equipo:', error);
             return state.equipos || [];
@@ -209,10 +217,10 @@ const DataManager = (function() {
     function actualizarEquipo(index, equipo) {
         try {
             if (!state.equipos) state.equipos = [];
-            
+
             if (index >= 0 && index < state.equipos.length) {
-                state.equipos[index] = { 
-                    ...state.equipos[index], 
+                state.equipos[index] = {
+                    ...state.equipos[index],
                     ...equipo,
                     fechaModificacion: new Date().toISOString()
                 };
@@ -221,7 +229,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando equipo:', error);
             return false;
@@ -231,7 +239,7 @@ const DataManager = (function() {
     function eliminarEquipo(index) {
         try {
             if (!state.equipos) state.equipos = [];
-            
+
             if (index >= 0 && index < state.equipos.length) {
                 state.equipos.splice(index, 1);
                 guardarEnLocalStorage();
@@ -239,7 +247,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error eliminando equipo:', error);
             return false;
@@ -247,7 +255,7 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE ESTUDIANTES =====
-    
+
     async function cargarEstudiantes() {
         console.log('👨‍🎓 DataManager.cargarEstudiantes() llamado');
         try {
@@ -277,24 +285,24 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE MESAS =====
-    
+
     function configurarMesas(filas, columnas, pcsPorMesa, curso) {
         try {
             // Limpiar mesas existentes del mismo curso
             if (state.mesas) {
                 state.mesas = state.mesas.filter(m => m.curso !== curso);
             }
-            
+
             const mesas = [];
-            
+
             for (let i = 0; i < filas; i++) {
                 for (let j = 0; j < columnas; j++) {
                     const pcs = [];
-                    
+
                     for (let k = 0; k < pcsPorMesa; k++) {
                         pcs.push({
                             id: `pc_${i}_${j}_${k}_${Date.now()}`,
-                            serial: `PC${String(i+1).padStart(2,'0')}${String(j+1).padStart(2,'0')}${String(k+1).padStart(2,'0')}`,
+                            serial: `PC${String(i + 1).padStart(2, '0')}${String(j + 1).padStart(2, '0')}${String(k + 1).padStart(2, '0')}`,
                             curso: curso,
                             estudiante: '',
                             documento: '',
@@ -308,7 +316,7 @@ const DataManager = (function() {
                             observaciones: ''
                         });
                     }
-                    
+
                     const stats = {
                         total: pcs.length,
                         excelente: 0,
@@ -317,7 +325,7 @@ const DataManager = (function() {
                         danado: 0,
                         asignados: 0
                     };
-                    
+
                     mesas.push({
                         id: `mesa_${i}_${j}_${Date.now()}`,
                         fila: i,
@@ -328,12 +336,12 @@ const DataManager = (function() {
                     });
                 }
             }
-            
+
             state.mesas = [...(state.mesas || []), ...mesas];
             guardarEnLocalStorage();
             console.log(`✅ ${mesas.length} mesas creadas para curso ${curso}`);
             return state.mesas;
-            
+
         } catch (error) {
             console.error('❌ Error configurando mesas:', error);
             return state.mesas || [];
@@ -356,10 +364,10 @@ const DataManager = (function() {
 
     function getPCsAsignados(curso) {
         if (!state.mesas) return [];
-        
+
         const mesas = state.mesas.filter(m => m.curso === curso);
         const pcsAsignados = [];
-        
+
         mesas.forEach(mesa => {
             mesa.pcs.forEach(pc => {
                 if (pc.documento) {
@@ -367,18 +375,18 @@ const DataManager = (function() {
                 }
             });
         });
-        
+
         return pcsAsignados;
     }
 
     // ===== FUNCIONES AUXILIARES PARA MESAS (ORDEN CRÍTICO) =====
-    
+
     /**
      * Actualiza las estadísticas de una mesa
      */
     function actualizarEstadisticasMesa(mesa) {
         if (!mesa || !mesa.pcs) return;
-        
+
         mesa.stats = {
             total: mesa.pcs.length,
             excelente: mesa.pcs.filter(pc => pc.estado === 'Excelente').length,
@@ -387,8 +395,8 @@ const DataManager = (function() {
             danado: mesa.pcs.filter(pc => pc.estado === 'Dañado').length,
             asignados: mesa.pcs.filter(pc => pc.estudiante).length
         };
-        
-        console.log(`📊 Estadísticas actualizadas para mesa ${mesa.fila+1}-${mesa.columna+1}:`, mesa.stats);
+
+        console.log(`📊 Estadísticas actualizadas para mesa ${mesa.fila + 1}-${mesa.columna + 1}:`, mesa.stats);
     }
 
     /**
@@ -396,24 +404,24 @@ const DataManager = (function() {
      */
     function verificarEstudianteEnPCs(documento, curso) {
         console.log(`🔍 Verificando estudiante ${documento} en curso ${curso}...`);
-        
+
         if (!state.mesas) {
             console.log('📭 No hay mesas en el estado');
             return false;
         }
-        
+
         const mesas = state.mesas.filter(m => m.curso === curso);
         console.log(`📊 ${mesas.length} mesas encontradas para curso ${curso}`);
-        
+
         for (const mesa of mesas) {
             for (const pc of mesa.pcs) {
                 if (pc.documento === documento) {
-                    console.log(`✅ Estudiante encontrado en mesa ${mesa.fila+1}-${mesa.columna+1}, PC ${pc.serial}`);
+                    console.log(`✅ Estudiante encontrado en mesa ${mesa.fila + 1}-${mesa.columna + 1}, PC ${pc.serial}`);
                     return true;
                 }
             }
         }
-        
+
         console.log(`✅ Estudiante ${documento} NO tiene PC asignado en este curso`);
         return false;
     }
@@ -423,53 +431,53 @@ const DataManager = (function() {
      */
     function actualizarPcEstudiante(mesaId, pcIndex, data) {
         console.log('🔄 actualizarPcEstudiante llamado:', { mesaId, pcIndex, data });
-        
+
         try {
             if (!state.mesas) {
                 console.error('❌ No hay mesas en el estado');
                 return false;
             }
-            
+
             const mesa = state.mesas.find(m => m.id === mesaId);
             if (!mesa) {
                 console.error('❌ Mesa no encontrada:', mesaId);
                 return false;
             }
-            
+
             if (!mesa.pcs || !mesa.pcs[pcIndex]) {
                 console.error('❌ PC no encontrado en la mesa');
                 return false;
             }
-            
+
             const pcActual = mesa.pcs[pcIndex];
-            
+
             // Verificar si el estudiante ya está asignado a otro PC
             if (data.documento && data.documento !== pcActual.documento) {
                 console.log(`🔍 Verificando si estudiante ${data.documento} ya tiene PC...`);
                 const documentoExistente = verificarEstudianteEnPCs(data.documento, mesa.curso);
-                
+
                 if (documentoExistente) {
                     console.warn('⚠️ Estudiante ya tiene un PC asignado');
                     return false;
                 }
             }
-            
+
             // Si el estudiante actual tiene documento y el nuevo no, es una desasignación
             if (pcActual.documento && !data.documento) {
                 console.log(`🔄 Desasignando estudiante ${pcActual.documento} del PC`);
             }
-            
+
             // Actualizar el PC
             mesa.pcs[pcIndex] = { ...pcActual, ...data };
             console.log(`✅ PC actualizado:`, mesa.pcs[pcIndex]);
-            
+
             // Actualizar estadísticas de la mesa
             actualizarEstadisticasMesa(mesa);
-            
+
             guardarEnLocalStorage();
             console.log('✅ Cambios guardados en localStorage');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando PC:', error);
             return false;
@@ -477,16 +485,16 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE SILLAS =====
-    
+
     function configurarSillas(numeroSillas, curso) {
         try {
             if (!numeroSillas) return [];
-            
+
             // Limpiar sillas existentes del mismo curso
             if (state.sillas) {
                 state.sillas = state.sillas.filter(s => s.curso !== curso);
             }
-            
+
             const nuevasSillas = Array(parseInt(numeroSillas)).fill().map((_, index) => ({
                 id: `silla_${Date.now()}_${index}`,
                 numero: index + 1,
@@ -498,12 +506,12 @@ const DataManager = (function() {
                 estado: 'Bueno',
                 observaciones: ''
             }));
-            
+
             state.sillas = [...(state.sillas || []), ...nuevasSillas];
             guardarEnLocalStorage();
             console.log(`✅ ${nuevasSillas.length} sillas creadas para el curso ${curso}`);
             return state.sillas;
-            
+
         } catch (error) {
             console.error('❌ Error configurando sillas:', error);
             return state.sillas || [];
@@ -526,39 +534,39 @@ const DataManager = (function() {
 
     function getEstudiantesSinSilla(estudiantes, curso) {
         if (!state.sillas) return estudiantes;
-        
+
         const sillasOcupadas = state.sillas
             .filter(s => s.curso === curso && s.documento)
             .map(s => s.documento);
-        
+
         return estudiantes.filter(e => !sillasOcupadas.includes(e.documento));
     }
 
     function asignarSilla(sillaIndex, documento, nombreEstudiante) {
         try {
             if (!state.sillas || !state.sillas[sillaIndex]) return false;
-            
+
             const silla = state.sillas[sillaIndex];
-            
+
             const sillaExistente = state.sillas.find(
-                s => s.curso === silla.curso && 
-                s.documento === documento && 
-                s.documento
+                s => s.curso === silla.curso &&
+                    s.documento === documento &&
+                    s.documento
             );
-            
+
             if (sillaExistente) {
                 console.warn('⚠️ El estudiante ya tiene una silla asignada en este curso');
                 return false;
             }
-            
+
             state.sillas[sillaIndex].documento = documento;
             state.sillas[sillaIndex].nombreEstudiante = nombreEstudiante;
             state.sillas[sillaIndex].estudiante = nombreEstudiante;
-            
+
             guardarEnLocalStorage();
             console.log('✅ Estudiante asignado a silla');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error asignando silla:', error);
             return false;
@@ -568,15 +576,15 @@ const DataManager = (function() {
     function desasignarSilla(sillaIndex) {
         try {
             if (!state.sillas || !state.sillas[sillaIndex]) return false;
-            
+
             state.sillas[sillaIndex].documento = '';
             state.sillas[sillaIndex].nombreEstudiante = '';
             state.sillas[sillaIndex].estudiante = '';
-            
+
             guardarEnLocalStorage();
             console.log('✅ Silla desasignada');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error desasignando silla:', error);
             return false;
@@ -586,7 +594,7 @@ const DataManager = (function() {
     function actualizarSilla(index, data) {
         try {
             if (!state.sillas) state.sillas = [];
-            
+
             if (index >= 0 && index < state.sillas.length) {
                 state.sillas[index] = { ...state.sillas[index], ...data };
                 guardarEnLocalStorage();
@@ -594,7 +602,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando silla:', error);
             return false;
@@ -603,7 +611,7 @@ const DataManager = (function() {
 
     function getEstadisticasSillas(curso) {
         const sillas = getSillasPorCurso(curso);
-        
+
         return {
             total: sillas.length,
             ocupadas: sillas.filter(s => s.documento).length,
@@ -616,15 +624,15 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE ASISTENCIA =====
-    
+
     function guardarAsistencia(curso, fecha, registros) {
         try {
             if (!state.asistencia) state.asistencia = [];
-            
+
             const indexExistente = state.asistencia.findIndex(
                 a => a.curso === curso && a.fecha === fecha
             );
-            
+
             const nuevoRegistro = {
                 id: Date.now(),
                 curso: curso,
@@ -632,7 +640,7 @@ const DataManager = (function() {
                 registros: registros,
                 fechaRegistro: new Date().toISOString()
             };
-            
+
             if (indexExistente >= 0) {
                 state.asistencia[indexExistente] = nuevoRegistro;
                 console.log('✅ Asistencia actualizada');
@@ -640,10 +648,10 @@ const DataManager = (function() {
                 state.asistencia.push(nuevoRegistro);
                 console.log('✅ Asistencia guardada');
             }
-            
+
             guardarEnLocalStorage();
             return nuevoRegistro;
-            
+
         } catch (error) {
             console.error('❌ Error guardando asistencia:', error);
             return null;
@@ -660,23 +668,23 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE LIMPIEZA POR CURSO =====
-    
+
     function limpiarDatosPorCurso(curso) {
         try {
             console.log(`🔄 Limpiando datos del curso ${curso}...`);
-            
+
             if (state.mesas) {
                 state.mesas = state.mesas.filter(m => m.curso !== curso);
             }
-            
+
             if (state.sillas) {
                 state.sillas = state.sillas.filter(s => s.curso !== curso);
             }
-            
+
             guardarEnLocalStorage();
             console.log(`✅ Datos del curso ${curso} limpiados`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error limpiando datos por curso:', error);
             return false;
@@ -699,12 +707,12 @@ const DataManager = (function() {
             mesas: (state.mesas || []).some(m => m.curso && m.curso !== cursoActual),
             sillas: (state.sillas || []).some(s => s.curso && s.curso !== cursoActual)
         };
-        
+
         return otrosCursos.mesas || otrosCursos.sillas;
     }
 
     // ===== FUNCIONES DE LOCALSTORAGE =====
-    
+
     function guardarEnLocalStorage() {
         try {
             localStorage.setItem('gestionSalones', JSON.stringify(state));
@@ -717,14 +725,14 @@ const DataManager = (function() {
     async function cargarDeLocalStorage() {
         try {
             console.log('🔄 Cargando datos desde localStorage...');
-            
+
             await cargarCursos();
-            
+
             const saved = localStorage.getItem('gestionSalones');
-            
+
             if (saved) {
                 const parsed = JSON.parse(saved);
-                
+
                 state = {
                     ...state,
                     responsables: parsed.responsables || [],
@@ -734,12 +742,12 @@ const DataManager = (function() {
                     sillas: parsed.sillas || [],
                     asistencia: parsed.asistencia || []
                 };
-                
+
                 console.log('✅ Datos cargados desde localStorage');
             } else {
                 console.log('ℹ️ No hay datos guardados en localStorage');
             }
-            
+
         } catch (error) {
             console.error('❌ Error cargando de localStorage:', error);
         }
@@ -751,7 +759,7 @@ const DataManager = (function() {
     }
 
     // ===== FUNCIONES DE EXPORTACIÓN/IMPORTACIÓN =====
-    
+
     function exportarDatos() {
         try {
             const datosCompletos = {
@@ -764,10 +772,10 @@ const DataManager = (function() {
                 sillas: state.sillas || [],
                 asistencia: state.asistencia || []
             };
-            
+
             console.log('✅ Datos exportados');
             return datosCompletos;
-            
+
         } catch (error) {
             console.error('❌ Error exportando datos:', error);
             return null;
@@ -779,7 +787,7 @@ const DataManager = (function() {
             if (!datos || typeof datos !== 'object') {
                 throw new Error('Datos inválidos');
             }
-            
+
             state = {
                 cursos: state.cursos,
                 responsables: datos.responsables || [],
@@ -789,11 +797,11 @@ const DataManager = (function() {
                 sillas: datos.sillas || [],
                 asistencia: datos.asistencia || []
             };
-            
+
             guardarEnLocalStorage();
             console.log('✅ Datos importados correctamente');
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error importando datos:', error);
             return false;
@@ -811,11 +819,11 @@ const DataManager = (function() {
                 sillas: [],
                 asistencia: []
             };
-            
+
             guardarEnLocalStorage();
             console.log('✅ Todos los datos han sido limpiados');
             return state;
-            
+
         } catch (error) {
             console.error('❌ Error limpiando datos:', error);
             return state;
@@ -849,7 +857,7 @@ const DataManager = (function() {
             }
 
             historial.push(snapshot);
-            
+
             if (historial.length > 50) {
                 historial = historial.slice(-50);
             }
@@ -857,7 +865,7 @@ const DataManager = (function() {
             localStorage.setItem('gestionSalonesHistorial', JSON.stringify(historial));
             console.log(`✅ Snapshot guardado: ${snapshot.fecha} ${snapshot.hora}`);
             return snapshot;
-            
+
         } catch (error) {
             console.error('❌ Error guardando snapshot:', error);
             return null;
@@ -878,7 +886,7 @@ const DataManager = (function() {
         try {
             const historial = getHistorial();
             const snapshot = historial.find(h => h.id === id);
-            
+
             if (snapshot) {
                 state = {
                     cursos: state.cursos,
@@ -894,7 +902,7 @@ const DataManager = (function() {
                 return true;
             }
             return false;
-            
+
         } catch (error) {
             console.error('❌ Error cargando snapshot:', error);
             return false;
@@ -918,19 +926,25 @@ const DataManager = (function() {
                 }
             };
             return datosCompletos;
-            
+
         } catch (error) {
             console.error('❌ Error exportando historial:', error);
             return null;
         }
     }
-
+    /**
+     * Obtiene las competencias de un curso
+     */
+    function getCompetenciasPorCurso(cursoId) {
+        const curso = state.cursos?.find(c => c.id === cursoId);
+        return curso?.competencias || [];
+    }
     // ===== API PÚBLICA =====
     const api = {
         // Cursos
         cargarCursos,
         getCursos,
-        
+
         // Responsables
         cargarResponsables,
         getResponsables,
@@ -938,22 +952,22 @@ const DataManager = (function() {
         guardarResponsable,
         actualizarResponsable,
         eliminarResponsable,
-        
+
         // Puestos Docentes
         agregarPuestoDocente,
         getPuestosDocentes,
         eliminarPuestoDocente,
-        
+
         // Equipos
         agregarEquipo,
         getEquipos,
         actualizarEquipo,
         eliminarEquipo,
-        
+
         // Estudiantes
         cargarEstudiantes,
         getEstudiantesPorCurso,
-        
+
         // Mesas
         configurarMesas,
         getMesas,
@@ -961,7 +975,7 @@ const DataManager = (function() {
         getMesa,
         getPCsAsignados,
         actualizarPcEstudiante,
-        
+
         // Sillas
         configurarSillas,
         getSillas,
@@ -972,32 +986,35 @@ const DataManager = (function() {
         desasignarSilla,
         actualizarSilla,
         getEstadisticasSillas,
-        
+
         // Asistencia
         guardarAsistencia,
         getAsistencia,
         getTodasAsistencias,
-        
+
         // Limpieza por curso
         limpiarDatosPorCurso,
         getDatosPorCurso,
         hayDatosDeOtroCurso,
-        
+
         // Exportación/Importación
         exportarDatos,
         importarDatos,
         limpiarTodosLosDatos,
-        
+
         // Historial
         guardarSnapshot,
         getHistorial,
         cargarSnapshot,
         exportarHistorialCompleto,
-        
+
         // Utilidades
         guardarEnLocalStorage,
         cargarDeLocalStorage,
-        getState
+        getState,
+
+        //Curso y competencias
+        getCompetenciasPorCurso
     };
 
     console.log('✅ DataManager: API creada con', Object.keys(api).length, 'funciones');

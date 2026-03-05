@@ -149,6 +149,12 @@
                     <i class="fas fa-exclamation-triangle"></i> Llamados
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="planes-tab" data-bs-toggle="tab" data-bs-target="#planes" type="button"
+                    role="tab">
+                    <i class="fas fa-clipboard-list"></i> Planes Mejoramiento
+                </button>
+            </li>
         </ul>
 
         <!-- Contenido de pestañas -->
@@ -186,8 +192,6 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Puestos (versión simplificada para prueba) -->
             <!-- Pestaña Puestos -->
             <div class="tab-pane fade" id="puestos" role="tabpanel">
                 <!-- Selector de curso para puestos docentes -->
@@ -301,9 +305,7 @@
                     </div>
                 </div>
             </div>
-
             <!-- Equipos (simplificado) -->
-            <!-- Pestaña TV/Proyectores -->
             <div class="tab-pane fade" id="equipos" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4><i class="fas fa-tv"></i> TV y Proyectores</h4>
@@ -334,8 +336,6 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Sillas (simplificado) -->
             <!-- Pestaña Sillas -->
             <div class="tab-pane fade" id="sillas" role="tabpanel">
                 <h4><i class="fas fa-chair"></i> Gestión de Sillas</h4>
@@ -406,7 +406,6 @@
                     <p class="text-muted">Seleccione un curso y cree las sillas para visualizarlas</p>
                 </div>
             </div>
-
             <!-- Pestaña Asistencia -->
             <div class="tab-pane fade" id="asistencia" role="tabpanel">
                 <h4><i class="fas fa-calendar-check"></i> Registro de Asistencia</h4>
@@ -571,6 +570,43 @@
                     <p class="text-muted">Seleccione un estudiante para ver sus llamados</p>
                 </div>
             </div>
+            <!-- Pestaña Planes de Mejoramiento -->
+<div class="tab-pane fade" id="planes" role="tabpanel">
+    <h4><i class="fas fa-clipboard-list"></i> Planes de Mejoramiento Académico</h4>
+    
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Gestione planes de mejoramiento según Acuerdo 009 de 2024.
+    </div>
+
+    <!-- Selector de curso y estudiante -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label class="form-label">Curso <span class="text-danger">*</span></label>
+            <select class="form-select" id="cursoPlanes" onchange="PlanesUI.cargarEstudiantes()">
+                <option value="">Seleccione un curso</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Estudiante <span class="text-danger">*</span></label>
+            <select class="form-select" id="estudiantePlanes">
+                <option value="">Primero seleccione un curso</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary me-2" onclick="PlanesUI.verPlanes()">
+                <i class="fas fa-search"></i> Ver Planes
+            </button>
+            <button class="btn btn-success" onclick="PlanesUI.mostrarFormularioNuevo()">
+                <i class="fas fa-plus"></i> Nuevo Plan
+            </button>
+        </div>
+    </div>
+
+    <!-- Tabla de planes -->
+    <div id="contenedorPlanes">
+        <p class="text-muted">Seleccione un estudiante para ver sus planes de mejoramiento</p>
+    </div>
+</div>
 
         </div>
     </div>
@@ -1204,11 +1240,18 @@
     <script src="js/modules/llamados/llamadosUI.js"></script>
     <script src="js/modules/llamados/generadorPDF.js"></script>
 
-    <!-- 7. REPORTES -->
+    <!-- 7. MÓDULOS DE PLANES DE MEJORAMIENTO (NUEVO) -->
+    <script src="js/modules/planes/planesData.js"></script>
+    <script src="js/modules/planes/logoUtils.js"></script>
+    <script src="js/modules/planes/planesUI.js"></script>
+    <script src="js/modules/planes/generadorPlanPDF.js"></script>
+
+    <!-- 8. REPORTES -->
     <script src="js/reportes.js"></script>
 
-    <!-- 8. APP (SIEMPRE AL FINAL) -->
+    <!-- 9. APP (SIEMPRE AL FINAL) -->
     <script src="js/app.js"></script>
+
 </body>
 
 </html>
