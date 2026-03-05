@@ -533,90 +533,122 @@ const PlanesUI = (function () {
     }
   }
 
-  function verPlanes() {
+  /**
+   * Ver planes del estudiante (VERSIÓN MEJORADA)
+   */
+ function verPlanes() {
     console.log('📋 Ver planes del estudiante...');
-
+    
     const estudianteSelect = document.getElementById('estudiantePlanes');
     const contenedor = document.getElementById('contenedorPlanes');
-
+    
     if (!estudianteSelect || !estudianteSelect.value) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Seleccione un estudiante',
-        text: 'Debe seleccionar un estudiante para ver sus planes'
-      });
-      return;
+        Swal.fire({
+            icon: 'warning',
+            title: 'Seleccione un estudiante',
+            text: 'Debe seleccionar un estudiante para ver sus planes'
+        });
+        return;
     }
-
+    
     const documento = estudianteSelect.value;
     const planes = PlanesData.getPlanesPorEstudiante(documento);
-
+    
     if (planes.length === 0) {
-      contenedor.innerHTML = '<p class="text-muted">No hay planes de mejoramiento para este estudiante</p>';
-      return;
+        contenedor.innerHTML = '<p class="text-muted">No hay planes de mejoramiento para este estudiante</p>';
+        return;
     }
-
+    
     let html = `
-            <div class="table-responsive">
-                <table class="table table-striped table-hover table-bordered">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Plazo</th>
-                            <th>Competencias</th>
-                            <th>Actividades</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Plazo</th>
+                        <th>Días</th>
+                        <th>Comp.</th>
+                        <th>Actividades</th>
+                        <th>Progreso</th>
+                        <th>Estado</th>
+                        <th>Instructor</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
     planes.forEach(p => {
-      const totalActividades = p.competencias?.reduce((acc, c) =>
-        acc + (c.actividades?.length || 0), 0) || 0;
-
-      const estadoMap = {
-        'en_curso': { clase: 'bg-warning', texto: 'En Curso' },
-        'aprobado': { clase: 'bg-success', texto: 'Aprobado' },
-        'no_aprobado': { clase: 'bg-danger', texto: 'No Aprobado' }
-      };
-
-      const estado = estadoMap[p.estado] || { clase: 'bg-secondary', texto: p.estado || 'N/A' };
-
-      html += `
-                <tr>
-                    <td>${p.fechaSuscripcion || 'N/A'}</td>
-                    <td>${p.plazoEjecucion || 'N/A'}</td>
-                    <td>${p.competencias?.length || 0}</td>
-                    <td>${totalActividades}</td>
-                    <td><span class="badge ${estado.clase}">${estado.texto}</span></td>
-                    <td>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-primary" onclick="PlanesUI.verDetalle('${p.id}')" title="Ver detalle">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-warning" onclick="PlanesUI.editarPlan('${p.id}')" title="Editar plan">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarPlan('${p.id}')" title="Eliminar plan">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="btn btn-sm btn-success" onclick="PlanesUI.cambiarEstado('${p.id}')" title="Cambiar estado">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <button class="btn btn-sm btn-info" onclick="GeneradorPlanPDF.generarPDF('${p.id}')" title="Generar PDF">
-                            <i class="fas fa-file-pdf"></i>
-                            </button>
+        const totalActividades = p.competencias?.reduce((acc, c) => 
+            acc + (c.actividades?.length || 0), 0) || 0;
+        
+        const actividadesCompletadas = p.competencias?.reduce((acc, c) => 
+            acc + (c.actividades?.filter(a => a.estado === 'completada').length || 0), 0) || 0;
+        
+        const progreso = totalActividades > 0 ? Math.round((actividadesCompletadas / totalActividades) * 100) : 0;
+        
+        // Calcular días restantes
+        const hoy = new Date();
+        const plazo = new Date(p.plazoEjecucion);
+        const diffTime = plazo - hoy;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        const diasRestantes = diffDays > 0 ? 
+            `<span class="badge ${diffDays <= 5 ? 'bg-danger' : diffDays <= 10 ? 'bg-warning' : 'bg-success'}">${diffDays}d</span>` : 
+            '<span class="badge bg-danger">Vencido</span>';
+        
+        const estadoMap = {
+            'en_curso': { clase: 'bg-warning', texto: 'En Curso' },
+            'aprobado': { clase: 'bg-success', texto: 'Aprobado' },
+            'no_aprobado': { clase: 'bg-danger', texto: 'No Aprobado' }
+        };
+        
+        const estado = estadoMap[p.estado] || { clase: 'bg-secondary', texto: p.estado || 'N/A' };
+        
+        html += `
+            <tr>
+                <td>${p.fechaSuscripcion || 'N/A'}</td>
+                <td>${p.plazoEjecucion || 'N/A'}</td>
+                <td>${diasRestantes}</td>
+                <td>${p.competencias?.length || 0}</td>
+                <td>${totalActividades}</td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" role="progressbar" 
+                             style="width: ${progreso}%;" 
+                             aria-valuenow="${progreso}" aria-valuemin="0" aria-valuemax="100">
+                            ${progreso}%
                         </div>
-                    </td>
-                </tr>
-            `;
+                    </div>
+                </td>
+                <td><span class="badge ${estado.clase}">${estado.texto}</span></td>
+                <td>${p.instructores?.map(i => i.nombre.split(' ')[0]).join(', ') || 'N/A'}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-primary" onclick="PlanesUI.verDetalle('${p.id}')" title="Ver detalle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="GeneradorPlanPDF.generarPDF('${p.id}')" title="Generar PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="PlanesUI.editarPlan('${p.id}')" title="Editar plan">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarPlan('${p.id}')" title="Eliminar plan">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="PlanesUI.cambiarEstado('${p.id}')" title="Cambiar estado">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
     });
-
+    
     html += '</tbody></table></div>';
     contenedor.innerHTML = html;
-  }
+}
 
   // ========== FUNCIONES DE ACCIONES ==========
 
@@ -722,7 +754,11 @@ const PlanesUI = (function () {
     });
   }
 
-  function editarPlan(id) {
+
+  /**
+ * Editar plan existente
+ */
+  async function editarPlan(id) {
     console.log('✏️ Editando plan:', id);
 
     const plan = PlanesData.getPlanPorId(id);
@@ -731,85 +767,251 @@ const PlanesUI = (function () {
       return;
     }
 
-    Swal.fire({
-      icon: 'info',
-      title: 'Editar plan',
-      text: 'Funcionalidad en desarrollo - Próximamente podrá editar planes existentes',
-      confirmButtonText: 'Entendido'
+    const cursoId = plan.curso.id;
+    const cursoNombre = plan.curso.nombre;
+
+    // Obtener competencias del curso
+    const competencias = await DataManager.getCompetenciasPorCurso ?
+      await DataManager.getCompetenciasPorCurso(cursoId) : [];
+
+    // Obtener instructores actualizados
+    let instructores = DataManager.getResponsablesPorCurso ?
+      DataManager.getResponsablesPorCurso(cursoId) : [];
+
+    if (instructores.length === 0) {
+      const todosLosResponsables = await DataManager.cargarResponsables() || [];
+      instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
+    }
+
+    // Generar opciones de instructores con los seleccionados actualmente
+    const opcionesInstructores = instructores.length > 0 ?
+      instructores.map(i => {
+        const selected = plan.instructores?.some(ins => ins.documento === i.documento) ? 'selected' : '';
+        return `<option value="${i.documento}" ${selected}>${i.nombre} - ${i.materia || 'Sin materia'}</option>`;
+      }).join('') :
+      '<option value="" disabled>No hay instructores para este curso</option>';
+
+    // Generar HTML para competencias existentes
+    let competenciasHtml = '';
+    window.competenciasDelCurso = competencias;
+
+    const { value: formValues, isConfirmed } = await Swal.fire({
+      title: '✏️ EDITAR PLAN DE MEJORAMIENTO',
+      width: '1000px',
+      html: `
+            <form id="formPlanMejoramiento" class="text-start" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
+                <div style="background: #003366; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                    <h5 style="margin:0;">SERVICIO NACIONAL DE APRENDIZAJE - SENA</h5>
+                    <h6 style="margin:5px 0 0 0;">CENTRO DE ELECTRICIDAD, ELECTRÓNICA Y TELECOMUNICACIONES - CEET</h6>
+                    <p style="margin:10px 0 0 0; font-size: 12px;">Acuerdo 009 de 2024 - Artículo 46</p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">PROGRAMA DE FORMACIÓN:</label>
+                        <input type="text" class="form-control" value="${cursoNombre}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">GRUPO No.:</label>
+                        <input type="text" class="form-control" value="${cursoId}" readonly>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">APRENDIZ:</label>
+                        <input type="text" class="form-control" value="${plan.aprendiz.nombre}" readonly>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">TIPO DOC.:</label>
+                        <select class="form-select" id="planTipoDocumento">
+                            <option value="CC" ${plan.aprendiz.tipoDocumento === 'CC' ? 'selected' : ''}>CC</option>
+                            <option value="TI" ${plan.aprendiz.tipoDocumento === 'TI' ? 'selected' : ''}>TI</option>
+                            <option value="CE" ${plan.aprendiz.tipoDocumento === 'CE' ? 'selected' : ''}>CE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">DOCUMENTO:</label>
+                        <input type="text" class="form-control" value="${plan.aprendiz.documento}" readonly>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">TELÉFONO / CELULAR:</label>
+                        <input type="text" class="form-control" id="planTelefono" value="${plan.aprendiz.telefono || ''}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">CORREO ELECTRÓNICO:</label>
+                        <input type="email" class="form-control" id="planCorreo" value="${plan.aprendiz.correo || ''}">
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">INSTRUCTOR(ES):</label>
+                        <select class="form-select" id="planInstructores" multiple size="3">
+                            ${opcionesInstructores}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">FECHA SUSCRIPCIÓN:</label>
+                        <input type="date" class="form-control" id="planFechaSuscripcion" value="${plan.fechaSuscripcion}" readonly>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">PLAZO (20 días):</label>
+                        <input type="date" class="form-control" id="planPlazo" value="${plan.plazoEjecucion}" readonly>
+                    </div>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">1. COMPETENCIAS, RESULTADOS Y ACTIVIDADES</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="competenciasContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="PlanesUI.agregarCompetenciaSelector()">
+                            <i class="fas fa-plus"></i> Agregar Competencia
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">3. RECURSOS Y ESTRATEGIAS DE APOYO</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="recursosContainer">
+                            ${plan.recursos?.map((r, idx) => `
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" value="${r}" id="recurso_${idx}">
+                                    <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            `).join('') || '<div class="input-group mb-2"><input type="text" class="form-control" placeholder="Recurso 1" id="recurso_0"><button class="btn btn-outline-success" type="button" onclick="PlanesUI.agregarRecurso()"><i class="fas fa-plus"></i></button></div>'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">OBSERVACIONES GENERALES:</label>
+                    <textarea class="form-control" id="planObservaciones" rows="2">${plan.observaciones || ''}</textarea>
+                </div>
+            </form>
+        `,
+      showCancelButton: true,
+      confirmButtonText: '✅ Actualizar Plan',
+      cancelButtonText: '❌ Cancelar',
+      confirmButtonColor: '#28a745',
+      didOpen: () => {
+        window.competenciasDelCurso = competencias;
+        // Cargar competencias existentes
+        setTimeout(() => {
+          plan.competencias.forEach(comp => {
+            agregarCompetenciaSelector();
+            // Aquí habría que seleccionar la competencia y sus resultados
+          });
+        }, 100);
+      },
+      preConfirm: () => {
+        return validarYGuardarPlan(plan.aprendiz, cursoId, cursoNombre);
+      }
     });
+
+    if (isConfirmed && formValues) {
+      // Actualizar el plan existente
+      const actualizado = PlanesData.actualizarPlan(id, formValues);
+
+      if (actualizado) {
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Plan actualizado',
+          text: 'El plan de mejoramiento ha sido actualizado exitosamente',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        verPlanes();
+      }
+    }
   }
 
+  /**
+  * Eliminar plan con confirmación y eliminación real
+  */
   function eliminarPlan(id) {
     console.log('🗑️ Eliminando plan:', id);
-    
+
     const plan = PlanesData.getPlanPorId(id);
     if (!plan) {
-        Swal.fire('Error', 'Plan no encontrado', 'error');
-        return;
+      Swal.fire('Error', 'Plan no encontrado', 'error');
+      return;
     }
-    
+
     Swal.fire({
-        title: '¿Eliminar plan?',
-        html: `
+      title: '¿Eliminar plan?',
+      html: `
             <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
             <p><strong>Fecha:</strong> ${plan.fechaSuscripcion}</p>
             <p class="text-danger">Esta acción no se puede deshacer</p>
         `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
-        if (result.isConfirmed) {
-            // Obtener todos los planes
-            const todosPlanes = PlanesData.getPlanesPorEstudiante(plan.aprendiz.documento);
-            
-            // Filtrar para eliminar el plan actual
-            const nuevosPlanes = todosPlanes.filter(p => p.id != id);
-            
-            // Actualizar localStorage (esto requiere modificar PlanesData)
-            // Por ahora simulamos la eliminación
-            Swal.fire({
-                icon: 'success',
-                title: 'Eliminado',
-                text: 'El plan ha sido eliminado',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            // Recargar la tabla
-            setTimeout(() => {
-                verPlanes();
-            }, 1500);
+      if (result.isConfirmed) {
+        const eliminado = PlanesData.eliminarPlan(id);
+
+        if (eliminado) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'El plan ha sido eliminado',
+            timer: 1500,
+            showConfirmButton: false
+          });
+
+          // Recargar la tabla
+          setTimeout(() => {
+            verPlanes();
+          }, 1500);
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo eliminar el plan'
+          });
         }
+      }
     });
   }
 
   /**
  * Cambiar estado del plan con persistencia
  */
-function cambiarEstado(id) {
+  function cambiarEstado(id) {
     console.log('🔄 Cambiando estado del plan:', id);
-    
+
     const plan = PlanesData.getPlanPorId(id);
     if (!plan) {
-        Swal.fire('Error', 'Plan no encontrado', 'error');
-        return;
+      Swal.fire('Error', 'Plan no encontrado', 'error');
+      return;
     }
-    
+
     const estados = [
-        { value: 'en_curso', label: '🟡 En Curso', color: 'warning' },
-        { value: 'aprobado', label: '🟢 Aprobado', color: 'success' },
-        { value: 'no_aprobado', label: '🔴 No Aprobado', color: 'danger' }
+      { value: 'en_curso', label: '🟡 En Curso', color: 'warning' },
+      { value: 'aprobado', label: '🟢 Aprobado', color: 'success' },
+      { value: 'no_aprobado', label: '🔴 No Aprobado', color: 'danger' }
     ];
-    
+
     const inputOptions = {};
     estados.forEach(e => { inputOptions[e.value] = e.label; });
-    
+
     Swal.fire({
-        title: 'Cambiar estado del plan',
-        html: `
+      title: 'Cambiar estado del plan',
+      html: `
             <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
             <p><strong>Estado actual:</strong> 
                 <span class="badge bg-${plan.estado === 'en_curso' ? 'warning' : plan.estado === 'aprobado' ? 'success' : 'danger'}">
@@ -817,32 +1019,79 @@ function cambiarEstado(id) {
                 </span>
             </p>
         `,
-        input: 'select',
-        inputOptions: inputOptions,
-        inputValue: plan.estado,
-        showCancelButton: true,
-        confirmButtonText: 'Actualizar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#28a745'
+      input: 'select',
+      inputOptions: inputOptions,
+      inputValue: plan.estado,
+      showCancelButton: true,
+      confirmButtonText: 'Actualizar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      preConfirm: (nuevoEstado) => {
+        return PlanesData.actualizarEstadoPlan(id, nuevoEstado);
+      }
     }).then((result) => {
-        if (result.isConfirmed) {
-            // Aquí deberías llamar a PlanesData.actualizarEstadoPlan(id, result.value)
-            // Por ahora simulamos
-            Swal.fire({
-                icon: 'success',
-                title: 'Estado actualizado',
-                text: `El plan ahora está: ${estados.find(e => e.value === result.value)?.label}`,
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            // Recargar la tabla
-            setTimeout(() => {
-                verPlanes();
-            }, 1500);
-        }
+      if (result.isConfirmed) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Estado actualizado',
+          text: `El plan ahora está: ${estados.find(e => e.value === result.value)?.label}`,
+          timer: 1500,
+          showConfirmButton: false
+        });
+
+        // Recargar la tabla
+        setTimeout(() => {
+          verPlanes();
+        }, 1500);
+      }
     });
-}
+  }
+
+  // ========== FUNCIONES DE DIAGNÓSTICO ==========
+
+  /**
+   * Diagnóstico completo de planes
+   */
+  function diagnosticarPlanes() {
+    console.log('=== DIAGNÓSTICO DE PLANES ===');
+    console.log('1. PlanesData existe:', typeof PlanesData !== 'undefined');
+
+    if (typeof PlanesData === 'undefined') {
+      console.error('❌ PlanesData no está disponible');
+      return;
+    }
+
+    // Obtener todos los planes
+    const todosPlanes = PlanesData.cargarPlanes ? PlanesData.cargarPlanes() : [];
+    console.log('2. Total planes en memoria:', todosPlanes.length);
+
+    // Verificar localStorage
+    try {
+      const saved = localStorage.getItem('planesMejoramiento');
+      console.log('3. localStorage (planesMejoramiento):', saved ? '✅' : '❌');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log('   - Planes en localStorage:', parsed.length);
+        console.log('   - Primer plan:', parsed[0]);
+      }
+    } catch (error) {
+      console.error('❌ Error leyendo localStorage:', error);
+    }
+
+    // Verificar el selector de cursos
+    const cursoSelect = document.getElementById('cursoPlanes');
+    console.log('4. Selector de cursos:', cursoSelect ? '✅' : '❌');
+    if (cursoSelect) {
+      console.log('   - Opciones:', cursoSelect.options.length);
+      console.log('   - Valor actual:', cursoSelect.value);
+    }
+
+    // Verificar el selector de estudiantes
+    const estudianteSelect = document.getElementById('estudiantePlanes');
+    console.log('5. Selector de estudiantes:', estudianteSelect ? '✅' : '❌');
+
+    return '✅ Diagnóstico completado';
+  }
 
   async function diagnosticarCursos() {
     console.log('=== DIAGNÓSTICO DE CURSOS ===');
@@ -893,7 +1142,8 @@ function cambiarEstado(id) {
     agregarRecurso,
     eliminarCompetencia,
     cargarResultadosCompetencia,
-    diagnosticarCursos
+    diagnosticarCursos,
+    diagnosticarPlanes
   };
 
 })();
@@ -901,3 +1151,4 @@ function cambiarEstado(id) {
 console.log('✅ Módulo PlanesUI v1.4 cargado correctamente');
 window.PlanesUI = PlanesUI;
 window.probarCursos = () => PlanesUI.diagnosticarCursos();
+window.diagnosticarPlanes = () => PlanesUI.diagnosticarPlanes();

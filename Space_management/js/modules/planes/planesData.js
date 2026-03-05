@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo planesData.js...');
 
-const PlanesData = (function() {
-    
+const PlanesData = (function () {
+
     let planes = [];
 
     /**
@@ -57,12 +57,12 @@ const PlanesData = (function() {
                     }
                 ]
             };
-            
+
             planes.push(nuevoPlan);
             guardarPlanes();
             console.log('✅ Plan agregado:', nuevoPlan.id);
             return nuevoPlan;
-            
+
         } catch (error) {
             console.error('❌ Error agregando plan:', error);
             return null;
@@ -74,7 +74,7 @@ const PlanesData = (function() {
      */
     function getPlanesPorEstudiante(documento) {
         return planes.filter(p => p.aprendiz?.documento === documento)
-                     .sort((a, b) => new Date(b.fechaSuscripcion) - new Date(a.fechaSuscripcion));
+            .sort((a, b) => new Date(b.fechaSuscripcion) - new Date(a.fechaSuscripcion));
     }
 
     /**
@@ -91,7 +91,7 @@ const PlanesData = (function() {
         try {
             const index = planes.findIndex(p => p.id == id);
             if (index === -1) return false;
-            
+
             planes[index].estado = nuevoEstado;
             if (observaciones) {
                 planes[index].observaciones = observaciones;
@@ -102,17 +102,65 @@ const PlanesData = (function() {
                 valor: nuevoEstado,
                 observaciones: observaciones
             });
-            
+
             guardarPlanes();
             console.log(`✅ Estado del plan ${id} actualizado a ${nuevoEstado}`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando estado:', error);
             return false;
         }
     }
+    /**
+     * Actualiza los datos completos de un plan
+     */
+    function actualizarPlan(id, nuevosDatos) {
+        try {
+            const index = planes.findIndex(p => p.id == id);
+            if (index === -1) return false;
 
+            planes[index] = {
+                ...planes[index],
+                ...nuevosDatos,
+                fechaModificacion: new Date().toISOString()
+            };
+
+            if (!planes[index].historial) planes[index].historial = [];
+            planes[index].historial.push({
+                fecha: new Date().toISOString(),
+                accion: 'actualizado',
+                usuario: nuevosDatos.instructores?.[0]?.nombre || 'Sistema'
+            });
+
+            guardarPlanes();
+            console.log(`✅ Plan ${id} actualizado`);
+            return true;
+
+        } catch (error) {
+            console.error('❌ Error actualizando plan:', error);
+            return false;
+        }
+    }
+    /**
+       * Elimina un plan
+       */
+    function eliminarPlan(id) {
+        try {
+            const index = planes.findIndex(p => p.id == id);
+            if (index === -1) return false;
+
+            const planEliminado = planes[index];
+            planes.splice(index, 1);
+            guardarPlanes();
+            console.log(`✅ Plan ${id} eliminado`);
+            return true;
+
+        } catch (error) {
+            console.error('❌ Error eliminando plan:', error);
+            return false;
+        }
+    }
     /**
      * Actualiza el estado de una actividad
      */
@@ -120,17 +168,17 @@ const PlanesData = (function() {
         try {
             const plan = planes.find(p => p.id == planId);
             if (!plan) return false;
-            
+
             const actividad = plan.competencias[competenciaIndex]?.actividades[actividadIndex];
             if (!actividad) return false;
-            
+
             actividad.estado = nuevoEstado;
             actividad.fechaActualizacion = new Date().toISOString();
-            
+
             guardarPlanes();
             console.log(`✅ Actividad ${actividadIndex + 1} actualizada a ${nuevoEstado}`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando actividad:', error);
             return false;
@@ -149,6 +197,8 @@ const PlanesData = (function() {
         getPlanesPorEstudiante,
         getPlanPorId,
         actualizarEstadoPlan,
+        actualizarPlan,
+        eliminarPlan,
         actualizarEstadoActividad
     };
 })();
