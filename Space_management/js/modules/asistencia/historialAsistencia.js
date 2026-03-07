@@ -1,5 +1,5 @@
-// historialAsistencia.js - Módulo para visualizar historial de asistencias
-// Versión 0.8 - COMPLETO
+// js/modules/asistencia/historialAsistencia.js
+// Versión 2.0 - CORREGIDA
 
 console.log('🔄 Cargando módulo historialAsistencia.js...');
 
@@ -17,8 +17,11 @@ const HistorialAsistencia = (function() {
             return;
         }
         
+        // USAR LA FUNCIÓN CORRECTA: filtrarAsistencias (AHORA SÍ EXISTE)
         const asistencias = typeof AsistenciaData !== 'undefined' ? 
             AsistenciaData.filtrarAsistencias() : [];
+        
+        console.log(`📊 ${asistencias.length} asistencias encontradas`);
         
         if (asistencias.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay asistencias registradas</td></tr>';
@@ -27,16 +30,17 @@ const HistorialAsistencia = (function() {
         
         let html = '';
         asistencias.forEach(asist => {
-            const presentes = asist.registros.filter(r => r.asistio).length;
-            const ausentes = asist.registros.length - presentes;
-            const porcentaje = Math.round((presentes / asist.registros.length) * 100);
+            const presentes = asist.registros?.filter(r => r.asistio).length || 0;
+            const ausentes = (asist.registros?.length || 0) - presentes;
+            const porcentaje = (asist.registros?.length || 0) > 0 ? 
+                Math.round((presentes / asist.registros.length) * 100) : 0;
             
             html += `
                 <tr>
                     <td>${asist.fecha}</td>
                     <td>${asist.curso}</td>
                     <td>${asist.docente?.nombre || 'N/A'}</td>
-                    <td>${asist.registros.length}</td>
+                    <td>${asist.registros?.length || 0}</td>
                     <td>
                         <span class="badge bg-success">${presentes} presentes</span>
                         <span class="badge bg-danger">${ausentes} ausentes</span>
@@ -61,18 +65,11 @@ const HistorialAsistencia = (function() {
      * Muestra detalle de una asistencia
      */
     function verDetalle(id) {
-        console.log(`🔍 Viendo detalle de asistencia ${id}`);
-        
-        const asistencias = typeof AsistenciaData !== 'undefined' ? 
-            AsistenciaData.obtenerTodasAsistencias() : [];
+        const asistencias = AsistenciaData.obtenerTodasAsistencias();
         const asist = asistencias.find(a => a.id == id);
         
         if (!asist) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Registro no encontrado'
-            });
+            Swal.fire('Error', 'Registro no encontrado', 'error');
             return;
         }
         
@@ -92,7 +89,7 @@ const HistorialAsistencia = (function() {
                     <tbody>
         `;
         
-        asist.registros.forEach(r => {
+        asist.registros?.forEach(r => {
             html += `
                 <tr>
                     <td>${r.nombre}</td>
@@ -117,8 +114,6 @@ const HistorialAsistencia = (function() {
      * Elimina un registro de asistencia
      */
     function eliminar(id) {
-        console.log(`🗑️ Eliminando asistencia ${id}`);
-        
         Swal.fire({
             title: '¿Eliminar registro?',
             text: 'Esta acción no se puede deshacer',
@@ -129,7 +124,7 @@ const HistorialAsistencia = (function() {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                if (typeof AsistenciaData !== 'undefined' && AsistenciaData.eliminarAsistencia(id)) {
+                if (AsistenciaData.eliminarAsistencia(id)) {
                     renderizarHistorial();
                     Swal.fire({
                         icon: 'success',
@@ -151,5 +146,5 @@ const HistorialAsistencia = (function() {
     };
 })();
 
-console.log('✅ Módulo HistorialAsistencia cargado');
+console.log('✅ Módulo HistorialAsistencia v2.0 cargado');
 window.HistorialAsistencia = HistorialAsistencia;

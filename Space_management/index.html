@@ -432,6 +432,7 @@
                         <label for="semanaAsistencia" class="form-label">Semana (para exportar)</label>
                         <input type="week" class="form-control" id="semanaAsistencia">
                     </div>
+
                     <div class="col-md-5 d-flex align-items-end gap-2">
                         <!-- Botón Filtrar -->
                         <button class="btn btn-primary" onclick="AsistenciaDiaria.filtrarAsistencia()"
@@ -446,23 +447,50 @@
                         </button>
 
                         <!-- Botones de exportación -->
-                        <div class="btn-group">
-                            <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-download"></i> Exportar
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#"
-                                        onclick="ExportarAsistencia.exportarRegistroDiario()">
-                                        <i class="fas fa-calendar-day"></i> Por día
-                                    </a></li>
-                                <li><a class="dropdown-item" href="#"
-                                        onclick="ExportarAsistencia.exportarRegistroSemanal()">
-                                        <i class="fas fa-calendar-week"></i> Por semana
-                                    </a></li>
-                            </ul>
-                        </div>
+                        <!-- Botones de exportación y PDF -->
+<div class="btn-group">
+    <button class="btn btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fas fa-download"></i> Exportar JSON
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="ExportarAsistencia.exportarRegistroDiario()">
+            <i class="fas fa-calendar-day"></i> Por día (JSON)
+        </a></li>
+        <li><a class="dropdown-item" href="#" onclick="ExportarAsistencia.exportarRegistroSemanal()">
+            <i class="fas fa-calendar-week"></i> Por semana (JSON)
+        </a></li>
+    </ul>
+</div>
+
+<div class="btn-group ms-2">
+    <button class="btn btn-danger dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <i class="fas fa-file-pdf"></i> Reporte PDF
+    </button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="#" onclick="ReporteAsistenciaPDF.generarReporteDiario()">
+            <i class="fas fa-calendar-day"></i> Reporte Diario
+        </a></li>
+        <li><a class="dropdown-item" href="#" onclick="ReporteAsistenciaPDF.generarReporteSemanal()">
+            <i class="fas fa-calendar-week"></i> Reporte Semanal
+        </a></li>
+    </ul>
+</div>
+                        
                     </div>
                 </div>
+                <!-- En la pestaña Asistencia, agregar botones de exportar/importar -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <button class="btn btn-info me-2" onclick="AsistenciaData.exportarAsistencias()">
+                                    <i class="fas fa-download"></i> Exportar Lista
+                                </button>
+                                <label for="importarAsistencia" class="btn btn-warning">
+                                    <i class="fas fa-upload"></i> Importar Lista
+                                    <input type="file" id="importarAsistencia" accept=".json" style="display: none;"
+                                        onchange="importarListaAsistencia(event)">
+                                </label>
+                            </div>
+                        </div>
 
                 <!-- Botones de acción rápida -->
                 <div class="row mb-3">
@@ -571,42 +599,42 @@
                 </div>
             </div>
             <!-- Pestaña Planes de Mejoramiento -->
-<div class="tab-pane fade" id="planes" role="tabpanel">
-    <h4><i class="fas fa-clipboard-list"></i> Planes de Mejoramiento Académico</h4>
-    
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> Gestione planes de mejoramiento según Acuerdo 009 de 2024.
-    </div>
+            <div class="tab-pane fade" id="planes" role="tabpanel">
+                <h4><i class="fas fa-clipboard-list"></i> Planes de Mejoramiento Académico</h4>
 
-    <!-- Selector de curso y estudiante -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <label class="form-label">Curso <span class="text-danger">*</span></label>
-            <select class="form-select" id="cursoPlanes" onchange="PlanesUI.cargarEstudiantes()">
-                <option value="">Seleccione un curso</option>
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Estudiante <span class="text-danger">*</span></label>
-            <select class="form-select" id="estudiantePlanes">
-                <option value="">Primero seleccione un curso</option>
-            </select>
-        </div>
-        <div class="col-md-4 d-flex align-items-end">
-            <button class="btn btn-primary me-2" onclick="PlanesUI.verPlanes()">
-                <i class="fas fa-search"></i> Ver Planes
-            </button>
-            <button class="btn btn-success" onclick="PlanesUI.mostrarFormularioNuevo()">
-                <i class="fas fa-plus"></i> Nuevo Plan
-            </button>
-        </div>
-    </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Gestione planes de mejoramiento según Acuerdo 009 de 2024.
+                </div>
 
-    <!-- Tabla de planes -->
-    <div id="contenedorPlanes">
-        <p class="text-muted">Seleccione un estudiante para ver sus planes de mejoramiento</p>
-    </div>
-</div>
+                <!-- Selector de curso y estudiante -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label">Curso <span class="text-danger">*</span></label>
+                        <select class="form-select" id="cursoPlanes" onchange="PlanesUI.cargarEstudiantes()">
+                            <option value="">Seleccione un curso</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estudiante <span class="text-danger">*</span></label>
+                        <select class="form-select" id="estudiantePlanes">
+                            <option value="">Primero seleccione un curso</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-primary me-2" onclick="PlanesUI.verPlanes()">
+                            <i class="fas fa-search"></i> Ver Planes
+                        </button>
+                        <button class="btn btn-success" onclick="PlanesUI.mostrarFormularioNuevo()">
+                            <i class="fas fa-plus"></i> Nuevo Plan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de planes -->
+                <div id="contenedorPlanes">
+                    <p class="text-muted">Seleccione un estudiante para ver sus planes de mejoramiento</p>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -1234,6 +1262,7 @@
     <script src="js/modules/asistencia/asistenciaDiaria.js"></script>
     <script src="js/modules/asistencia/exportarAsistencia.js"></script>
     <script src="js/modules/asistencia/historialAsistencia.js"></script>
+    <script src="js/modules/asistencia/reporteAsistenciaPDF.js"></script>
 
     <!-- 6. MÓDULOS DE LLAMADOS (NUEVO) -->
     <script src="js/modules/llamados/llamadosData.js"></script>

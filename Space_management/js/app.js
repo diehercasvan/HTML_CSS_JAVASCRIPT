@@ -722,9 +722,59 @@ window.diagnosticarSistema = function () {
     funciones.forEach(f => console.log(`- ${f}:`, typeof window[f] === 'function' ? '✅' : '❌'));
 };
 
+// En app.js, agregar función global
+
+window.importarListaAsistencia = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.json')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Archivo inválido',
+            text: 'Por favor seleccione un archivo JSON'
+        });
+        event.target.value = '';
+        return;
+    }
+    
+    AsistenciaData.importarAsistencias(file)
+        .then(() => {
+            // Recargar vista actual si hay curso seleccionado
+            const curso = document.getElementById('cursoAsistencia')?.value;
+            const fecha = document.getElementById('fechaAsistencia')?.value;
+            if (curso && fecha) {
+                AsistenciaDiaria.filtrarAsistencia();
+            }
+            if (typeof HistorialAsistencia !== 'undefined') {
+                HistorialAsistencia.renderizarHistorial();
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message
+            });
+        })
+        .finally(() => {
+            event.target.value = '';
+        });
+};
+
 // Ejecutar diagnóstico automático
 setTimeout(() => {
     console.log('ℹ️ Ejecute diagnosticarSistema() en la consola para ver el estado completo');
 }, 2000);
 
 console.log('✅ app.js v0.6 cargado correctamente');
+
+// En app.js, asegurar que el historial se renderiza después de cargar
+
+// Inicializar historial al cargar la página
+setTimeout(() => {
+    if (typeof HistorialAsistencia !== 'undefined') {
+        console.log('🔄 Renderizando historial de asistencias...');
+        HistorialAsistencia.renderizarHistorial();
+    }
+}, 1500); // Aumentar el timeout para asegurar que todo está cargado
