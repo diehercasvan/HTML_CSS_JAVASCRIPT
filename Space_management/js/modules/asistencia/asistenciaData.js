@@ -1,5 +1,5 @@
 // js/modules/asistencia/asistenciaData.js
-// Versión 2.1 - COMPLETA - CON IMPORTAR ASISTENCIAS
+// Versión 3.1 - CON MIGRACIÓN AUTOMÁTICA DE HORARIOS
 
 console.log('🔄 Cargando módulo asistenciaData.js...');
 
@@ -77,32 +77,39 @@ const AsistenciaData = (function() {
         }
     }
 
-    /**
-     * Guarda las asistencias en storage
-     */
-    function guardarEnStorage(asistencias) {
-        try {
-            // Guardar en DataManager si existe
-            if (typeof DataManager !== 'undefined') {
-                if (typeof DataManager.guardarTodasAsistencias === 'function') {
-                    DataManager.guardarTodasAsistencias(asistencias);
-                }
+
+   /**
+ * Guarda las asistencias en storage (VERSIÓN MEJORADA)
+ */
+function guardarEnStorage(asistencias) {
+    try {
+        console.log(`💾 Guardando ${asistencias.length} asistencias en storage...`);
+        
+        // 1. Guardar en DataManager si existe
+        if (typeof DataManager !== 'undefined') {
+            if (typeof DataManager.guardarTodasAsistencias === 'function') {
+                DataManager.guardarTodasAsistencias(asistencias);
+                console.log('✅ Guardado en DataManager');
             }
-            
-            // Guardar en localStorage
-            const saved = localStorage.getItem('gestionSalones');
-            let datos = saved ? JSON.parse(saved) : {};
-            datos.asistencia = asistencias;
-            localStorage.setItem('gestionSalones', JSON.stringify(datos));
-            
-            console.log(`✅ ${asistencias.length} asistencias guardadas`);
-            return true;
-            
-        } catch (error) {
-            console.error('❌ Error guardando en storage:', error);
-            return false;
         }
+        
+        // 2. Guardar en localStorage (gestionSalones)
+        const saved = localStorage.getItem('gestionSalones');
+        let datos = saved ? JSON.parse(saved) : {};
+        datos.asistencia = asistencias;
+        localStorage.setItem('gestionSalones', JSON.stringify(datos));
+        console.log(`✅ Guardado en localStorage (gestionSalones): ${asistencias.length} asistencias`);
+        
+        // 3. También guardar una copia de respaldo en una clave específica
+        localStorage.setItem('asistenciaData', JSON.stringify(asistencias));
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error guardando en storage:', error);
+        return false;
     }
+}
 
     /**
      * Obtiene asistencia por curso y fecha
@@ -136,23 +143,35 @@ const AsistenciaData = (function() {
     /**
      * Elimina una asistencia específica
      */
-    function eliminarAsistencia(id) {
-        try {
-            let asistencias = obtenerTodasAsistencias();
-            const nuevaLista = asistencias.filter(a => a.id !== id);
-            
-            if (nuevaLista.length !== asistencias.length) {
-                guardarEnStorage(nuevaLista);
-                console.log('✅ Asistencia eliminada');
-                return true;
-            }
-            return false;
-            
-        } catch (error) {
-            console.error('❌ Error eliminando asistencia:', error);
+
+function eliminarAsistencia(id) {
+    try {
+        console.log(`🗑️ Eliminando asistencia con ID: ${id} (tipo: ${typeof id})`);
+        let asistencias = obtenerTodasAsistencias();
+        console.log(`📊 Antes de eliminar: ${asistencias.length} asistencias`);
+        
+        const longitudInicial = asistencias.length;
+        
+        // Convertir ID a número para comparación segura
+        const idNum = parseInt(id);
+        const nuevaLista = asistencias.filter(a => a.id != idNum && a.id != id);
+        
+        console.log(`📊 Después de filtrar: ${nuevaLista.length} asistencias`);
+        
+        if (nuevaLista.length < longitudInicial) {
+            guardarEnStorage(nuevaLista);
+            console.log(`✅ Asistencia eliminada. Quedan: ${nuevaLista.length}`);
+            return true;
+        } else {
+            console.warn(`⚠️ No se encontró asistencia con ID: ${id}`);
+            console.log('IDs disponibles:', asistencias.map(a => a.id));
             return false;
         }
+    } catch (error) {
+        console.error('❌ Error eliminando asistencia:', error);
+        return false;
     }
+}
 
     /**
      * Limpia todas las asistencias (con backup)
@@ -176,7 +195,7 @@ const AsistenciaData = (function() {
                         const asistencias = obtenerTodasAsistencias();
                         if (asistencias.length > 0) {
                             const backup = {
-                                version: "2.1",
+                                version: "3.1",
                                 fecha: new Date().toISOString(),
                                 tipo: "backup_asistencias",
                                 asistencias: asistencias
@@ -228,7 +247,7 @@ const AsistenciaData = (function() {
         }
         
         const datos = {
-            version: "2.1",
+            version: "3.1",
             fechaExportacion: new Date().toISOString(),
             totalRegistros: datosAExportar.length,
             asistencias: datosAExportar
@@ -256,82 +275,78 @@ const AsistenciaData = (function() {
     }
 
     /**
-     * NUEVA FUNCIÓN: Importa asistencias desde un archivo JSON
-     */
-    function importarAsistencias(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                try {
-                    const datos = JSON.parse(e.target.result);
-                    
-                    // Validar estructura del archivo
-                    if (!datos.asistencias || !Array.isArray(datos.asistencias)) {
-                        reject(new Error('El archivo no tiene el formato correcto'));
-                        return;
-                    }
-                    
-                    // Obtener asistencias actuales
-                    let asistenciasActuales = obtenerTodasAsistencias();
-                    let contadorNuevas = 0;
-                    let contadorActualizadas = 0;
-                    
-                    // Procesar cada asistencia del archivo
-                    datos.asistencias.forEach(nuevaAsistencia => {
-                        // Buscar si ya existe (mismo curso y misma fecha)
-                        const index = asistenciasActuales.findIndex(
-                            a => a.curso === nuevaAsistencia.curso && a.fecha === nuevaAsistencia.fecha
-                        );
-                        
-                        if (index >= 0) {
-                            // Actualizar existente
-                            asistenciasActuales[index] = {
-                                ...nuevaAsistencia,
-                                id: asistenciasActuales[index].id, // Mantener el ID original
-                                fechaImportacion: new Date().toISOString()
-                            };
-                            contadorActualizadas++;
-                        } else {
-                            // Agregar nueva
-                            asistenciasActuales.push({
-                                ...nuevaAsistencia,
-                                id: Date.now() + contadorNuevas, // ID único
-                                fechaImportacion: new Date().toISOString()
-                            });
-                            contadorNuevas++;
-                        }
-                    });
-                    
-                    // Guardar todas las asistencias
-                    guardarEnStorage(asistenciasActuales);
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Importación completada',
-                        html: `
-                            <p>✅ Nuevas: ${contadorNuevas}</p>
-                            <p>🔄 Actualizadas: ${contadorActualizadas}</p>
-                            <p>📊 Total: ${asistenciasActuales.length}</p>
-                        `,
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
-                    
-                    resolve(asistenciasActuales);
-                    
-                } catch (error) {
-                    reject(new Error('Error al procesar el archivo: ' + error.message));
+ * Importa asistencias desde un archivo JSON (VERSIÓN MEJORADA)
+ */
+function importarAsistencias(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const datos = JSON.parse(e.target.result);
+                
+                // Validar estructura
+                if (!datos.asistencias || !Array.isArray(datos.asistencias)) {
+                    reject(new Error('El archivo no tiene el formato correcto'));
+                    return;
                 }
-            };
-            
-            reader.onerror = () => reject(new Error('Error al leer el archivo'));
-            reader.readAsText(file);
-        });
-    }
+                
+                // Obtener asistencias actuales
+                let asistenciasActuales = obtenerTodasAsistencias();
+                let contadorNuevas = 0;
+                let contadorActualizadas = 0;
+                
+                // Procesar cada asistencia del archivo
+                datos.asistencias.forEach(nuevaAsistencia => {
+                    // Buscar si ya existe (mismo curso y misma fecha)
+                    const index = asistenciasActuales.findIndex(
+                        a => a.curso === nuevaAsistencia.curso && a.fecha === nuevaAsistencia.fecha
+                    );
+                    
+                    if (index >= 0) {
+                        // Actualizar existente
+                        asistenciasActuales[index] = {
+                            ...nuevaAsistencia,
+                            id: asistenciasActuales[index].id, // Mantener ID original
+                            fechaImportacion: new Date().toISOString(),
+                            importado: true
+                        };
+                        contadorActualizadas++;
+                    } else {
+                        // Agregar nueva
+                        asistenciasActuales.push({
+                            ...nuevaAsistencia,
+                            id: Date.now() + contadorNuevas,
+                            fechaImportacion: new Date().toISOString(),
+                            importado: true
+                        });
+                        contadorNuevas++;
+                    }
+                });
+                
+                // Guardar todas las asistencias
+                guardarEnStorage(asistenciasActuales);
+                
+                console.log(`✅ Importación completada: ${contadorNuevas} nuevas, ${contadorActualizadas} actualizadas`);
+                
+                resolve({
+                    nuevas: contadorNuevas,
+                    actualizadas: contadorActualizadas,
+                    total: asistenciasActuales.length
+                });
+                
+            } catch (error) {
+                reject(new Error('Error al procesar el archivo: ' + error.message));
+            }
+        };
+        
+        reader.onerror = () => reject(new Error('Error al leer el archivo'));
+        reader.readAsText(file);
+    });
+}
 
     /**
-     * Obtiene el docente actual
+     * Obtiene el docente actual con horario incluido
      */
     function obtenerDocenteActual(curso) {
         if (!curso) return null;
@@ -344,9 +359,54 @@ const AsistenciaData = (function() {
         return docente ? {
             documento: docente.documento,
             nombre: docente.nombre,
-            materia: docente.materia || 'No especificada'
+            materia: docente.materia || 'No especificada',
+            horarioInicio: docente.horarioInicio || 'N/A',
+            horarioFin: docente.horarioFin || 'N/A'
         } : null;
     }
+
+    // ===== FUNCIÓN DE MIGRACIÓN AUTOMÁTICA =====
+    // Se ejecuta al cargar el módulo para actualizar asistencias antiguas
+
+    function migrarAsistenciasConHorario() {
+        try {
+            console.log('🔄 Verificando asistencias para migrar horarios...');
+            const asistencias = obtenerTodasAsistencias();
+            let modificadas = 0;
+            
+            asistencias.forEach(asist => {
+                // Si la asistencia tiene docente pero le falta horario
+                if (asist.docente && (!asist.docente.horarioInicio || !asist.docente.horarioFin)) {
+                    const responsables = typeof DataManager !== 'undefined' ? 
+                        DataManager.getResponsables?.() || [] : [];
+                    
+                    const docente = responsables.find(r => r.documento === asist.docente.documento);
+                    
+                    if (docente) {
+                        asist.docente.horarioInicio = docente.horarioInicio || 'N/A';
+                        asist.docente.horarioFin = docente.horarioFin || 'N/A';
+                        modificadas++;
+                        console.log(`✅ Migrada asistencia del ${asist.fecha} para ${asist.docente.nombre}`);
+                    }
+                }
+            });
+            
+            if (modificadas > 0) {
+                guardarEnStorage(asistencias);
+                console.log(`✅ ${modificadas} asistencias actualizadas con horario`);
+            } else {
+                console.log('✅ No se requirieron migraciones');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error en migración:', error);
+        }
+    }
+
+    // Ejecutar migración automática después de cargar
+    setTimeout(() => {
+        migrarAsistenciasConHorario();
+    }, 1000);
 
     // API pública
     return {
@@ -357,10 +417,12 @@ const AsistenciaData = (function() {
         eliminarAsistencia,
         limpiarTodasAsistencias,
         exportarAsistencias,
-        importarAsistencias,  // ← NUEVA FUNCIÓN AGREGADA
-        obtenerDocenteActual
+        importarAsistencias,
+        obtenerDocenteActual,
+        guardarEnStorage, // Exportada para uso en migración manual si es necesario
+        migrarAsistenciasConHorario // Exportada para poder ejecutarla manualmente si se desea
     };
 })();
 
-console.log('✅ Módulo AsistenciaData v2.1 cargado');
+console.log('✅ Módulo AsistenciaData v3.1 cargado');
 window.AsistenciaData = AsistenciaData;

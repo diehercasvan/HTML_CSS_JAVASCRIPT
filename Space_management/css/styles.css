@@ -364,3 +364,36 @@ body {
     margin: 10px 0;
     border-left: 4px solid #0d6efd;
 }
+/* Estilos adicionales para la tabla semanal */
+.detalle-semana {
+    font-size: 11px;
+}
+
+.detalle-semana td {
+    padding: 5px;
+    border: 1px solid #dee2e6;
+}
+
+.detalle-semana th {
+    background: #343a40;
+    color: white;
+    padding: 8px;
+    text-align: center;
+    font-size: 11px;
+}
+
+.indicador-asistencia {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+.asistio-true {
+    background-color: #198754;
+}
+
+.asistio-false {
+    background-color: #dc3545;
+}

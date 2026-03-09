@@ -672,9 +672,166 @@ window.guardarAsistencia = () => AsistenciaDiaria.guardarAsistencia();
 window.cargarAsistenciaPorCurso = () => AsistenciaDiaria.cargarAsistenciaPorCurso();
 window.marcarTodos = () => AsistenciaDiaria.marcarTodos();
 window.desmarcarTodos = () => AsistenciaDiaria.desmarcarTodos();
-window.exportarTodo = function () {
-    const asistencias = AsistenciaData.obtenerTodasAsistencias();
-    AsistenciaData.exportarParaUnificar(asistencias);
+// En app.js, buscar y corregir la función exportarTodo
+
+window.exportarTodo = function() {
+    console.log('📤 Exportando todas las asistencias...');
+    
+    if (typeof AsistenciaData !== 'undefined' && typeof AsistenciaData.exportarAsistencias === 'function') {
+        AsistenciaData.exportarAsistencias();
+    } else {
+        console.error('❌ Función exportarAsistencias no disponible');
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se puede exportar: módulo no disponible'
+        });
+    }
+};
+
+// En app.js, agregar función para importar historial completo
+
+window.importarHistorialCompleto = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.json')) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Archivo inválido',
+            text: 'Por favor seleccione un archivo JSON'
+        });
+        event.target.value = '';
+        return;
+    }
+    
+    // Mostrar vista previa del archivo
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const datos = JSON.parse(e.target.result);
+            
+            // Validar estructura
+            if (!datos.asistencias || !Array.isArray(datos.asistencias)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Formato inválido',
+                    text: 'El archivo no tiene la estructura correcta'
+                });
+                event.target.value = '';
+                return;
+            }
+            
+            // Mostrar resumen
+            Swal.fire({
+                title: '¿Importar historial?',
+                html: `
+                    <p>Se importarán:</p>
+                    <ul style="text-align: left;">
+                        <li>📊 ${datos.asistencias.length} registros de asistencia</li>
+                        <li>📅 Fechas: ${datos.asistencias.slice(0, 3).map(a => a.fecha).join(', ')}${datos.asistencias.length > 3 ? '...' : ''}</li>
+                    </ul>
+                    <p class="text-warning">Los registros existentes se conservarán</p>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, importar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Usar la función de AsistenciaData
+                    AsistenciaData.importarAsistencias(file)
+                        .then(() => {
+                            // Recargar historial
+                            if (typeof HistorialAsistencia !== 'undefined') {
+                                HistorialAsistencia.renderizarHistorial();
+                            }
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Importado',
+                                text: 'Historial importado correctamente',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        })
+                        .catch(error => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: error.message
+                            });
+                        });
+                }
+            });
+            
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'El archivo no es un JSON válido'
+            });
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+};
+
+// En app.js, agregar función para descargar plantilla
+
+window.descargarPlantillaHistorial = function() {
+    const plantilla = {
+        version: "3.0",
+        fechaExportacion: new Date().toISOString(),
+        descripcion: "Plantilla de ejemplo para importar historial",
+        asistencias: [
+            {
+                id: 1234567890,
+                curso: "101",
+                fecha: new Date().toISOString().split('T')[0],
+                docente: {
+                    documento: "12345678",
+                    nombre: "Juan Pérez",
+                    materia: "Matemáticas",
+                    horarioInicio: "07:00",
+                    horarioFin: "09:00"
+                },
+                registros: [
+                    {
+                        documento: "1001234567",
+                        nombre: "Diego González",
+                        asistio: true,
+                        uniforme: true,
+                        observaciones: ""
+                    },
+                    {
+                        documento: "1002345678",
+                        nombre: "Valentina Rodríguez",
+                        asistio: false,
+                        uniforme: false,
+                        observaciones: "Llegó tarde"
+                    }
+                ]
+            }
+        ]
+    };
+    
+    const blob = new Blob([JSON.stringify(plantilla, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `plantilla-historial.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    Swal.fire({
+        icon: 'success',
+        title: 'Plantilla descargada',
+        text: 'Use este archivo como ejemplo para importar',
+        timer: 2000,
+        showConfirmButton: false
+    });
 };
 
 // Inicializar historial al cargar la página
@@ -724,6 +881,8 @@ window.diagnosticarSistema = function () {
 
 // En app.js, agregar función global
 
+// En app.js, agregar o actualizar estas funciones
+
 window.importarListaAsistencia = function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -740,15 +899,12 @@ window.importarListaAsistencia = function(event) {
     
     AsistenciaData.importarAsistencias(file)
         .then(() => {
-            // Recargar vista actual si hay curso seleccionado
             const curso = document.getElementById('cursoAsistencia')?.value;
             const fecha = document.getElementById('fechaAsistencia')?.value;
             if (curso && fecha) {
                 AsistenciaDiaria.filtrarAsistencia();
             }
-            if (typeof HistorialAsistencia !== 'undefined') {
-                HistorialAsistencia.renderizarHistorial();
-            }
+            HistorialAsistencia.renderizarHistorial();
         })
         .catch(error => {
             Swal.fire({
@@ -761,6 +917,8 @@ window.importarListaAsistencia = function(event) {
             event.target.value = '';
         });
 };
+
+
 
 // Ejecutar diagnóstico automático
 setTimeout(() => {
@@ -778,3 +936,25 @@ setTimeout(() => {
         HistorialAsistencia.renderizarHistorial();
     }
 }, 1500); // Aumentar el timeout para asegurar que todo está cargado
+
+// En app.js, agregar:
+
+window.importarLlamadosArchivo = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    LlamadosData.importarLlamados(file)
+        .then(() => {
+            const curso = document.getElementById('cursoLlamados')?.value;
+            const estudiante = document.getElementById('estudianteLlamados')?.value;
+            if (curso && estudiante) {
+                LlamadosUI.cargarLlamadosEstudiante();
+            }
+        })
+        .catch(error => {
+            Swal.fire('Error', error.message, 'error');
+        })
+        .finally(() => {
+            event.target.value = '';
+        });
+};

@@ -1,10 +1,43 @@
 // js/modules/asistencia/reporteAsistenciaPDF.js
-// Generador de reportes PDF para asistencia (diario y semanal)
+// Versión 3.1 - CON SOPORTE PARA HISTORIAL
 
 console.log('🔄 Cargando reporteAsistenciaPDF.js...');
 
 const ReporteAsistenciaPDF = (function() {
     
+    /**
+     * Genera reporte PDF desde datos del historial
+     */
+    function generarReporteDesdeHistorial(datosAsistencia) {
+        console.log('📄 Generando reporte desde historial...');
+        
+        // Obtener nombre del curso
+        const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
+        const cursoInfo = cursos.find(c => c.id === datosAsistencia.curso);
+        const nombreCurso = cursoInfo ? cursoInfo.nombre : datosAsistencia.curso;
+        
+        // Calcular estadísticas
+        const total = datosAsistencia.registros.length;
+        const presentes = datosAsistencia.registros.filter(r => r.asistio).length;
+        const ausentes = total - presentes;
+        const uniforme = datosAsistencia.registros.filter(r => r.uniforme).length;
+        const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
+        
+        const datos = {
+            tipo: 'diario',
+            curso: datosAsistencia.curso,
+            nombreCurso: nombreCurso,
+            fecha: datosAsistencia.fecha,
+            docente: datosAsistencia.docente,
+            registros: datosAsistencia.registros,
+            estadisticas: {
+                total, presentes, ausentes, uniforme, porcentaje
+            }
+        };
+        
+        generarHTMLReporte(datos);
+    }
+
     /**
      * Genera reporte PDF de asistencia diaria
      */
@@ -14,11 +47,20 @@ const ReporteAsistenciaPDF = (function() {
         const curso = document.getElementById('cursoAsistencia')?.value;
         const fecha = document.getElementById('fechaAsistencia')?.value;
         
-        if (!curso || !fecha) {
+        if (!curso) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Campos requeridos',
-                text: 'Seleccione un curso y una fecha'
+                title: 'Curso requerido',
+                text: 'Por favor seleccione un curso'
+            });
+            return;
+        }
+        
+        if (!fecha) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fecha requerida',
+                text: 'Por favor seleccione una fecha'
             });
             return;
         }
@@ -46,7 +88,7 @@ const ReporteAsistenciaPDF = (function() {
         const uniforme = asistencia.registros.filter(r => r.uniforme).length;
         const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
         
-        generarHTMLReporte({
+        const datos = {
             tipo: 'diario',
             curso: curso,
             nombreCurso: nombreCurso,
@@ -56,7 +98,9 @@ const ReporteAsistenciaPDF = (function() {
             estadisticas: {
                 total, presentes, ausentes, uniforme, porcentaje
             }
-        });
+        };
+        
+        generarHTMLReporte(datos);
     }
 
     /**
@@ -68,11 +112,20 @@ const ReporteAsistenciaPDF = (function() {
         const curso = document.getElementById('cursoAsistencia')?.value;
         const semanaInput = document.getElementById('semanaAsistencia')?.value;
         
-        if (!curso || !semanaInput) {
+        if (!curso) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Campos requeridos',
-                text: 'Seleccione un curso y una semana'
+                title: 'Curso requerido',
+                text: 'Por favor seleccione un curso'
+            });
+            return;
+        }
+        
+        if (!semanaInput) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Semana requerida',
+                text: 'Por favor seleccione una semana en el campo "Semana"'
             });
             return;
         }
@@ -101,7 +154,7 @@ const ReporteAsistenciaPDF = (function() {
             Swal.fire({
                 icon: 'info',
                 title: 'Sin datos',
-                text: 'No hay asistencias registradas para esta semana'
+                text: `No hay asistencias registradas para la semana ${semanaInput} (${fechaInicioStr} al ${fechaFinStr})`
             });
             return;
         }
@@ -322,9 +375,11 @@ const ReporteAsistenciaPDF = (function() {
             <tr>
                 <td>${r.documento}</td>
                 <td>${r.nombre}</td>
-                <td class="${r.asistio ? 'presente' : 'ausente'}">${r.asistio ? '✅ Presente' : '❌ Ausente'}</td>
+                <td class="${r.asistio ? 'presente' : 'ausente'}">
+                    ${r.asistio ? '✅ Presente' : '❌ Ausente'}
+                    ${r.observaciones ? `<br><small>${r.observaciones}</small>` : ''}
+                </td>
                 <td>${r.uniforme ? '✅ Sí' : '❌ No'}</td>
-                <td>${r.observaciones || ''}</td>
             </tr>
         `).join('');
 
@@ -333,6 +388,7 @@ const ReporteAsistenciaPDF = (function() {
                 <p><strong>Curso:</strong> ${datos.curso} - ${datos.nombreCurso}</p>
                 <p><strong>Fecha:</strong> ${datos.fecha}</p>
                 <p><strong>Docente:</strong> ${datos.docente?.nombre || 'No especificado'}</p>
+                <p><strong>Horario:</strong> ${datos.docente?.horarioInicio || 'N/A'} - ${datos.docente?.horarioFin || 'N/A'}</p>
             </div>
 
             <div class="stats-grid">
@@ -358,7 +414,7 @@ const ReporteAsistenciaPDF = (function() {
                 </div>
             </div>
 
-            <h2>Detalle de Estudiantes</h2>
+            <h2>Lista de Estudiantes</h2>
             <table>
                 <thead>
                     <tr>
@@ -366,13 +422,16 @@ const ReporteAsistenciaPDF = (function() {
                         <th>Nombre</th>
                         <th>Asistencia</th>
                         <th>Uniforme</th>
-                        <th>Observaciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${filas}
                 </tbody>
             </table>
+            
+            <div style="margin-top: 30px; font-style: italic;">
+                <p><strong>Resumen:</strong> ${datos.estadisticas.presentes} presentes, ${datos.estadisticas.ausentes} ausentes, ${datos.estadisticas.uniforme} con uniforme.</p>
+            </div>
         `;
     }
 
@@ -380,7 +439,56 @@ const ReporteAsistenciaPDF = (function() {
      * Genera HTML para reporte semanal
      */
     function generarHTMLSemanal(datos) {
-        // Resumen general de la semana
+        // Obtener todos los estudiantes únicos de la semana
+        const estudiantesMap = new Map();
+        
+        datos.asistencias.forEach(dia => {
+            dia.registros.forEach(r => {
+                if (!estudiantesMap.has(r.documento)) {
+                    estudiantesMap.set(r.documento, {
+                        documento: r.documento,
+                        nombre: r.nombre,
+                        dias: {}
+                    });
+                }
+                estudiantesMap.get(r.documento).dias[dia.fecha] = {
+                    asistio: r.asistio,
+                    uniforme: r.uniforme
+                };
+            });
+        });
+        
+        const estudiantes = Array.from(estudiantesMap.values());
+        
+        // Crear cabecera de la tabla con los días de la semana
+        const diasCabecera = datos.dias.map(dia => 
+            `<th style="font-size: 11px; text-align: center;">${dia.fecha.split('-')[2]}/${dia.fecha.split('-')[1]}</th>`
+        ).join('');
+        
+        // Crear filas de estudiantes
+        const filasEstudiantes = estudiantes.map(est => {
+            let fila = `<tr>
+                <td>${est.documento}</td>
+                <td>${est.nombre}</td>`;
+            
+            datos.dias.forEach(dia => {
+                const registro = est.dias[dia.fecha];
+                if (registro) {
+                    fila += `<td style="text-align: center;">
+                        <span style="color: ${registro.asistio ? '#198754' : '#dc3545'}; font-weight: bold;">
+                            ${registro.asistio ? '✅' : '❌'}
+                        </span>
+                        ${registro.uniforme ? '<br><small style="color: #0d6efd;">👕</small>' : ''}
+                    </td>`;
+                } else {
+                    fila += `<td style="text-align: center; color: #6c757d;">—</td>`;
+                }
+            });
+            
+            fila += '</tr>';
+            return fila;
+        }).join('');
+
         const resumenGeneral = `
             <div class="resumen-semana">
                 <h3>Resumen de la Semana</h3>
@@ -405,36 +513,6 @@ const ReporteAsistenciaPDF = (function() {
             </div>
         `;
 
-        // Detalle por día
-        const diasHtml = datos.dias.map(dia => {
-            if (!dia.existe) {
-                return `
-                    <div class="dia-card">
-                        <div class="dia-header">${dia.fecha}</div>
-                        <p class="text-muted">Sin registro de asistencia</p>
-                    </div>
-                `;
-            }
-            
-            return `
-                <div class="dia-card">
-                    <div class="dia-header">${dia.fecha} - Docente: ${dia.docente?.nombre || 'N/A'}</div>
-                    <div class="row">
-                        <div class="col-md-4">Total: ${dia.registros}</div>
-                        <div class="col-md-4 presente">Presentes: ${dia.presentes}</div>
-                        <div class="col-md-4 ausente">Ausentes: ${dia.ausentes}</div>
-                    </div>
-                    <div class="progress" style="height: 20px; margin: 10px 0;">
-                        <div class="progress-bar bg-success" role="progressbar" 
-                             style="width: ${dia.porcentaje}%;" 
-                             aria-valuenow="${dia.porcentaje}" aria-valuemin="0" aria-valuemax="100">
-                            ${dia.porcentaje}%
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
         return `
             <div class="info-box">
                 <p><strong>Curso:</strong> ${datos.curso} - ${datos.nombreCurso}</p>
@@ -443,17 +521,57 @@ const ReporteAsistenciaPDF = (function() {
 
             ${resumenGeneral}
 
-            <h2>Detalle por Día</h2>
-            ${diasHtml}
+            <h2>Detalle de Asistencia por Estudiante</h2>
+            <div style="overflow-x: auto;">
+                <table style="font-size: 12px;">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Nombre</th>
+                            ${diasCabecera}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filasEstudiantes}
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 style="margin-top: 30px;">Resumen por Día</h2>
+            ${datos.dias.map(dia => {
+                if (!dia.existe) {
+                    return `
+                        <div class="dia-card">
+                            <div class="dia-header">${dia.fecha}</div>
+                            <p class="text-muted">Sin registro de asistencia</p>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="dia-card">
+                        <div class="dia-header">${dia.fecha} - Docente: ${dia.docente?.nombre || 'N/A'}</div>
+                        <p><strong>Total:</strong> ${dia.registros} | 
+                           <span class="presente">Presentes: ${dia.presentes}</span> | 
+                           <span class="ausente">Ausentes: ${dia.ausentes}</span></p>
+                        <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 5px;">
+                            <div style="background: #198754; width: ${dia.porcentaje}%; height: 100%; text-align: center; color: white; font-size: 12px;">
+                                ${dia.porcentaje}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
         `;
     }
 
     // API pública
     return {
         generarReporteDiario,
-        generarReporteSemanal
+        generarReporteSemanal,
+        generarReporteDesdeHistorial
     };
 })();
 
-console.log('✅ ReporteAsistenciaPDF cargado');
+console.log('✅ ReporteAsistenciaPDF v3.1 cargado');
 window.ReporteAsistenciaPDF = ReporteAsistenciaPDF;

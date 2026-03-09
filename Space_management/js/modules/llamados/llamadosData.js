@@ -1,11 +1,10 @@
-// llamadosData.js - Gestión de datos de llamados de atención
-// Versión 0.9
+// js/modules/llamados/llamadosData.js
+// Versión 3.0 - COMPLETA - CON TODAS LAS FUNCIONES
 
 console.log('🔄 Cargando módulo llamadosData.js...');
 
-const LlamadosData = (function () {
-
-    // Estructura de datos para llamados
+const LlamadosData = (function() {
+    
     let llamados = [];
 
     /**
@@ -13,16 +12,19 @@ const LlamadosData = (function () {
      */
     function cargarLlamados() {
         try {
+            console.log('📚 Cargando llamados desde localStorage...');
             const saved = localStorage.getItem('gestionLlamados');
             if (saved) {
                 llamados = JSON.parse(saved);
                 console.log(`✅ ${llamados.length} llamados cargados`);
             } else {
                 llamados = [];
+                console.log('📭 No hay llamados guardados');
             }
             return llamados;
         } catch (error) {
             console.error('❌ Error cargando llamados:', error);
+            llamados = [];
             return [];
         }
     }
@@ -34,8 +36,10 @@ const LlamadosData = (function () {
         try {
             localStorage.setItem('gestionLlamados', JSON.stringify(llamados));
             console.log(`✅ ${llamados.length} llamados guardados`);
+            return true;
         } catch (error) {
             console.error('❌ Error guardando llamados:', error);
+            return false;
         }
     }
 
@@ -56,12 +60,12 @@ const LlamadosData = (function () {
                     }
                 ]
             };
-
+            
             llamados.push(nuevoLlamado);
             guardarLlamados();
             console.log('✅ Llamado agregado:', nuevoLlamado.id);
             return nuevoLlamado;
-
+            
         } catch (error) {
             console.error('❌ Error agregando llamado:', error);
             return null;
@@ -73,36 +77,42 @@ const LlamadosData = (function () {
      */
     function getLlamadosPorEstudiante(documento) {
         return llamados.filter(l => l.estudiante?.documento === documento)
-            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     }
 
     /**
-     * Obtiene llamados por curso
+     * Obtiene un llamado por su ID
      */
-    function getLlamadosPorCurso(cursoId) {
-        return llamados.filter(l => l.curso === cursoId)
-            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    function getLlamadoPorId(id) {
+        console.log(`🔍 Buscando llamado ID: ${id} (${typeof id})`);
+        const encontrado = llamados.find(l => String(l.id) === String(id));
+        if (encontrado) {
+            console.log('✅ Llamado encontrado');
+        } else {
+            console.log('❌ Llamado no encontrado. IDs:', llamados.map(l => l.id));
+        }
+        return encontrado || null;
     }
 
     /**
      * Actualiza el estado de un llamado
      */
-    function actualizarEstadoLlamado(id, nuevoEstado, observacion) {
+    function actualizarEstado(id, nuevoEstado) {
         try {
-            const index = llamados.findIndex(l => l.id === id);
+            const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
-
+            
             llamados[index].estado = nuevoEstado;
             llamados[index].historial.push({
                 fecha: new Date().toISOString(),
                 accion: 'estado_actualizado',
-                valor: nuevoEstado,
-                observacion: observacion
+                valor: nuevoEstado
             });
-
+            
             guardarLlamados();
+            console.log(`✅ Estado del llamado ${id} actualizado a ${nuevoEstado}`);
             return true;
-
+            
         } catch (error) {
             console.error('❌ Error actualizando estado:', error);
             return false;
@@ -110,97 +120,192 @@ const LlamadosData = (function () {
     }
 
     /**
-     * Agrega un compromiso a un llamado
+     * Actualiza un llamado completo
      */
-    function agregarCompromiso(llamadoId, compromiso) {
+    function actualizarLlamado(id, nuevosDatos) {
         try {
-            const index = llamados.findIndex(l => l.id === llamadoId);
+            const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
-
-            if (!llamados[index].compromisos) {
-                llamados[index].compromisos = [];
-            }
-
-            const nuevoCompromiso = {
-                id: Date.now(),
-                ...compromiso,
-                fechaCreacion: new Date().toISOString(),
-                estado: 'pendiente'
+            
+            llamados[index] = {
+                ...llamados[index],
+                ...nuevosDatos,
+                fechaModificacion: new Date().toISOString()
             };
-
-            llamados[index].compromisos.push(nuevoCompromiso);
+            
+            llamados[index].historial.push({
+                fecha: new Date().toISOString(),
+                accion: 'actualizado'
+            });
+            
             guardarLlamados();
-            return nuevoCompromiso;
-
-        } catch (error) {
-            console.error('❌ Error agregando compromiso:', error);
-            return false;
-        }
-    }
-
-    /**
-     * Marca un compromiso como cumplido
-     */
-    function cumplirCompromiso(llamadoId, compromisoId, observacion) {
-        try {
-            const llamado = llamados.find(l => l.id === llamadoId);
-            if (!llamado) return false;
-
-            const compromiso = llamado.compromisos?.find(c => c.id === compromisoId);
-            if (!compromiso) return false;
-
-            compromiso.estado = 'cumplido';
-            compromiso.fechaCumplimiento = new Date().toISOString();
-            compromiso.observacion = observacion;
-
-            guardarLlamados();
+            console.log(`✅ Llamado ${id} actualizado`);
             return true;
-
+            
         } catch (error) {
-            console.error('❌ Error actualizando compromiso:', error);
+            console.error('❌ Error actualizando llamado:', error);
             return false;
         }
     }
 
     /**
-     * Cuenta llamados por estudiante
+     * Elimina un llamado
      */
-    function contarLlamadosPorEstudiante(documento) {
-        const llamadosEstudiante = getLlamadosPorEstudiante(documento);
-        return {
-            academicos: llamadosEstudiante.filter(l => l.tipo === 'academico').length,
-            disciplinarios: llamadosEstudiante.filter(l => l.tipo === 'disciplinario').length,
-            total: llamadosEstudiante.length
-        };
+    function eliminarLlamado(id) {
+        try {
+            const index = llamados.findIndex(l => String(l.id) === String(id));
+            if (index === -1) return false;
+            
+            llamados.splice(index, 1);
+            guardarLlamados();
+            console.log(`✅ Llamado ${id} eliminado`);
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error eliminando llamado:', error);
+            return false;
+        }
     }
 
-    // Cargar datos al iniciar
+    /**
+     * Duplica un llamado
+     */
+    function duplicarLlamado(id) {
+        try {
+            const original = getLlamadoPorId(id);
+            if (!original) return null;
+            
+            const copia = {
+                ...original,
+                id: Date.now(),
+                fecha: new Date().toISOString().split('T')[0],
+                fechaCreacion: new Date().toISOString(),
+                estado: 'activo',
+                historial: [
+                    {
+                        fecha: new Date().toISOString(),
+                        accion: 'duplicado',
+                        original: id
+                    }
+                ]
+            };
+            
+            llamados.push(copia);
+            guardarLlamados();
+            console.log(`✅ Llamado duplicado: ${copia.id}`);
+            return copia;
+            
+        } catch (error) {
+            console.error('❌ Error duplicando llamado:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Exporta todos los llamados a JSON
+     */
+    function exportarLlamados() {
+        const datos = {
+            version: "3.0",
+            fechaExportacion: new Date().toISOString(),
+            total: llamados.length,
+            llamados: llamados
+        };
+        
+        const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `llamados-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Exportado',
+            text: `${llamados.length} llamados exportados`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    /**
+     * Importa llamados desde JSON
+     */
+    function importarLlamados(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const datos = JSON.parse(e.target.result);
+                    
+                    if (!datos.llamados || !Array.isArray(datos.llamados)) {
+                        reject(new Error('Formato de archivo inválido'));
+                        return;
+                    }
+                    
+                    let nuevos = 0;
+                    let actualizados = 0;
+                    
+                    datos.llamados.forEach(nuevo => {
+                        const existe = llamados.some(l => l.id === nuevo.id);
+                        if (!existe) {
+                            llamados.push(nuevo);
+                            nuevos++;
+                        } else {
+                            const index = llamados.findIndex(l => l.id === nuevo.id);
+                            llamados[index] = nuevo;
+                            actualizados++;
+                        }
+                    });
+                    
+                    guardarLlamados();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Importado',
+                        html: `
+                            <p>✅ Nuevos: ${nuevos}</p>
+                            <p>🔄 Actualizados: ${actualizados}</p>
+                            <p>📊 Total: ${llamados.length}</p>
+                        `,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                    
+                    resolve({ nuevos, actualizados });
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            reader.readAsText(file);
+        });
+    }
+
+    // Inicializar
     setTimeout(() => {
         cargarLlamados();
     }, 200);
-    /**
- * Obtiene un llamado por su ID
- */
-    function getLlamadoPorId(id) {
-        return llamados.find(l => l.id == id) || null;
-    }
 
     // API pública
     return {
         cargarLlamados,
         agregarLlamado,
         getLlamadosPorEstudiante,
-        getLlamadosPorCurso,
-        actualizarEstadoLlamado,
-        agregarCompromiso,
-        cumplirCompromiso,
-        contarLlamadosPorEstudiante,
-        cargarLlamados,
-        agregarLlamado,
-        getLlamadosPorEstudiante,
-        getLlamadoPorId
+        getLlamadoPorId,
+        actualizarEstado,
+        actualizarLlamado,
+        eliminarLlamado,
+        duplicarLlamado,
+        exportarLlamados,
+        importarLlamados
     };
 })();
 
-console.log('✅ Módulo LlamadosData cargado');
+console.log('✅ Módulo LlamadosData v3.0 cargado');
 window.LlamadosData = LlamadosData;
