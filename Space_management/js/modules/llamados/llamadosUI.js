@@ -1,5 +1,5 @@
 // js/modules/llamados/llamadosUI.js
-// Versión 3.0 - COMPLETA - CON TODAS LAS ACCIONES
+// Versión 3.3 - Con funcionalidad de EDITAR completada
 
 console.log('🔄 Cargando módulo llamadosUI.js...');
 
@@ -62,6 +62,8 @@ const LlamadosUI = (function() {
                 option.value = est.documento;
                 option.setAttribute('data-nombres', est.nombres);
                 option.setAttribute('data-apellidos', est.apellidos);
+                option.setAttribute('data-telefono', est.celular || '');
+                option.setAttribute('data-correo', est.correo || '');
                 option.textContent = `${est.documento} - ${est.nombres} ${est.apellidos}`;
                 estudianteSelect.appendChild(option);
             });
@@ -92,7 +94,9 @@ const LlamadosUI = (function() {
         const estudiante = {
             documento: estudianteSelect.value,
             nombres: selectedOption.getAttribute('data-nombres'),
-            apellidos: selectedOption.getAttribute('data-apellidos')
+            apellidos: selectedOption.getAttribute('data-apellidos'),
+            telefono: selectedOption.getAttribute('data-telefono'),
+            correo: selectedOption.getAttribute('data-correo')
         };
         
         const html = renderizarTablaLlamados(estudiante);
@@ -154,7 +158,7 @@ const LlamadosUI = (function() {
                             <button class="btn btn-sm btn-danger" onclick="GeneradorPDF.generarPDFLlamado('${l.id}')" title="Generar PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
-                            <button class="btn btn-sm btn-success" onclick="LlamadosUI.compartir('${l.id}')" title="Compartir">
+                            <button class="btn btn-sm btn-success" onclick="LlamadosUI.mostrarOpcionesCompartir('${l.id}', '${estudiante.telefono}', '${estudiante.correo}')" title="Compartir">
                                 <i class="fas fa-share-alt"></i>
                             </button>
                             <button class="btn btn-sm btn-info" onclick="LlamadosUI.editarLlamado('${l.id}')" title="Editar">
@@ -235,11 +239,11 @@ const LlamadosUI = (function() {
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: 'PDF',
+            confirmButtonText: '📝 Editar',
             cancelButtonText: 'Cerrar'
         }).then(result => {
             if (result.isConfirmed) {
-                GeneradorPDF.generarPDFLlamado(id);
+                editarLlamado(id);
             }
         });
     }
@@ -279,45 +283,301 @@ const LlamadosUI = (function() {
     }
 
     /**
-     * Compartir llamado
+     * FUNCIÓN DE EDITAR COMPLETADA
      */
-    function compartir(id) {
-        console.log('📱 Compartir:', id);
+    function editarLlamado(id) {
+        console.log('✏️ Editando llamado:', id);
+        
         const llamado = LlamadosData.getLlamadoPorId(id);
-        if (!llamado) return;
+        if (!llamado) {
+            Swal.fire('Error', 'Llamado no encontrado', 'error');
+            return;
+        }
+        
+        // Generar HTML para compromisos existentes
+        let compromisosHtml = '';
+        if (llamado.compromisos && llamado.compromisos.length > 0) {
+            llamado.compromisos.forEach((comp, idx) => {
+                compromisosHtml += `
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Compromiso ${idx + 1}" 
+                               id="edit_compromiso_${idx}" value="${comp.descripcion}">
+                        <button class="btn btn-outline-${comp.estado === 'cumplido' ? 'success' : 'warning'}" 
+                                type="button" onclick="cambiarEstadoCompromiso(this, ${idx})" 
+                                title="${comp.estado === 'cumplido' ? 'Cumplido' : 'Pendiente'}">
+                            <i class="fas ${comp.estado === 'cumplido' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <input type="hidden" id="edit_compromiso_estado_${idx}" value="${comp.estado}">
+                    </div>
+                `;
+            });
+        } else {
+            compromisosHtml = `
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control" placeholder="Compromiso 1" id="edit_compromiso_0">
+                    <button class="btn btn-outline-success" type="button" onclick="agregarCampoCompromisoEdit()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            `;
+        }
         
         Swal.fire({
-            title: 'Compartir llamado',
+            title: '✏️ Editar Llamado',
             html: `
-                <p>¿Cómo desea compartir este llamado?</p>
-                <div class="row mt-3">
-                    <div class="col-6">
-                        <button class="btn btn-success btn-lg w-100" onclick="Notificaciones.compartirWhatsApp('${id}')">
-                            <i class="fab fa-whatsapp"></i> WhatsApp
+                <form id="formEditarLlamado" class="text-start" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo de Llamado</label>
+                        <select class="form-select" id="editTipoLlamado">
+                            <option value="academico" ${llamado.tipo === 'academico' ? 'selected' : ''}>📚 Académico</option>
+                            <option value="disciplinario" ${llamado.tipo === 'disciplinario' ? 'selected' : ''}>⚠️ Disciplinario</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nivel</label>
+                        <select class="form-select" id="editNivelLlamado">
+                            <option value="1" ${llamado.nivel === 1 ? 'selected' : ''}>Primer Llamado</option>
+                            <option value="2" ${llamado.nivel === 2 ? 'selected' : ''}>Segundo Llamado</option>
+                            <option value="3" ${llamado.nivel === 3 ? 'selected' : ''}>Tercer Llamado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo</label>
+                        <textarea class="form-control" id="editMotivo" rows="3">${llamado.motivo || ''}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Compromisos</label>
+                        <div id="editCompromisosContainer">
+                            ${compromisosHtml}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="agregarCampoCompromisoEdit()">
+                            <i class="fas fa-plus"></i> Agregar Compromiso
                         </button>
                     </div>
-                    <div class="col-6">
-                        <button class="btn btn-primary btn-lg w-100" onclick="Notificaciones.compartirEmail('${id}')">
-                            <i class="fas fa-envelope"></i> Email
-                        </button>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" id="editObservaciones" rows="2">${llamado.observaciones || ''}</textarea>
                     </div>
-                </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Estado</label>
+                        <select class="form-select" id="editEstadoLlamado">
+                            <option value="activo" ${llamado.estado === 'activo' ? 'selected' : ''}>🟡 Activo</option>
+                            <option value="cumplido" ${llamado.estado === 'cumplido' ? 'selected' : ''}>✅ Cumplido</option>
+                        </select>
+                    </div>
+                </form>
             `,
-            showConfirmButton: false,
-            showCloseButton: true
+            width: '700px',
+            showCancelButton: true,
+            confirmButtonText: '💾 Guardar Cambios',
+            cancelButtonText: 'Cancelar',
+            didOpen: () => {
+                // Guardar el contador de compromisos inicial
+                window.editCompromisoCount = llamado.compromisos?.length || 1;
+            },
+            preConfirm: () => {
+                // Recoger datos del formulario
+                const tipo = document.getElementById('editTipoLlamado').value;
+                const nivel = parseInt(document.getElementById('editNivelLlamado').value);
+                const motivo = document.getElementById('editMotivo').value;
+                const observaciones = document.getElementById('editObservaciones').value;
+                const estado = document.getElementById('editEstadoLlamado').value;
+                
+                if (!motivo) {
+                    Swal.showValidationMessage('El motivo es obligatorio');
+                    return false;
+                }
+                
+                // Recoger compromisos
+                const compromisos = [];
+                let i = 0;
+                while (document.getElementById(`edit_compromiso_${i}`)) {
+                    const desc = document.getElementById(`edit_compromiso_${i}`).value;
+                    const estadoComp = document.getElementById(`edit_compromiso_estado_${i}`)?.value || 'pendiente';
+                    
+                    if (desc && desc.trim()) {
+                        compromisos.push({
+                            descripcion: desc.trim(),
+                            estado: estadoComp
+                        });
+                    }
+                    i++;
+                }
+                
+                return {
+                    tipo: tipo,
+                    nivel: nivel,
+                    motivo: motivo,
+                    compromisos: compromisos,
+                    observaciones: observaciones,
+                    estado: estado
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                // Actualizar el llamado
+                const actualizado = LlamadosData.actualizarLlamado(id, result.value);
+                
+                if (actualizado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Llamado actualizado',
+                        text: 'Los cambios han sido guardados exitosamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    // Recargar la tabla
+                    cargarLlamadosEstudiante();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo actualizar el llamado'
+                    });
+                }
+            }
         });
     }
 
     /**
-     * Editar llamado
+     * Función para compartir
      */
-    function editarLlamado(id) {
-        console.log('✏️ Editar:', id);
+    function mostrarOpcionesCompartir(id, telefono, correo) {
+        console.log('📱 Mostrando opciones de compartir:', id);
+        
+        const llamado = LlamadosData.getLlamadoPorId(id);
+        if (!llamado) {
+            Swal.fire('Error', 'Llamado no encontrado', 'error');
+            return;
+        }
+        
         Swal.fire({
-            icon: 'info',
-            title: 'Editar llamado',
-            text: 'Funcionalidad en desarrollo - Próximamente'
+            title: '📤 Compartir Llamado',
+            html: `
+                <div class="text-center">
+                    <p><strong>Estudiante:</strong> ${llamado.estudiante?.nombre}</p>
+                    <p><strong>Documento:</strong> ${llamado.estudiante?.documento}</p>
+                    <p><strong>Curso:</strong> ${llamado.curso}</p>
+                    <p><strong>Tipo:</strong> ${llamado.tipo === 'academico' ? '📚 Académico' : '⚠️ Disciplinario'}</p>
+                    <hr>
+                    <p>¿Cómo desea compartir este llamado?</p>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <button class="btn btn-success btn-lg w-100" id="btnCompartirWhatsApp">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-primary btn-lg w-100" id="btnCompartirEmail">
+                                <i class="fas fa-envelope"></i> Email
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        ${!telefono ? '⚠️ No hay teléfono registrado' : ''}
+                        ${!correo ? '⚠️ No hay email registrado' : ''}
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
+            didOpen: () => {
+                document.getElementById('btnCompartirWhatsApp').addEventListener('click', () => {
+                    if (telefono) {
+                        compartirWhatsAppDirecto(llamado, telefono);
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sin teléfono',
+                            text: 'El estudiante no tiene número registrado'
+                        });
+                    }
+                });
+                
+                document.getElementById('btnCompartirEmail').addEventListener('click', () => {
+                    if (correo) {
+                        compartirEmailDirecto(llamado, correo);
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sin correo',
+                            text: 'El estudiante no tiene email registrado'
+                        });
+                    }
+                });
+            }
         });
+    }
+
+    /**
+     * Funciones internas de compartir
+     */
+    function compartirWhatsAppDirecto(llamado, telefono) {
+        const mensaje = prepararMensaje(llamado);
+        const numero = telefono.replace(/\D/g, '');
+        const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'WhatsApp abierto',
+            text: 'Adjunte el PDF manualmente si es necesario',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    function compartirEmailDirecto(llamado, correo) {
+        const mensaje = prepararMensaje(llamado);
+        const asunto = `Llamado de Atención - ${llamado.estudiante?.nombre}`;
+        const url = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
+        window.location.href = url;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Cliente de correo abierto',
+            text: 'Adjunte el PDF manualmente',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    function prepararMensaje(llamado) {
+        const estado = llamado.estado === 'activo' ? '🟡 Activo' : '✅ Cumplido';
+        
+        return `
+*SENA - Sistema de Gestión*
+*LLAMADO DE ATENCIÓN*
+
+*Estudiante:* ${llamado.estudiante?.nombre}
+*Documento:* ${llamado.estudiante?.documento}
+*Curso:* ${llamado.curso}
+*Tipo:* ${llamado.tipo === 'academico' ? '📚 Académico' : '⚠️ Disciplinario'}
+*Fecha:* ${llamado.fecha}
+*Estado:* ${estado}
+
+*Motivo:*
+${llamado.motivo}
+
+*Compromisos:*
+${llamado.compromisos?.map(c => `• ${c.descripcion} (${c.estado})`).join('\n') || 'Ninguno'}
+
+*Observaciones:* ${llamado.observaciones || 'Ninguna'}
+
+*Docente:* ${llamado.docente?.nombre || 'N/A'}
+
+--- 
+Documento generado automáticamente.
+        `.trim();
     }
 
     /**
@@ -378,24 +638,116 @@ const LlamadosUI = (function() {
             return;
         }
         
+        const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+        const estudiante = {
+            documento: estudianteSelect.value,
+            nombre: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`,
+            telefono: selectedOption.getAttribute('data-telefono'),
+            correo: selectedOption.getAttribute('data-correo')
+        };
+        
         Swal.fire({
-            title: 'Nuevo Llamado',
+            title: '📝 Nuevo Llamado',
             html: `
-                <form>
-                    <select class="form-select mb-2" id="nuevoTipo">
-                        <option value="academico">Académico</option>
-                        <option value="disciplinario">Disciplinario</option>
-                    </select>
-                    <textarea class="form-control mb-2" id="nuevoMotivo" placeholder="Motivo" rows="3"></textarea>
-                    <input class="form-control mb-2" id="nuevoCompromiso" placeholder="Compromiso">
-                    <textarea class="form-control" id="nuevoObservaciones" placeholder="Observaciones" rows="2"></textarea>
+                <form id="formNuevoLlamado" class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Llamado</label>
+                        <select class="form-select" id="nuevoTipoLlamado">
+                            <option value="academico">📚 Académico</option>
+                            <option value="disciplinario">⚠️ Disciplinario</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nivel</label>
+                        <select class="form-select" id="nuevoNivelLlamado">
+                            <option value="1">Primer Llamado</option>
+                            <option value="2">Segundo Llamado</option>
+                            <option value="3">Tercer Llamado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo</label>
+                        <textarea class="form-control" id="nuevoMotivo" rows="3" placeholder="Describa el motivo del llamado..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Compromisos</label>
+                        <div id="compromisosContainer">
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" placeholder="Compromiso 1" id="compromiso_0">
+                                <button class="btn btn-outline-success" type="button" onclick="agregarCampoCompromiso()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="nuevoObservaciones" rows="2"></textarea>
+                    </div>
                 </form>
             `,
             showCancelButton: true,
-            confirmButtonText: 'Guardar'
-        }).then(result => {
-            if (result.isConfirmed) {
-                console.log('Guardar nuevo llamado');
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            width: '600px',
+            preConfirm: () => {
+                const tipo = document.getElementById('nuevoTipoLlamado').value;
+                const nivel = parseInt(document.getElementById('nuevoNivelLlamado').value);
+                const motivo = document.getElementById('nuevoMotivo').value;
+                const observaciones = document.getElementById('nuevoObservaciones').value;
+                
+                const compromisos = [];
+                let i = 0;
+                while (document.getElementById(`compromiso_${i}`)) {
+                    const desc = document.getElementById(`compromiso_${i}`).value;
+                    if (desc && desc.trim()) {
+                        compromisos.push({
+                            descripcion: desc.trim(),
+                            estado: 'pendiente'
+                        });
+                    }
+                    i++;
+                }
+                
+                if (!motivo) {
+                    Swal.showValidationMessage('El motivo es obligatorio');
+                    return false;
+                }
+                
+                const curso = cursoSelect.value;
+                const responsables = DataManager.getResponsablesPorCurso ? 
+                    DataManager.getResponsablesPorCurso(curso) : [];
+                const docente = responsables.length > 0 ? {
+                    nombre: responsables[0].nombre,
+                    documento: responsables[0].documento
+                } : { nombre: 'Docente', documento: 'N/A' };
+                
+                return {
+                    curso: curso,
+                    estudiante: estudiante,
+                    fecha: new Date().toISOString().split('T')[0],
+                    tipo: tipo,
+                    nivel: nivel,
+                    motivo: motivo,
+                    compromisos: compromisos,
+                    observaciones: observaciones,
+                    docente: docente,
+                    estado: 'activo'
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const nuevoLlamado = LlamadosData.agregarLlamado(result.value);
+                if (nuevoLlamado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Llamado guardado',
+                        text: 'El llamado ha sido registrado exitosamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    cargarLlamadosEstudiante();
+                }
             }
         });
     }
@@ -411,7 +763,7 @@ const LlamadosUI = (function() {
         renderizarTablaLlamados,
         verDetalle,
         cambiarEstado,
-        compartir,
+        mostrarOpcionesCompartir,
         editarLlamado,
         duplicarLlamado,
         eliminarLlamado,
@@ -419,5 +771,59 @@ const LlamadosUI = (function() {
     };
 })();
 
-console.log('✅ Módulo LlamadosUI v3.0 cargado');
+// Funciones globales para los formularios
+window.agregarCampoCompromiso = function() {
+    const container = document.getElementById('compromisosContainer');
+    if (!container) return;
+    
+    const count = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = `
+        <input type="text" class="form-control" placeholder="Compromiso ${count + 1}" id="compromiso_${count}">
+        <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(div);
+};
+
+window.agregarCampoCompromisoEdit = function() {
+    const container = document.getElementById('editCompromisosContainer');
+    if (!container) return;
+    
+    const count = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = `
+        <input type="text" class="form-control" placeholder="Compromiso ${count + 1}" id="edit_compromiso_${count}">
+        <button class="btn btn-outline-warning" type="button" onclick="cambiarEstadoCompromiso(this, ${count})" title="Pendiente">
+            <i class="fas fa-clock"></i>
+        </button>
+        <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+        <input type="hidden" id="edit_compromiso_estado_${count}" value="pendiente">
+    `;
+    container.appendChild(div);
+};
+
+window.cambiarEstadoCompromiso = function(btn, index) {
+    const estadoInput = document.getElementById(`edit_compromiso_estado_${index}`);
+    if (!estadoInput) return;
+    
+    if (estadoInput.value === 'pendiente') {
+        estadoInput.value = 'cumplido';
+        btn.className = 'btn btn-outline-success';
+        btn.innerHTML = '<i class="fas fa-check-circle"></i>';
+        btn.title = 'Cumplido';
+    } else {
+        estadoInput.value = 'pendiente';
+        btn.className = 'btn btn-outline-warning';
+        btn.innerHTML = '<i class="fas fa-clock"></i>';
+        btn.title = 'Pendiente';
+    }
+};
+
+console.log('✅ Módulo LlamadosUI v3.3 cargado correctamente');
 window.LlamadosUI = LlamadosUI;

@@ -1,25 +1,25 @@
 // js/modules/planes/planesUI.js
-// Versión 1.4 - COMPLETA - CON TODAS LAS FUNCIONES DE ACCIONES
+// Versión 2.0 - CON OPCIONES DE COMPARTIR
 
 console.log('🔄 Cargando módulo planesUI.js...');
 
 const PlanesUI = (function () {
 
-  let estudiantesCache = {};
+    let estudiantesCache = {};
 
-  // ========== FUNCIONES AUXILIARES ==========
+    // ========== FUNCIONES AUXILIARES ==========
 
-  function agregarCompetenciaSelector() {
-    const container = document.getElementById('competenciasContainer');
-    if (!container || !window.competenciasDelCurso) return;
+    function agregarCompetenciaSelector() {
+        const container = document.getElementById('competenciasContainer');
+        if (!container || !window.competenciasDelCurso) return;
 
-    const index = container.children.length;
-    const competencias = window.competenciasDelCurso;
+        const index = container.children.length;
+        const competencias = window.competenciasDelCurso;
 
-    const div = document.createElement('div');
-    div.className = 'card mb-2 competencia-item';
-    div.setAttribute('data-index', index);
-    div.innerHTML = `
+        const div = document.createElement('div');
+        div.className = 'card mb-2 competencia-item';
+        div.setAttribute('data-index', index);
+        div.innerHTML = `
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><strong>Competencia ${index + 1}</strong></span>
                 <button type="button" class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarCompetencia(this)">
@@ -32,9 +32,9 @@ const PlanesUI = (function () {
                     <select class="form-select" id="comp_select_${index}" onchange="PlanesUI.cargarResultadosCompetencia(${index})">
                         <option value="">Seleccione una competencia</option>
                         ${competencias.map(c => {
-      const resultadosStr = JSON.stringify(c.resultados).replace(/'/g, "&#39;");
-      return `<option value="${c.id}" data-resultados='${resultadosStr}'>${c.nombre}</option>`;
-    }).join('')}
+            const resultadosStr = JSON.stringify(c.resultados).replace(/'/g, "&#39;");
+            return `<option value="${c.id}" data-resultados='${resultadosStr}'>${c.nombre}</option>`;
+        }).join('')}
                     </select>
                 </div>
                 <div class="mb-2">
@@ -51,19 +51,19 @@ const PlanesUI = (function () {
             </div>
         `;
 
-    container.appendChild(div);
-  }
+        container.appendChild(div);
+    }
 
-  function agregarActividad(competenciaIndex) {
-    const container = document.getElementById(`actividades_container_${competenciaIndex}`);
-    if (!container) return;
+    function agregarActividad(competenciaIndex) {
+        const container = document.getElementById(`actividades_container_${competenciaIndex}`);
+        if (!container) return;
 
-    const count = container.children.length;
+        const count = container.children.length;
 
-    const div = document.createElement('div');
-    div.className = 'card mb-2 bg-light';
-    div.setAttribute('data-actividad', count);
-    div.innerHTML = `
+        const div = document.createElement('div');
+        div.className = 'card mb-2 bg-light';
+        div.setAttribute('data-actividad', count);
+        div.innerHTML = `
             <div class="card-body p-2">
                 <div class="row">
                     <div class="col-md-1">
@@ -87,54 +87,54 @@ const PlanesUI = (function () {
             </div>
         `;
 
-    container.appendChild(div);
-  }
+        container.appendChild(div);
+    }
 
-  function agregarRecurso() {
-    const container = document.getElementById('recursosContainer');
-    if (!container) return;
+    function agregarRecurso() {
+        const container = document.getElementById('recursosContainer');
+        if (!container) return;
 
-    const count = container.children.length;
+        const count = container.children.length;
 
-    const div = document.createElement('div');
-    div.className = 'input-group mb-2';
-    div.innerHTML = `
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
             <input type="text" class="form-control" placeholder="Recurso ${count + 1}" id="recurso_${count}">
             <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">
                 <i class="fas fa-times"></i>
             </button>
         `;
 
-    container.appendChild(div);
-  }
-
-  function eliminarCompetencia(boton) {
-    boton.closest('.competencia-item').remove();
-  }
-
-  function cargarResultadosCompetencia(competenciaIndex) {
-    const select = document.getElementById(`comp_select_${competenciaIndex}`);
-    const container = document.getElementById(`resultados_container_${competenciaIndex}`);
-
-    if (!select || !container) return;
-
-    const selectedOption = select.options[select.selectedIndex];
-    if (!selectedOption || !selectedOption.value) {
-      container.innerHTML = '';
-      return;
+        container.appendChild(div);
     }
 
-    let resultados = [];
-    try {
-      const dataResultados = selectedOption.getAttribute('data-resultados');
-      resultados = dataResultados ? JSON.parse(dataResultados) : [];
-    } catch (e) {
-      console.error('Error parsing resultados:', e);
+    function eliminarCompetencia(boton) {
+        boton.closest('.competencia-item').remove();
     }
 
-    let html = '<div class="border p-2 rounded">';
-    resultados.forEach((resultado, idx) => {
-      html += `
+    function cargarResultadosCompetencia(competenciaIndex) {
+        const select = document.getElementById(`comp_select_${competenciaIndex}`);
+        const container = document.getElementById(`resultados_container_${competenciaIndex}`);
+
+        if (!select || !container) return;
+
+        const selectedOption = select.options[select.selectedIndex];
+        if (!selectedOption || !selectedOption.value) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let resultados = [];
+        try {
+            const dataResultados = selectedOption.getAttribute('data-resultados');
+            resultados = dataResultados ? JSON.parse(dataResultados) : [];
+        } catch (e) {
+            console.error('Error parsing resultados:', e);
+        }
+
+        let html = '<div class="border p-2 rounded">';
+        resultados.forEach((resultado, idx) => {
+            html += `
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="comp_${competenciaIndex}_rap_${idx}" value="${resultado}">
                     <label class="form-check-label" for="comp_${competenciaIndex}_rap_${idx}">
@@ -142,270 +142,270 @@ const PlanesUI = (function () {
                     </label>
                 </div>
             `;
-    });
-    html += '</div>';
-
-    container.innerHTML = html;
-  }
-
-  function validarYGuardarPlan(estudiante, cursoId, cursoNombre) {
-    console.log('💾 Validando y guardando plan...');
-
-    const selectInstructores = document.getElementById('planInstructores');
-    const instructoresSeleccionados = Array.from(selectInstructores.selectedOptions).map(opt => ({
-      documento: opt.value,
-      nombre: opt.text.split(' - ')[0],
-      materia: opt.text.includes(' - ') ? opt.text.split(' - ')[1] : ''
-    }));
-
-    const recursos = [];
-    let i = 0;
-    while (document.getElementById(`recurso_${i}`)) {
-      const val = document.getElementById(`recurso_${i}`).value;
-      if (val && val.trim()) recursos.push(val.trim());
-      i++;
-    }
-
-    const competencias = [];
-    const competenciasContainer = document.getElementById('competenciasContainer');
-
-    if (!competenciasContainer || competenciasContainer.children.length === 0) {
-      Swal.showValidationMessage('Debe agregar al menos una competencia');
-      return false;
-    }
-
-    Array.from(competenciasContainer.children).forEach((compDiv, compIndex) => {
-      const select = document.getElementById(`comp_select_${compIndex}`);
-      if (!select || !select.value) return;
-
-      const selectedOption = select.options[select.selectedIndex];
-      const nombreCompetencia = selectedOption.text;
-
-      const resultados = [];
-      const checkboxes = document.querySelectorAll(`#resultados_container_${compIndex} input[type="checkbox"]:checked`);
-      checkboxes.forEach(cb => {
-        resultados.push(cb.value);
-      });
-
-      if (resultados.length === 0) return;
-
-      const actividades = [];
-      const actividadesContainer = document.getElementById(`actividades_container_${compIndex}`);
-      if (actividadesContainer) {
-        Array.from(actividadesContainer.children).forEach((actDiv, actIndex) => {
-          const desc = document.getElementById(`comp_${compIndex}_act_${actIndex}_desc`)?.value;
-          const evidencia = document.getElementById(`comp_${compIndex}_act_${actIndex}_evidencia`)?.value;
-          const fecha = document.getElementById(`comp_${compIndex}_act_${actIndex}_fecha`)?.value;
-
-          if (desc && desc.trim()) {
-            actividades.push({
-              numero: actIndex + 1,
-              descripcion: desc.trim(),
-              evidencia: evidencia || '',
-              fechaEntrega: fecha || '',
-              estado: 'pendiente'
-            });
-          }
         });
-      }
+        html += '</div>';
 
-      competencias.push({
-        nombre: nombreCompetencia,
-        resultados: resultados,
-        actividades: actividades
-      });
-    });
-
-    if (competencias.length === 0) {
-      Swal.showValidationMessage('Debe seleccionar al menos una competencia con sus resultados');
-      return false;
+        container.innerHTML = html;
     }
 
-    const nuevoPlan = {
-      fechaSuscripcion: document.getElementById('planFechaSuscripcion').value,
-      plazoEjecucion: document.getElementById('planPlazo').value,
-      aprendiz: {
-        documento: estudiante.documento,
-        nombre: estudiante.nombreCompleto,
-        tipoDocumento: document.getElementById('planTipoDocumento').value,
-        telefono: document.getElementById('planTelefono').value,
-        correo: document.getElementById('planCorreo').value
-      },
-      curso: {
-        id: cursoId,
-        nombre: cursoNombre,
-        grupo: cursoId
-      },
-      instructores: instructoresSeleccionados,
-      competencias: competencias,
-      recursos: recursos,
-      observaciones: document.getElementById('planObservaciones').value,
-      estado: 'en_curso'
-    };
+    function validarYGuardarPlan(estudiante, cursoId, cursoNombre) {
+        console.log('💾 Validando y guardando plan...');
 
-    console.log('📦 Plan validado:', nuevoPlan);
-    return nuevoPlan;
-  }
+        const selectInstructores = document.getElementById('planInstructores');
+        const instructoresSeleccionados = Array.from(selectInstructores.selectedOptions).map(opt => ({
+            documento: opt.value,
+            nombre: opt.text.split(' - ')[0],
+            materia: opt.text.includes(' - ') ? opt.text.split(' - ')[1] : ''
+        }));
 
-  // ========== FUNCIONES PRINCIPALES ==========
+        const recursos = [];
+        let i = 0;
+        while (document.getElementById(`recurso_${i}`)) {
+            const val = document.getElementById(`recurso_${i}`).value;
+            if (val && val.trim()) recursos.push(val.trim());
+            i++;
+        }
 
-  async function inicializarSelectores() {
-    console.log('🔄 ===== INICIANDO INICIALIZACIÓN DE PLANES =====');
+        const competencias = [];
+        const competenciasContainer = document.getElementById('competenciasContainer');
 
-    const cursoSelect = document.getElementById('cursoPlanes');
-    console.log('📌 Elemento cursoPlanes:', cursoSelect);
+        if (!competenciasContainer || competenciasContainer.children.length === 0) {
+            Swal.showValidationMessage('Debe agregar al menos una competencia');
+            return false;
+        }
 
-    if (!cursoSelect) {
-      console.error('❌ CRÍTICO: Selector de cursos no encontrado en el DOM');
-      return;
+        Array.from(competenciasContainer.children).forEach((compDiv, compIndex) => {
+            const select = document.getElementById(`comp_select_${compIndex}`);
+            if (!select || !select.value) return;
+
+            const selectedOption = select.options[select.selectedIndex];
+            const nombreCompetencia = selectedOption.text;
+
+            const resultados = [];
+            const checkboxes = document.querySelectorAll(`#resultados_container_${compIndex} input[type="checkbox"]:checked`);
+            checkboxes.forEach(cb => {
+                resultados.push(cb.value);
+            });
+
+            if (resultados.length === 0) return;
+
+            const actividades = [];
+            const actividadesContainer = document.getElementById(`actividades_container_${compIndex}`);
+            if (actividadesContainer) {
+                Array.from(actividadesContainer.children).forEach((actDiv, actIndex) => {
+                    const desc = document.getElementById(`comp_${compIndex}_act_${actIndex}_desc`)?.value;
+                    const evidencia = document.getElementById(`comp_${compIndex}_act_${actIndex}_evidencia`)?.value;
+                    const fecha = document.getElementById(`comp_${compIndex}_act_${actIndex}_fecha`)?.value;
+
+                    if (desc && desc.trim()) {
+                        actividades.push({
+                            numero: actIndex + 1,
+                            descripcion: desc.trim(),
+                            evidencia: evidencia || '',
+                            fechaEntrega: fecha || '',
+                            estado: 'pendiente'
+                        });
+                    }
+                });
+            }
+
+            competencias.push({
+                nombre: nombreCompetencia,
+                resultados: resultados,
+                actividades: actividades
+            });
+        });
+
+        if (competencias.length === 0) {
+            Swal.showValidationMessage('Debe seleccionar al menos una competencia con sus resultados');
+            return false;
+        }
+
+        const nuevoPlan = {
+            fechaSuscripcion: document.getElementById('planFechaSuscripcion').value,
+            plazoEjecucion: document.getElementById('planPlazo').value,
+            aprendiz: {
+                documento: estudiante.documento,
+                nombre: estudiante.nombreCompleto,
+                tipoDocumento: document.getElementById('planTipoDocumento').value,
+                telefono: document.getElementById('planTelefono').value,
+                correo: document.getElementById('planCorreo').value
+            },
+            curso: {
+                id: cursoId,
+                nombre: cursoNombre,
+                grupo: cursoId
+            },
+            instructores: instructoresSeleccionados,
+            competencias: competencias,
+            recursos: recursos,
+            observaciones: document.getElementById('planObservaciones').value,
+            estado: 'en_curso'
+        };
+
+        console.log('📦 Plan validado:', nuevoPlan);
+        return nuevoPlan;
     }
 
-    if (typeof DataManager === 'undefined') {
-      console.error('❌ DataManager no está disponible');
-      cursoSelect.innerHTML = '<option value="">Error: DataManager no disponible</option>';
-      return;
+    // ========== FUNCIONES PRINCIPALES ==========
+
+    async function inicializarSelectores() {
+        console.log('🔄 ===== INICIANDO INICIALIZACIÓN DE PLANES =====');
+
+        const cursoSelect = document.getElementById('cursoPlanes');
+        console.log('📌 Elemento cursoPlanes:', cursoSelect);
+
+        if (!cursoSelect) {
+            console.error('❌ CRÍTICO: Selector de cursos no encontrado en el DOM');
+            return;
+        }
+
+        if (typeof DataManager === 'undefined') {
+            console.error('❌ DataManager no está disponible');
+            cursoSelect.innerHTML = '<option value="">Error: DataManager no disponible</option>';
+            return;
+        }
+
+        let cursos = DataManager.getCursos ? DataManager.getCursos() : [];
+        console.log('📚 getCursos() retornó:', cursos.length, 'cursos');
+
+        if (cursos.length === 0 && DataManager.cargarCursos) {
+            console.log('🔄 Intentando cargar cursos...');
+            cursos = await DataManager.cargarCursos();
+        }
+
+        cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
+
+        if (cursos.length === 0) {
+            cursoSelect.innerHTML = '<option value="">No hay cursos disponibles</option>';
+            return;
+        }
+
+        cursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso.id;
+            option.textContent = `${curso.id} - ${curso.nombre}`;
+            cursoSelect.appendChild(option);
+        });
+
+        console.log(`✅ Selector inicializado con ${cursos.length} cursos`);
+
+        cursoSelect.addEventListener('change', function () {
+            cargarEstudiantes();
+        });
     }
 
-    let cursos = DataManager.getCursos ? DataManager.getCursos() : [];
-    console.log('📚 getCursos() retornó:', cursos.length, 'cursos');
+    async function cargarEstudiantes() {
+        console.log('🔄 Cargando estudiantes...');
 
-    if (cursos.length === 0 && DataManager.cargarCursos) {
-      console.log('🔄 Intentando cargar cursos...');
-      cursos = await DataManager.cargarCursos();
+        const cursoSelect = document.getElementById('cursoPlanes');
+        const estudianteSelect = document.getElementById('estudiantePlanes');
+
+        if (!cursoSelect || !estudianteSelect) return;
+
+        const cursoId = cursoSelect.value;
+
+        estudianteSelect.innerHTML = '<option value="">Cargando...</option>';
+
+        if (!cursoId) {
+            estudianteSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
+            return;
+        }
+
+        try {
+            const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId) || [];
+            estudiantesCache[cursoId] = estudiantes;
+
+            estudianteSelect.innerHTML = '<option value="">Seleccione un estudiante</option>';
+
+            estudiantes.forEach(est => {
+                const option = document.createElement('option');
+                option.value = est.documento;
+                option.setAttribute('data-nombres', est.nombres);
+                option.setAttribute('data-apellidos', est.apellidos);
+                option.setAttribute('data-email', est.correo || '');
+                option.setAttribute('data-telefono', est.celular || '');
+                option.textContent = `${est.documento} - ${est.nombres} ${est.apellidos}`;
+                estudianteSelect.appendChild(option);
+            });
+
+            console.log(`✅ ${estudiantes.length} estudiantes cargados`);
+
+        } catch (error) {
+            console.error('❌ Error:', error);
+            estudianteSelect.innerHTML = '<option value="">Error cargando estudiantes</option>';
+        }
     }
 
-    cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
+    /**
+     * Muestra formulario nuevo plan
+     */
+    async function mostrarFormularioNuevo() {
+        console.log('📝 Mostrando formulario nuevo plan');
 
-    if (cursos.length === 0) {
-      cursoSelect.innerHTML = '<option value="">No hay cursos disponibles</option>';
-      return;
-    }
+        const cursoSelect = document.getElementById('cursoPlanes');
+        const estudianteSelect = document.getElementById('estudiantePlanes');
 
-    cursos.forEach(curso => {
-      const option = document.createElement('option');
-      option.value = curso.id;
-      option.textContent = `${curso.id} - ${curso.nombre}`;
-      cursoSelect.appendChild(option);
-    });
+        if (!cursoSelect.value || !estudianteSelect.value) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Campos requeridos',
+                text: 'Debe seleccionar un curso y un estudiante'
+            });
+            return;
+        }
 
-    console.log(`✅ Selector inicializado con ${cursos.length} cursos`);
+        const cursoId = cursoSelect.value;
+        const cursoNombre = cursoSelect.options[cursoSelect.selectedIndex]?.textContent || cursoId;
 
-    cursoSelect.addEventListener('change', function () {
-      cargarEstudiantes();
-    });
-  }
+        // Obtener competencias del curso
+        const competencias = await DataManager.getCompetenciasPorCurso ?
+            await DataManager.getCompetenciasPorCurso(cursoId) : [];
 
-  async function cargarEstudiantes() {
-    console.log('🔄 Cargando estudiantes...');
+        if (competencias.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin competencias',
+                text: 'El curso no tiene competencias definidas'
+            });
+            return;
+        }
 
-    const cursoSelect = document.getElementById('cursoPlanes');
-    const estudianteSelect = document.getElementById('estudiantePlanes');
+        const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+        const estudiante = {
+            documento: estudianteSelect.value,
+            nombres: selectedOption.getAttribute('data-nombres'),
+            apellidos: selectedOption.getAttribute('data-apellidos'),
+            email: selectedOption.getAttribute('data-email') || '',
+            telefono: selectedOption.getAttribute('data-telefono') || '',
+            nombreCompleto: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`
+        };
 
-    if (!cursoSelect || !estudianteSelect) return;
+        // Cargar instructores
+        let instructores = DataManager.getResponsablesPorCurso ?
+            DataManager.getResponsablesPorCurso(cursoId) : [];
 
-    const cursoId = cursoSelect.value;
+        if (instructores.length === 0) {
+            const todosLosResponsables = await DataManager.cargarResponsables() || [];
+            instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
+        }
 
-    estudianteSelect.innerHTML = '<option value="">Cargando...</option>';
+        const hoy = new Date();
+        const plazo = new Date(hoy);
+        plazo.setDate(hoy.getDate() + 20);
+        const fechaPlazo = plazo.toISOString().split('T')[0];
+        const fechaHoy = hoy.toISOString().split('T')[0];
 
-    if (!cursoId) {
-      estudianteSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
-      return;
-    }
+        const opcionesInstructores = instructores.length > 0 ?
+            instructores.map(i =>
+                `<option value="${i.documento}" selected>${i.nombre} - ${i.materia || 'Sin materia'}</option>`
+            ).join('') :
+            '<option value="" disabled>No hay instructores para este curso</option>';
 
-    try {
-      const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId) || [];
-      estudiantesCache[cursoId] = estudiantes;
-
-      estudianteSelect.innerHTML = '<option value="">Seleccione un estudiante</option>';
-
-      estudiantes.forEach(est => {
-        const option = document.createElement('option');
-        option.value = est.documento;
-        option.setAttribute('data-nombres', est.nombres);
-        option.setAttribute('data-apellidos', est.apellidos);
-        option.setAttribute('data-email', est.correo || '');
-        option.setAttribute('data-telefono', est.celular || '');
-        option.textContent = `${est.documento} - ${est.nombres} ${est.apellidos}`;
-        estudianteSelect.appendChild(option);
-      });
-
-      console.log(`✅ ${estudiantes.length} estudiantes cargados`);
-
-    } catch (error) {
-      console.error('❌ Error:', error);
-      estudianteSelect.innerHTML = '<option value="">Error cargando estudiantes</option>';
-    }
-  }
-
-  /**
-* Muestra formulario nuevo plan (VERSIÓN CORREGIDA)
-*/
-  async function mostrarFormularioNuevo() {
-    console.log('📝 Mostrando formulario nuevo plan');
-
-    const cursoSelect = document.getElementById('cursoPlanes');
-    const estudianteSelect = document.getElementById('estudiantePlanes');
-
-    if (!cursoSelect.value || !estudianteSelect.value) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos requeridos',
-        text: 'Debe seleccionar un curso y un estudiante'
-      });
-      return;
-    }
-
-    const cursoId = cursoSelect.value;
-    const cursoNombre = cursoSelect.options[cursoSelect.selectedIndex]?.textContent || cursoId;
-
-    // Obtener competencias del curso
-    const competencias = await DataManager.getCompetenciasPorCurso ?
-      await DataManager.getCompetenciasPorCurso(cursoId) : [];
-
-    if (competencias.length === 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sin competencias',
-        text: 'El curso no tiene competencias definidas'
-      });
-      return;
-    }
-
-    const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
-    const estudiante = {
-      documento: estudianteSelect.value,
-      nombres: selectedOption.getAttribute('data-nombres'),
-      apellidos: selectedOption.getAttribute('data-apellidos'),
-      email: selectedOption.getAttribute('data-email') || '',
-      telefono: selectedOption.getAttribute('data-telefono') || '',
-      nombreCompleto: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`
-    };
-
-    // Cargar instructores
-    let instructores = DataManager.getResponsablesPorCurso ?
-      DataManager.getResponsablesPorCurso(cursoId) : [];
-
-    if (instructores.length === 0) {
-      const todosLosResponsables = await DataManager.cargarResponsables() || [];
-      instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
-    }
-
-    const hoy = new Date();
-    const plazo = new Date(hoy);
-    plazo.setDate(hoy.getDate() + 20);
-    const fechaPlazo = plazo.toISOString().split('T')[0];
-    const fechaHoy = hoy.toISOString().split('T')[0];
-
-    const opcionesInstructores = instructores.length > 0 ?
-      instructores.map(i =>
-        `<option value="${i.documento}" selected>${i.nombre} - ${i.materia || 'Sin materia'}</option>`
-      ).join('') :
-      '<option value="" disabled>No hay instructores para este curso</option>';
-
-    const { value: formValues, isConfirmed } = await Swal.fire({
-      title: '📋 NUEVO PLAN DE MEJORAMIENTO',
-      width: '1000px',
-      html: `
+        const { value: formValues, isConfirmed } = await Swal.fire({
+            title: '📋 NUEVO PLAN DE MEJORAMIENTO',
+            width: '1000px',
+            html: `
             <form id="formPlanMejoramiento" class="text-start" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
                 <div style="background: #003366; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
                     <h5 style="margin:0;">SERVICIO NACIONAL DE APRENDIZAJE - SENA</h5>
@@ -505,165 +505,353 @@ const PlanesUI = (function () {
                 </div>
             </form>
         `,
-      showCancelButton: true,
-      confirmButtonText: '✅ Generar Plan',
-      cancelButtonText: '❌ Cancelar',
-      confirmButtonColor: '#28a745',
-      didOpen: () => {
-        window.competenciasDelCurso = competencias;
-        agregarCompetenciaSelector();
-      },
-      preConfirm: () => {
-        return validarYGuardarPlan(estudiante, cursoId, cursoNombre);
-      }
-    });
-
-    if (isConfirmed && formValues) {
-      const resultado = PlanesData.agregarPlan(formValues);
-      if (resultado) {
-        Swal.fire({
-          icon: 'success',
-          title: '✅ Plan guardado',
-          text: 'El plan de mejoramiento ha sido creado exitosamente',
-          timer: 2000,
-          showConfirmButton: false
+            showCancelButton: true,
+            confirmButtonText: '✅ Generar Plan',
+            cancelButtonText: '❌ Cancelar',
+            confirmButtonColor: '#28a745',
+            didOpen: () => {
+                window.competenciasDelCurso = competencias;
+                agregarCompetenciaSelector();
+            },
+            preConfirm: () => {
+                return validarYGuardarPlan(estudiante, cursoId, cursoNombre);
+            }
         });
-        verPlanes();
-      }
-    }
-  }
 
-  /**
-   * Ver planes del estudiante (VERSIÓN MEJORADA)
-   */
- function verPlanes() {
-    console.log('📋 Ver planes del estudiante...');
-    
-    const estudianteSelect = document.getElementById('estudiantePlanes');
-    const contenedor = document.getElementById('contenedorPlanes');
-    
-    if (!estudianteSelect || !estudianteSelect.value) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Seleccione un estudiante',
-            text: 'Debe seleccionar un estudiante para ver sus planes'
-        });
-        return;
+        if (isConfirmed && formValues) {
+            const resultado = PlanesData.agregarPlan(formValues);
+            if (resultado) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Plan guardado',
+                    text: 'El plan de mejoramiento ha sido creado exitosamente',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                verPlanes();
+            }
+        }
     }
-    
-    const documento = estudianteSelect.value;
-    const planes = PlanesData.getPlanesPorEstudiante(documento);
-    
-    if (planes.length === 0) {
-        contenedor.innerHTML = '<p class="text-muted">No hay planes de mejoramiento para este estudiante</p>';
-        return;
-    }
-    
-    let html = `
-        <div class="table-responsive">
-            <table class="table table-striped table-hover table-bordered">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Plazo</th>
-                        <th>Días</th>
-                        <th>Comp.</th>
-                        <th>Actividades</th>
-                        <th>Progreso</th>
-                        <th>Estado</th>
-                        <th>Instructor</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    planes.forEach(p => {
-        const totalActividades = p.competencias?.reduce((acc, c) => 
-            acc + (c.actividades?.length || 0), 0) || 0;
+
+    /**
+     * NUEVA FUNCIÓN: Preparar mensaje para compartir
+     */
+    function prepararMensajePlan(plan) {
+        const estado = plan.estado === 'en_curso' ? '🟡 En Curso' : 
+                      plan.estado === 'aprobado' ? '✅ Aprobado' : '❌ No Aprobado';
         
-        const actividadesCompletadas = p.competencias?.reduce((acc, c) => 
-            acc + (c.actividades?.filter(a => a.estado === 'completada').length || 0), 0) || 0;
-        
-        const progreso = totalActividades > 0 ? Math.round((actividadesCompletadas / totalActividades) * 100) : 0;
-        
-        // Calcular días restantes
         const hoy = new Date();
-        const plazo = new Date(p.plazoEjecucion);
+        const plazo = new Date(plan.plazoEjecucion);
         const diffTime = plazo - hoy;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diasRestantes = diffDays > 0 ? `${diffDays} días restantes` : 'PLAZO VENCIDO';
         
-        const diasRestantes = diffDays > 0 ? 
-            `<span class="badge ${diffDays <= 5 ? 'bg-danger' : diffDays <= 10 ? 'bg-warning' : 'bg-success'}">${diffDays}d</span>` : 
-            '<span class="badge bg-danger">Vencido</span>';
+        // Resumen de competencias y actividades
+        const totalCompetencias = plan.competencias.length;
+        const totalActividades = plan.competencias.reduce((acc, c) => 
+            acc + (c.actividades?.length || 0), 0);
         
-        const estadoMap = {
-            'en_curso': { clase: 'bg-warning', texto: 'En Curso' },
-            'aprobado': { clase: 'bg-success', texto: 'Aprobado' },
-            'no_aprobado': { clase: 'bg-danger', texto: 'No Aprobado' }
-        };
-        
-        const estado = estadoMap[p.estado] || { clase: 'bg-secondary', texto: p.estado || 'N/A' };
-        
-        html += `
-            <tr>
-                <td>${p.fechaSuscripcion || 'N/A'}</td>
-                <td>${p.plazoEjecucion || 'N/A'}</td>
-                <td>${diasRestantes}</td>
-                <td>${p.competencias?.length || 0}</td>
-                <td>${totalActividades}</td>
-                <td>
-                    <div class="progress" style="height: 20px;">
-                        <div class="progress-bar bg-info" role="progressbar" 
-                             style="width: ${progreso}%;" 
-                             aria-valuenow="${progreso}" aria-valuemin="0" aria-valuemax="100">
-                            ${progreso}%
-                        </div>
-                    </div>
-                </td>
-                <td><span class="badge ${estado.clase}">${estado.texto}</span></td>
-                <td>${p.instructores?.map(i => i.nombre.split(' ')[0]).join(', ') || 'N/A'}</td>
-                <td>
-                    <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-primary" onclick="PlanesUI.verDetalle('${p.id}')" title="Ver detalle">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-info" onclick="GeneradorPlanPDF.generarPDF('${p.id}')" title="Generar PDF">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>
-                        <button class="btn btn-sm btn-warning" onclick="PlanesUI.editarPlan('${p.id}')" title="Editar plan">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarPlan('${p.id}')" title="Eliminar plan">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button class="btn btn-sm btn-success" onclick="PlanesUI.cambiarEstado('${p.id}')" title="Cambiar estado">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
-    
-    html += '</tbody></table></div>';
-    contenedor.innerHTML = html;
-}
+        let mensaje = `
+*SENA - Sistema de Gestión*
+*PLAN DE MEJORAMIENTO ACADÉMICO*
 
-  // ========== FUNCIONES DE ACCIONES ==========
+*APRENDIZ:*
+• Nombre: ${plan.aprendiz.nombre}
+• Documento: ${plan.aprendiz.tipoDocumento} ${plan.aprendiz.documento}
+• Teléfono: ${plan.aprendiz.telefono || 'No registrado'}
+• Correo: ${plan.aprendiz.correo || 'No registrado'}
 
-  function verDetalle(id) {
-    console.log('🔍 Ver detalle del plan:', id);
-    const plan = PlanesData.getPlanPorId(id);
+*CURSO:*
+• Programa: ${plan.curso.nombre}
+• Grupo: ${plan.curso.grupo}
 
-    if (!plan) {
-      Swal.fire('Error', 'Plan no encontrado', 'error');
-      return;
+*FECHAS:*
+• Suscripción: ${plan.fechaSuscripcion}
+• Plazo máximo: ${plan.plazoEjecucion}
+• Estado plazo: ${diasRestantes}
+
+*COMPETENCIAS A MEJORAR: (${totalCompetencias})*
+${plan.competencias.map(c => `• ${c.nombre}`).join('\n')}
+
+*ACTIVIDADES: (${totalActividades})*
+${plan.competencias.map(c => 
+    c.actividades?.map(a => `  - ${a.descripcion} (Entrega: ${a.fechaEntrega || 'N/A'})`).join('\n')
+).filter(a => a).join('\n') || '  No hay actividades registradas'}
+
+*RECURSOS DE APOYO:*
+${plan.recursos?.map(r => `• ${r}`).join('\n') || '• No se registraron recursos adicionales'}
+
+*ESTADO DEL PLAN:* ${estado}
+
+${plan.observaciones ? `*OBSERVACIONES:*\n${plan.observaciones}` : ''}
+
+*INSTRUCTOR(ES):*
+${plan.instructores.map(i => `• ${i.nombre}`).join('\n')}
+
+---
+Documento generado por el Sistema de Gestión de Salones - SENA CEET
+        `.trim();
+        
+        return mensaje;
     }
 
-    let competenciasHtml = '';
-    plan.competencias.forEach((comp, idx) => {
-      competenciasHtml += `
+    /**
+     * NUEVA FUNCIÓN: Mostrar opciones para compartir plan
+     */
+    function mostrarOpcionesCompartir(id) {
+        console.log('📱 Mostrando opciones de compartir para plan:', id);
+        
+        const plan = PlanesData.getPlanPorId(id);
+        if (!plan) {
+            Swal.fire('Error', 'Plan no encontrado', 'error');
+            return;
+        }
+        
+        const telefono = plan.aprendiz.telefono;
+        const correo = plan.aprendiz.correo;
+        
+        Swal.fire({
+            title: '📤 Compartir Plan de Mejoramiento',
+            html: `
+                <div class="text-center">
+                    <p><strong>Aprendiz:</strong> ${plan.aprendiz.nombre}</p>
+                    <p><strong>Documento:</strong> ${plan.aprendiz.documento}</p>
+                    <p><strong>Curso:</strong> ${plan.curso.nombre}</p>
+                    <p><strong>Plazo:</strong> ${plan.plazoEjecucion}</p>
+                    <hr>
+                    <p>¿Cómo desea compartir este plan?</p>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <button class="btn btn-success btn-lg w-100" id="btnCompartirWhatsApp">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-primary btn-lg w-100" id="btnCompartirEmail">
+                                <i class="fas fa-envelope"></i> Email
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <button class="btn btn-danger btn-lg w-100" id="btnCompartirPDF">
+                                <i class="fas fa-file-pdf"></i> Compartir PDF
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-muted small">
+                        ${!telefono ? '⚠️ No hay teléfono registrado' : ''}
+                        ${!correo ? '⚠️ No hay email registrado' : ''}
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
+            didOpen: () => {
+                document.getElementById('btnCompartirWhatsApp').addEventListener('click', () => {
+                    if (telefono) {
+                        compartirWhatsAppPlan(plan, telefono);
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sin teléfono',
+                            text: 'El aprendiz no tiene número registrado'
+                        });
+                    }
+                });
+                
+                document.getElementById('btnCompartirEmail').addEventListener('click', () => {
+                    if (correo) {
+                        compartirEmailPlan(plan, correo);
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sin correo',
+                            text: 'El aprendiz no tiene email registrado'
+                        });
+                    }
+                });
+                
+                document.getElementById('btnCompartirPDF').addEventListener('click', () => {
+                    Swal.close();
+                    setTimeout(() => {
+                        GeneradorPlanPDF.generarPDF(id);
+                    }, 300);
+                });
+            }
+        });
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Compartir por WhatsApp
+     */
+    function compartirWhatsAppPlan(plan, telefono) {
+        const mensaje = prepararMensajePlan(plan);
+        const numero = telefono.replace(/\D/g, '');
+        const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank');
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'WhatsApp abierto',
+            text: 'El mensaje ha sido preparado',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    /**
+     * NUEVA FUNCIÓN: Compartir por Email
+     */
+    function compartirEmailPlan(plan, correo) {
+        const mensaje = prepararMensajePlan(plan);
+        const asunto = `Plan de Mejoramiento - ${plan.aprendiz.nombre}`;
+        const url = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
+        window.location.href = url;
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Cliente de correo abierto',
+            text: 'El mensaje ha sido preparado',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    /**
+     * Ver planes del estudiante (ACTUALIZADO con botón de compartir)
+     */
+    function verPlanes() {
+        console.log('📋 Ver planes del estudiante...');
+        
+        const estudianteSelect = document.getElementById('estudiantePlanes');
+        const contenedor = document.getElementById('contenedorPlanes');
+        
+        if (!estudianteSelect || !estudianteSelect.value) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Seleccione un estudiante',
+                text: 'Debe seleccionar un estudiante para ver sus planes'
+            });
+            return;
+        }
+        
+        const documento = estudianteSelect.value;
+        const planes = PlanesData.getPlanesPorEstudiante(documento);
+        
+        if (planes.length === 0) {
+            contenedor.innerHTML = '<p class="text-muted">No hay planes de mejoramiento para este estudiante</p>';
+            return;
+        }
+        
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Plazo</th>
+                            <th>Días</th>
+                            <th>Comp.</th>
+                            <th>Actividades</th>
+                            <th>Progreso</th>
+                            <th>Estado</th>
+                            <th>Instructor</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        planes.forEach(p => {
+            const totalActividades = p.competencias?.reduce((acc, c) => 
+                acc + (c.actividades?.length || 0), 0) || 0;
+            
+            const actividadesCompletadas = p.competencias?.reduce((acc, c) => 
+                acc + (c.actividades?.filter(a => a.estado === 'completada').length || 0), 0) || 0;
+            
+            const progreso = totalActividades > 0 ? Math.round((actividadesCompletadas / totalActividades) * 100) : 0;
+            
+            // Calcular días restantes
+            const hoy = new Date();
+            const plazo = new Date(p.plazoEjecucion);
+            const diffTime = plazo - hoy;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            const diasRestantes = diffDays > 0 ? 
+                `<span class="badge ${diffDays <= 5 ? 'bg-danger' : diffDays <= 10 ? 'bg-warning' : 'bg-success'}">${diffDays}d</span>` : 
+                '<span class="badge bg-danger">Vencido</span>';
+            
+            const estadoMap = {
+                'en_curso': { clase: 'bg-warning', texto: 'En Curso' },
+                'aprobado': { clase: 'bg-success', texto: 'Aprobado' },
+                'no_aprobado': { clase: 'bg-danger', texto: 'No Aprobado' }
+            };
+            
+            const estado = estadoMap[p.estado] || { clase: 'bg-secondary', texto: p.estado || 'N/A' };
+            
+            html += `
+                <tr>
+                    <td>${p.fechaSuscripcion || 'N/A'}</td>
+                    <td>${p.plazoEjecucion || 'N/A'}</td>
+                    <td>${diasRestantes}</td>
+                    <td>${p.competencias?.length || 0}</td>
+                    <td>${totalActividades}</td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-info" role="progressbar" 
+                                 style="width: ${progreso}%;" 
+                                 aria-valuenow="${progreso}" aria-valuemin="0" aria-valuemax="100">
+                                ${progreso}%
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge ${estado.clase}">${estado.texto}</span></td>
+                    <td>${p.instructores?.map(i => i.nombre.split(' ')[0]).join(', ') || 'N/A'}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-primary" onclick="PlanesUI.verDetalle('${p.id}')" title="Ver detalle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="GeneradorPlanPDF.generarPDF('${p.id}')" title="Generar PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                            <button class="btn btn-sm btn-success" onclick="PlanesUI.mostrarOpcionesCompartir('${p.id}')" title="Compartir">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="PlanesUI.editarPlan('${p.id}')" title="Editar plan">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarPlan('${p.id}')" title="Eliminar plan">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="PlanesUI.cambiarEstado('${p.id}')" title="Cambiar estado">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table></div>';
+        contenedor.innerHTML = html;
+    }
+
+    // ========== FUNCIONES DE ACCIONES ==========
+
+    function verDetalle(id) {
+        console.log('🔍 Ver detalle del plan:', id);
+        const plan = PlanesData.getPlanPorId(id);
+
+        if (!plan) {
+            Swal.fire('Error', 'Plan no encontrado', 'error');
+            return;
+        }
+
+        let competenciasHtml = '';
+        plan.competencias.forEach((comp, idx) => {
+            competenciasHtml += `
                 <div class="card mb-2">
                     <div class="card-header bg-light">
                         <strong>Competencia ${idx + 1}:</strong> ${comp.nombre}
@@ -701,12 +889,12 @@ const PlanesUI = (function () {
                     </div>
                 </div>
             `;
-    });
+        });
 
-    Swal.fire({
-      title: '📋 Detalle del Plan de Mejoramiento',
-      width: '900px',
-      html: `
+        Swal.fire({
+            title: '📋 Detalle del Plan de Mejoramiento',
+            width: '900px',
+            html: `
                 <div class="text-start">
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -750,55 +938,60 @@ const PlanesUI = (function () {
                     ` : ''}
                 </div>
             `,
-      confirmButtonText: 'Cerrar'
-    });
-  }
-
-
-  /**
- * Editar plan existente
- */
-  async function editarPlan(id) {
-    console.log('✏️ Editando plan:', id);
-
-    const plan = PlanesData.getPlanPorId(id);
-    if (!plan) {
-      Swal.fire('Error', 'Plan no encontrado', 'error');
-      return;
+            showCancelButton: true,
+            confirmButtonText: '📤 Compartir',
+            cancelButtonText: 'Cerrar'
+        }).then(result => {
+            if (result.isConfirmed) {
+                mostrarOpcionesCompartir(id);
+            }
+        });
     }
 
-    const cursoId = plan.curso.id;
-    const cursoNombre = plan.curso.nombre;
+    /**
+     * Editar plan existente
+     */
+    async function editarPlan(id) {
+        console.log('✏️ Editando plan:', id);
 
-    // Obtener competencias del curso
-    const competencias = await DataManager.getCompetenciasPorCurso ?
-      await DataManager.getCompetenciasPorCurso(cursoId) : [];
+        const plan = PlanesData.getPlanPorId(id);
+        if (!plan) {
+            Swal.fire('Error', 'Plan no encontrado', 'error');
+            return;
+        }
 
-    // Obtener instructores actualizados
-    let instructores = DataManager.getResponsablesPorCurso ?
-      DataManager.getResponsablesPorCurso(cursoId) : [];
+        const cursoId = plan.curso.id;
+        const cursoNombre = plan.curso.nombre;
 
-    if (instructores.length === 0) {
-      const todosLosResponsables = await DataManager.cargarResponsables() || [];
-      instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
-    }
+        // Obtener competencias del curso
+        const competencias = await DataManager.getCompetenciasPorCurso ?
+            await DataManager.getCompetenciasPorCurso(cursoId) : [];
 
-    // Generar opciones de instructores con los seleccionados actualmente
-    const opcionesInstructores = instructores.length > 0 ?
-      instructores.map(i => {
-        const selected = plan.instructores?.some(ins => ins.documento === i.documento) ? 'selected' : '';
-        return `<option value="${i.documento}" ${selected}>${i.nombre} - ${i.materia || 'Sin materia'}</option>`;
-      }).join('') :
-      '<option value="" disabled>No hay instructores para este curso</option>';
+        // Obtener instructores actualizados
+        let instructores = DataManager.getResponsablesPorCurso ?
+            DataManager.getResponsablesPorCurso(cursoId) : [];
 
-    // Generar HTML para competencias existentes
-    let competenciasHtml = '';
-    window.competenciasDelCurso = competencias;
+        if (instructores.length === 0) {
+            const todosLosResponsables = await DataManager.cargarResponsables() || [];
+            instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
+        }
 
-    const { value: formValues, isConfirmed } = await Swal.fire({
-      title: '✏️ EDITAR PLAN DE MEJORAMIENTO',
-      width: '1000px',
-      html: `
+        // Generar opciones de instructores con los seleccionados actualmente
+        const opcionesInstructores = instructores.length > 0 ?
+            instructores.map(i => {
+                const selected = plan.instructores?.some(ins => ins.documento === i.documento) ? 'selected' : '';
+                return `<option value="${i.documento}" ${selected}>${i.nombre} - ${i.materia || 'Sin materia'}</option>`;
+            }).join('') :
+            '<option value="" disabled>No hay instructores para este curso</option>';
+
+        // Generar HTML para competencias existentes
+        let competenciasHtml = '';
+        window.competenciasDelCurso = competencias;
+
+        const { value: formValues, isConfirmed } = await Swal.fire({
+            title: '✏️ EDITAR PLAN DE MEJORAMIENTO',
+            width: '1000px',
+            html: `
             <form id="formPlanMejoramiento" class="text-start" style="max-height: 70vh; overflow-y: auto; padding: 10px;">
                 <div style="background: #003366; color: white; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
                     <h5 style="margin:0;">SERVICIO NACIONAL DE APRENDIZAJE - SENA</h5>
@@ -900,255 +1093,241 @@ const PlanesUI = (function () {
                 </div>
             </form>
         `,
-      showCancelButton: true,
-      confirmButtonText: '✅ Actualizar Plan',
-      cancelButtonText: '❌ Cancelar',
-      confirmButtonColor: '#28a745',
-      didOpen: () => {
-        window.competenciasDelCurso = competencias;
-        // Cargar competencias existentes
-        setTimeout(() => {
-          plan.competencias.forEach(comp => {
-            agregarCompetenciaSelector();
-            // Aquí habría que seleccionar la competencia y sus resultados
-          });
-        }, 100);
-      },
-      preConfirm: () => {
-        return validarYGuardarPlan(plan.aprendiz, cursoId, cursoNombre);
-      }
-    });
-
-    if (isConfirmed && formValues) {
-      // Actualizar el plan existente
-      const actualizado = PlanesData.actualizarPlan(id, formValues);
-
-      if (actualizado) {
-        Swal.fire({
-          icon: 'success',
-          title: '✅ Plan actualizado',
-          text: 'El plan de mejoramiento ha sido actualizado exitosamente',
-          timer: 2000,
-          showConfirmButton: false
+            showCancelButton: true,
+            confirmButtonText: '✅ Actualizar Plan',
+            cancelButtonText: '❌ Cancelar',
+            confirmButtonColor: '#28a745',
+            didOpen: () => {
+                window.competenciasDelCurso = competencias;
+                // Cargar competencias existentes
+                setTimeout(() => {
+                    plan.competencias.forEach(comp => {
+                        agregarCompetenciaSelector();
+                        // Aquí habría que seleccionar la competencia y sus resultados
+                    });
+                }, 100);
+            },
+            preConfirm: () => {
+                return validarYGuardarPlan(plan.aprendiz, cursoId, cursoNombre);
+            }
         });
-        verPlanes();
-      }
-    }
-  }
 
-  /**
-  * Eliminar plan con confirmación y eliminación real
-  */
-  function eliminarPlan(id) {
-    console.log('🗑️ Eliminando plan:', id);
+        if (isConfirmed && formValues) {
+            const actualizado = PlanesData.actualizarPlan(id, formValues);
 
-    const plan = PlanesData.getPlanPorId(id);
-    if (!plan) {
-      Swal.fire('Error', 'Plan no encontrado', 'error');
-      return;
-    }
-
-    Swal.fire({
-      title: '¿Eliminar plan?',
-      html: `
-            <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
-            <p><strong>Fecha:</strong> ${plan.fechaSuscripcion}</p>
-            <p class="text-danger">Esta acción no se puede deshacer</p>
-        `,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        const eliminado = PlanesData.eliminarPlan(id);
-
-        if (eliminado) {
-          Swal.fire({
-            icon: 'success',
-            title: 'Eliminado',
-            text: 'El plan ha sido eliminado',
-            timer: 1500,
-            showConfirmButton: false
-          });
-
-          // Recargar la tabla
-          setTimeout(() => {
-            verPlanes();
-          }, 1500);
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo eliminar el plan'
-          });
+            if (actualizado) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Plan actualizado',
+                    text: 'El plan de mejoramiento ha sido actualizado exitosamente',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                verPlanes();
+            }
         }
-      }
-    });
-  }
-
-  /**
- * Cambiar estado del plan con persistencia
- */
-  function cambiarEstado(id) {
-    console.log('🔄 Cambiando estado del plan:', id);
-
-    const plan = PlanesData.getPlanPorId(id);
-    if (!plan) {
-      Swal.fire('Error', 'Plan no encontrado', 'error');
-      return;
     }
 
-    const estados = [
-      { value: 'en_curso', label: '🟡 En Curso', color: 'warning' },
-      { value: 'aprobado', label: '🟢 Aprobado', color: 'success' },
-      { value: 'no_aprobado', label: '🔴 No Aprobado', color: 'danger' }
-    ];
+    /**
+     * Eliminar plan con confirmación
+     */
+    function eliminarPlan(id) {
+        console.log('🗑️ Eliminando plan:', id);
 
-    const inputOptions = {};
-    estados.forEach(e => { inputOptions[e.value] = e.label; });
+        const plan = PlanesData.getPlanPorId(id);
+        if (!plan) {
+            Swal.fire('Error', 'Plan no encontrado', 'error');
+            return;
+        }
 
-    Swal.fire({
-      title: 'Cambiar estado del plan',
-      html: `
-            <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
-            <p><strong>Estado actual:</strong> 
-                <span class="badge bg-${plan.estado === 'en_curso' ? 'warning' : plan.estado === 'aprobado' ? 'success' : 'danger'}">
-                    ${plan.estado}
-                </span>
-            </p>
-        `,
-      input: 'select',
-      inputOptions: inputOptions,
-      inputValue: plan.estado,
-      showCancelButton: true,
-      confirmButtonText: 'Actualizar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#28a745',
-      preConfirm: (nuevoEstado) => {
-        return PlanesData.actualizarEstadoPlan(id, nuevoEstado);
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
         Swal.fire({
-          icon: 'success',
-          title: 'Estado actualizado',
-          text: `El plan ahora está: ${estados.find(e => e.value === result.value)?.label}`,
-          timer: 1500,
-          showConfirmButton: false
+            title: '¿Eliminar plan?',
+            html: `
+                <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
+                <p><strong>Fecha:</strong> ${plan.fechaSuscripcion}</p>
+                <p class="text-danger">Esta acción no se puede deshacer</p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const eliminado = PlanesData.eliminarPlan(id);
+
+                if (eliminado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Eliminado',
+                        text: 'El plan ha sido eliminado',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    setTimeout(() => {
+                        verPlanes();
+                    }, 1500);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo eliminar el plan'
+                    });
+                }
+            }
         });
-
-        // Recargar la tabla
-        setTimeout(() => {
-          verPlanes();
-        }, 1500);
-      }
-    });
-  }
-
-  // ========== FUNCIONES DE DIAGNÓSTICO ==========
-
-  /**
-   * Diagnóstico completo de planes
-   */
-  function diagnosticarPlanes() {
-    console.log('=== DIAGNÓSTICO DE PLANES ===');
-    console.log('1. PlanesData existe:', typeof PlanesData !== 'undefined');
-
-    if (typeof PlanesData === 'undefined') {
-      console.error('❌ PlanesData no está disponible');
-      return;
     }
 
-    // Obtener todos los planes
-    const todosPlanes = PlanesData.cargarPlanes ? PlanesData.cargarPlanes() : [];
-    console.log('2. Total planes en memoria:', todosPlanes.length);
+    /**
+     * Cambiar estado del plan
+     */
+    function cambiarEstado(id) {
+        console.log('🔄 Cambiando estado del plan:', id);
 
-    // Verificar localStorage
-    try {
-      const saved = localStorage.getItem('planesMejoramiento');
-      console.log('3. localStorage (planesMejoramiento):', saved ? '✅' : '❌');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        console.log('   - Planes en localStorage:', parsed.length);
-        console.log('   - Primer plan:', parsed[0]);
-      }
-    } catch (error) {
-      console.error('❌ Error leyendo localStorage:', error);
+        const plan = PlanesData.getPlanPorId(id);
+        if (!plan) {
+            Swal.fire('Error', 'Plan no encontrado', 'error');
+            return;
+        }
+
+        const estados = [
+            { value: 'en_curso', label: '🟡 En Curso', color: 'warning' },
+            { value: 'aprobado', label: '🟢 Aprobado', color: 'success' },
+            { value: 'no_aprobado', label: '🔴 No Aprobado', color: 'danger' }
+        ];
+
+        const inputOptions = {};
+        estados.forEach(e => { inputOptions[e.value] = e.label; });
+
+        Swal.fire({
+            title: 'Cambiar estado del plan',
+            html: `
+                <p><strong>Estudiante:</strong> ${plan.aprendiz.nombre}</p>
+                <p><strong>Estado actual:</strong> 
+                    <span class="badge bg-${plan.estado === 'en_curso' ? 'warning' : plan.estado === 'aprobado' ? 'success' : 'danger'}">
+                        ${plan.estado}
+                    </span>
+                </p>
+            `,
+            input: 'select',
+            inputOptions: inputOptions,
+            inputValue: plan.estado,
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            preConfirm: (nuevoEstado) => {
+                return PlanesData.actualizarEstadoPlan(id, nuevoEstado);
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Estado actualizado',
+                    text: `El plan ahora está: ${estados.find(e => e.value === result.value)?.label}`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                setTimeout(() => {
+                    verPlanes();
+                }, 1500);
+            }
+        });
     }
 
-    // Verificar el selector de cursos
-    const cursoSelect = document.getElementById('cursoPlanes');
-    console.log('4. Selector de cursos:', cursoSelect ? '✅' : '❌');
-    if (cursoSelect) {
-      console.log('   - Opciones:', cursoSelect.options.length);
-      console.log('   - Valor actual:', cursoSelect.value);
+    // ========== FUNCIONES DE DIAGNÓSTICO ==========
+
+    function diagnosticarPlanes() {
+        console.log('=== DIAGNÓSTICO DE PLANES ===');
+        console.log('1. PlanesData existe:', typeof PlanesData !== 'undefined');
+
+        if (typeof PlanesData === 'undefined') {
+            console.error('❌ PlanesData no está disponible');
+            return;
+        }
+
+        const todosPlanes = PlanesData.cargarPlanes ? PlanesData.cargarPlanes() : [];
+        console.log('2. Total planes en memoria:', todosPlanes.length);
+
+        try {
+            const saved = localStorage.getItem('planesMejoramiento');
+            console.log('3. localStorage (planesMejoramiento):', saved ? '✅' : '❌');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                console.log('   - Planes en localStorage:', parsed.length);
+            }
+        } catch (error) {
+            console.error('❌ Error leyendo localStorage:', error);
+        }
+
+        const cursoSelect = document.getElementById('cursoPlanes');
+        console.log('4. Selector de cursos:', cursoSelect ? '✅' : '❌');
+
+        const estudianteSelect = document.getElementById('estudiantePlanes');
+        console.log('5. Selector de estudiantes:', estudianteSelect ? '✅' : '❌');
+
+        return '✅ Diagnóstico completado';
     }
 
-    // Verificar el selector de estudiantes
-    const estudianteSelect = document.getElementById('estudiantePlanes');
-    console.log('5. Selector de estudiantes:', estudianteSelect ? '✅' : '❌');
+    async function diagnosticarCursos() {
+        console.log('=== DIAGNÓSTICO DE CURSOS ===');
+        console.log('DataManager existe:', typeof DataManager !== 'undefined');
 
-    return '✅ Diagnóstico completado';
-  }
+        if (typeof DataManager !== 'undefined') {
+            console.log('getCursos existe:', typeof DataManager.getCursos === 'function');
+            const cursos = DataManager.getCursos();
+            console.log('Cursos en memoria:', cursos);
+        }
 
-  async function diagnosticarCursos() {
-    console.log('=== DIAGNÓSTICO DE CURSOS ===');
-    console.log('DataManager existe:', typeof DataManager !== 'undefined');
-
-    if (typeof DataManager !== 'undefined') {
-      console.log('getCursos existe:', typeof DataManager.getCursos === 'function');
-      const cursos = DataManager.getCursos();
-      console.log('Cursos en memoria:', cursos);
+        try {
+            const response = await fetch('data/cursos.json');
+            console.log('Archivo cursos.json:', response.ok ? '✅' : '❌');
+        } catch (error) {
+            console.error('Error:', error);
+        }
     }
 
-    try {
-      const response = await fetch('data/cursos.json');
-      console.log('Archivo cursos.json:', response.ok ? '✅' : '❌');
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  }
-
-  // ========== AUTO-INICIALIZACIÓN ==========
-  setTimeout(() => {
-    console.log('🔄 Auto-inicializando PlanesUI...');
-    inicializarSelectores();
-  }, 1000);
-
-  document.addEventListener('DOMContentLoaded', function () {
-    const tabButton = document.getElementById('planes-tab');
-    if (tabButton) {
-      tabButton.addEventListener('shown.bs.tab', function () {
-        console.log('📌 Pestaña Planes activada - Recargando selectores...');
+    // ========== AUTO-INICIALIZACIÓN ==========
+    setTimeout(() => {
+        console.log('🔄 Auto-inicializando PlanesUI...');
         inicializarSelectores();
-      });
-    }
-  });
+    }, 1000);
 
-  // ========== API PÚBLICA ==========
-  return {
-    inicializarSelectores,
-    cargarEstudiantes,
-    verPlanes,
-    verDetalle,
-    editarPlan,
-    eliminarPlan,
-    cambiarEstado,
-    mostrarFormularioNuevo,
-    agregarCompetenciaSelector,
-    agregarActividad,
-    agregarRecurso,
-    eliminarCompetencia,
-    cargarResultadosCompetencia,
-    diagnosticarCursos,
-    diagnosticarPlanes
-  };
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabButton = document.getElementById('planes-tab');
+        if (tabButton) {
+            tabButton.addEventListener('shown.bs.tab', function () {
+                console.log('📌 Pestaña Planes activada - Recargando selectores...');
+                inicializarSelectores();
+            });
+        }
+    });
+
+    // ========== API PÚBLICA ==========
+    return {
+        inicializarSelectores,
+        cargarEstudiantes,
+        verPlanes,
+        verDetalle,
+        editarPlan,
+        eliminarPlan,
+        cambiarEstado,
+        mostrarFormularioNuevo,
+        mostrarOpcionesCompartir,
+        agregarCompetenciaSelector,
+        agregarActividad,
+        agregarRecurso,
+        eliminarCompetencia,
+        cargarResultadosCompetencia,
+        diagnosticarCursos,
+        diagnosticarPlanes
+    };
 
 })();
 
-console.log('✅ Módulo PlanesUI v1.4 cargado correctamente');
+console.log('✅ Módulo PlanesUI v2.0 cargado correctamente');
 window.PlanesUI = PlanesUI;
 window.probarCursos = () => PlanesUI.diagnosticarCursos();
 window.diagnosticarPlanes = () => PlanesUI.diagnosticarPlanes();

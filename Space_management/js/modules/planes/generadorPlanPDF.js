@@ -1,5 +1,5 @@
 // js/modules/planes/generadorPlanPDF.js
-// Versión 1.2 - CORREGIDA - ERROR DE diffDays
+// Versión 2.0 - CON LOGO Y DISEÑO MEJORADO
 
 console.log('🔄 Cargando generadorPlanPDF.js...');
 
@@ -8,7 +8,7 @@ const GeneradorPlanPDF = (function() {
     /**
      * Genera PDF de un plan de mejoramiento
      */
-    function generarPDF(planId) {
+    async function generarPDF(planId) {
         console.log('📄 Generando PDF para plan:', planId);
         
         const plan = PlanesData.getPlanPorId(planId);
@@ -17,15 +17,21 @@ const GeneradorPlanPDF = (function() {
             return;
         }
         
-        // Calcular días restantes AQUÍ y pasarlos a la función
+        // Cargar logo
+        let logoBase64 = null;
+        if (typeof LogoUtils !== 'undefined') {
+            logoBase64 = await LogoUtils.cargarLogoDesdeArchivo();
+        }
+        
+        // Calcular días restantes
         const hoy = new Date();
         const plazo = new Date(plan.plazoEjecucion);
         const diffTime = plazo - hoy;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const estadoPlazo = diffDays > 0 ? `${diffDays} días restantes` : 'PLAZO VENCIDO';
         
-        // Crear contenido HTML con la estructura de Word (PASAR diffDays)
-        const contenido = generarHTMLPlan(plan, diffDays, estadoPlazo);
+        // Crear contenido HTML con logo
+        const contenido = generarHTMLPlan(plan, diffDays, estadoPlazo, logoBase64);
         
         // Abrir ventana para impresión
         const ventana = window.open('', '_blank');
@@ -42,18 +48,47 @@ const GeneradorPlanPDF = (function() {
                         font-size: 12pt;
                         line-height: 1.5;
                     }
-                    h1 {
-                        color: #003366;
+                    .header {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #003366;
+                        padding-bottom: 15px;
+                    }
+                    .logo {
+                        width: 100px;
+                        height: 100px;
+                        margin-right: 20px;
+                    }
+                    .logo img {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                    .titulo {
+                        flex: 1;
                         text-align: center;
-                        font-size: 18pt;
-                        margin-bottom: 5px;
+                    }
+                    .titulo h1 {
+                        color: #003366;
+                        margin: 0;
+                        font-size: 20pt;
                         font-weight: bold;
+                    }
+                    .titulo h2 {
+                        color: #003366;
+                        margin: 5px 0 0;
+                        font-size: 16pt;
+                        font-weight: normal;
+                    }
+                    .titulo p {
+                        color: #666;
+                        margin: 5px 0 0;
+                        font-size: 11pt;
                     }
                     h2 {
                         color: #003366;
                         font-size: 16pt;
                         margin-top: 25px;
-                        margin-bottom: 10px;
                         border-bottom: 1px solid #003366;
                         padding-bottom: 5px;
                     }
@@ -85,21 +120,6 @@ const GeneradorPlanPDF = (function() {
                         padding: 8px;
                         border: 1px solid #999;
                         vertical-align: top;
-                    }
-                    .header-sena {
-                        text-align: center;
-                        margin-bottom: 30px;
-                    }
-                    .header-sena h1 {
-                        margin: 0;
-                        color: #003366;
-                        font-size: 20pt;
-                    }
-                    .header-sena h2 {
-                        margin: 5px 0;
-                        color: #003366;
-                        font-weight: normal;
-                        border: none;
                     }
                     .info-table {
                         width: 100%;
@@ -143,13 +163,26 @@ const GeneradorPlanPDF = (function() {
                         border-left: 4px solid #003366;
                         margin: 15px 0;
                     }
+                    .badge-estado {
+                        display: inline-block;
+                        padding: 3px 8px;
+                        border-radius: 4px;
+                        font-size: 10pt;
+                        font-weight: bold;
+                    }
+                    .badge-activo { background: #ffc107; color: #000; }
+                    .badge-completado { background: #28a745; color: #fff; }
+                    .footer {
+                        margin-top: 50px;
+                        text-align: center;
+                        font-size: 10pt;
+                        color: #666;
+                        border-top: 1px solid #ccc;
+                        padding-top: 20px;
+                    }
                     @media print {
-                        .no-print {
-                            display: none;
-                        }
-                        body {
-                            margin: 2cm;
-                        }
+                        .no-print { display: none; }
+                        body { margin: 2cm; }
                     }
                 </style>
             </head>
@@ -171,12 +204,15 @@ const GeneradorPlanPDF = (function() {
     }
 
     /**
-     * Genera el HTML del plan con la estructura de la plantilla Word
-     * @param {Object} plan - Datos del plan
-     * @param {number} diffDays - Días restantes (calculado en generarPDF)
-     * @param {string} estadoPlazo - Texto del estado del plazo
+     * Genera el HTML del plan con logo
      */
-    function generarHTMLPlan(plan, diffDays, estadoPlazo) {
+    function generarHTMLPlan(plan, diffDays, estadoPlazo, logoBase64) {
+        const logoHtml = logoBase64 ? 
+            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` : 
+            `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 18px; font-weight: bold;">
+                SENA
+            </div>`;
+
         const competenciasHtml = plan.competencias.map((comp, idx) => `
             <h3>${idx + 1}. COMPETENCIA: ${comp.nombre}</h3>
             
@@ -215,11 +251,13 @@ const GeneradorPlanPDF = (function() {
         const estadoTexto = diffDays > 0 ? `En curso (${estadoPlazo})` : '⚠️ PLAZO VENCIDO';
 
         return `
-            <div class="header-sena">
-                <h1>SERVICIO NACIONAL DE APRENDIZAJE - SENA</h1>
-                <h2>CENTRO DE ELECTRICIDAD, ELECTRÓNICA Y TELECOMUNICACIONES - CEET</h2>
-                <h2 style="font-size: 18pt; margin-top: 10px;">PLAN DE MEJORAMIENTO ACADÉMICO</h2>
-                <p><strong>Acuerdo 009 de 2024 - Artículo 46</strong></p>
+            <div class="header">
+                ${logoHtml}
+                <div class="titulo">
+                    <h1>SERVICIO NACIONAL DE APRENDIZAJE - SENA</h1>
+                    <h2>CENTRO DE ELECTRICIDAD, ELECTRÓNICA Y TELECOMUNICACIONES - CEET</h2>
+                    <p>Acuerdo 009 de 2024 - Artículo 46</p>
+                </div>
             </div>
 
             <h2>1. INFORMACIÓN GENERAL</h2>
@@ -282,6 +320,11 @@ const GeneradorPlanPDF = (function() {
                 <h3>ANEXOS U OBSERVACIONES</h3>
                 <p>${plan.observaciones}</p>
             ` : ''}
+            
+            <div class="footer">
+                <p>Documento generado por el Sistema de Gestión de Salones - SENA CEET</p>
+                <p>Fecha de generación: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}</p>
+            </div>
         `;
     }
 
@@ -290,5 +333,5 @@ const GeneradorPlanPDF = (function() {
     };
 })();
 
-console.log('✅ GeneradorPlanPDF v1.2 cargado');
+console.log('✅ GeneradorPlanPDF v2.0 cargado');
 window.GeneradorPlanPDF = GeneradorPlanPDF;
