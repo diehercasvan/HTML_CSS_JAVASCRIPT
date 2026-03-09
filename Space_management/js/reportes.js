@@ -1,5 +1,5 @@
-// reportes.js - Módulo profesional de reportes v0.6
-// VERSIÓN MEJORADA - CON INFORMACIÓN COMPLETA DE SALONES, MESAS Y EQUIPOS
+// reportes.js - Módulo profesional de reportes v0.7
+// VERSIÓN CON LOGO Y DISEÑO MEJORADO
 
 console.log('🔄 Iniciando carga de reportes.js...');
 
@@ -14,13 +14,48 @@ const Reportes = (function () {
     console.log('📦 Ejecutando IIFE de Reportes...');
 
     /**
-  * Genera un reporte profesional completo con todos los datos
-  */
-    function generarReporteProfesional() {
+     * Carga el logo para los reportes
+     */
+    async function cargarLogo() {
+        let logoBase64 = null;
+        if (typeof LogoUtils !== 'undefined') {
+            logoBase64 = await LogoUtils.cargarLogoDesdeArchivo();
+        }
+        return logoBase64;
+    }
+
+    /**
+     * Genera el header con logo para los reportes
+     */
+    function generarHeaderConLogo(logoBase64, titulo, subtitulo = '') {
+        const logoHtml = logoBase64 ? 
+            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` : 
+            `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 24px; font-weight: bold;">
+                SENA
+            </div>`;
+
+        return `
+            <div class="header">
+                ${logoHtml}
+                <div class="titulo">
+                    <h1>SERVICIO NACIONAL DE APRENDIZAJE - SENA</h1>
+                    <h2>CENTRO DE ELECTRICIDAD, ELECTRÓNICA Y TELECOMUNICACIONES - CEET</h2>
+                    <h3>${titulo}</h3>
+                    ${subtitulo ? `<p>${subtitulo}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Genera un reporte profesional completo con todos los datos
+     */
+    async function generarReporteProfesional() {
         console.log('📊 Generando reporte profesional...');
 
         try {
             const datos = DataManager.exportarDatos ? DataManager.exportarDatos() : null;
+            const logoBase64 = await cargarLogo();
 
             if (!datos) {
                 if (typeof Swal !== 'undefined') {
@@ -35,42 +70,29 @@ const Reportes = (function () {
                 return;
             }
 
-            // MOSTRAR TODOS LOS DATOS DISPONIBLES PARA DEPURACIÓN
-            console.log('📦 Datos completos:', datos);
-            console.log('📦 Mesas en datos:', datos.mesas);
-            console.log('📦 Sillas en datos:', datos.sillas);
-
-            // Obtener curso actual - PRIORIZAR EL CURSO SELECCIONADO EN MESAS O SILLAS
+            // Obtener curso actual
             let cursoActual = sessionStorage.getItem('cursoMesasSeleccionado') ||
                 document.getElementById('cursoSillas')?.value ||
                 document.getElementById('cursoAsistencia')?.value;
 
             // Si no hay curso seleccionado, tomar el primer curso con datos
             if (!cursoActual || cursoActual === '') {
-                // Buscar si hay mesas de algún curso
                 if (datos.mesas && datos.mesas.length > 0) {
                     cursoActual = datos.mesas[0].curso;
-                    console.log(`📌 Usando curso de mesas: ${cursoActual}`);
-                }
-                // Si no hay mesas, buscar sillas
-                else if (datos.sillas && datos.sillas.length > 0) {
+                } else if (datos.sillas && datos.sillas.length > 0) {
                     cursoActual = datos.sillas[0].curso;
-                    console.log(`📌 Usando curso de sillas: ${cursoActual}`);
-                }
-                // Si no hay nada, usar TODOS
-                else {
+                } else {
                     cursoActual = 'TODOS';
                 }
             }
 
             console.log(`📌 Curso seleccionado para reporte: ${cursoActual}`);
 
-            // Obtener responsable del curso (el primero que encuentre)
+            // Obtener responsable del curso
             let responsable = null;
             if (cursoActual !== 'TODOS') {
                 responsable = datos.responsables?.find(r => r.numeroCurso === cursoActual);
             }
-            // Si no hay responsable para el curso específico, tomar el primero
             if (!responsable && datos.responsables && datos.responsables.length > 0) {
                 responsable = datos.responsables[0];
             }
@@ -93,10 +115,6 @@ const Reportes = (function () {
                 };
             }
 
-            console.log('📦 Datos filtrados:', datosFiltrados);
-            console.log('📦 Mesas filtradas:', datosFiltrados.mesas);
-            console.log('📦 Sillas filtradas:', datosFiltrados.sillas);
-
             const fechaActual = new Date();
             const fechaReporte = fechaActual.toLocaleDateString();
             const horaReporte = fechaActual.toLocaleTimeString();
@@ -114,10 +132,7 @@ const Reportes = (function () {
             let PCsRegular = 0;
             let PCsDanado = 0;
 
-            console.log(`📊 Procesando ${totalMesas} mesas...`);
-
-            datosFiltrados.mesas?.forEach((mesa, idx) => {
-                console.log(`Mesa ${idx + 1}:`, mesa);
+            datosFiltrados.mesas?.forEach(mesa => {
                 totalPCs += mesa.pcs?.length || 0;
                 PCsAsignados += mesa.pcs?.filter(pc => pc.estudiante).length || 0;
 
@@ -130,8 +145,6 @@ const Reportes = (function () {
                     }
                 });
             });
-
-            console.log(`📊 Total PCs: ${totalPCs}, Asignados: ${PCsAsignados}`);
 
             // Calcular estadísticas de sillas
             const totalSillas = datosFiltrados.sillas?.length || 0;
@@ -159,93 +172,120 @@ const Reportes = (function () {
                 <title>Reporte ${cursoActual !== 'TODOS' ? `Curso ${cursoActual}` : 'General'}</title>
                 <style>
                     body { 
-                        font-family: 'Segoe UI', Arial, sans-serif; 
-                        margin: 40px; 
+                        font-family: 'Times New Roman', Times, serif;
+                        margin: 2.5cm 2cm;
+                        font-size: 12pt;
+                        line-height: 1.5;
                         color: #333;
-                        background: #fff;
                     }
                     .header {
-                        text-align: center;
+                        display: flex;
+                        align-items: center;
                         margin-bottom: 30px;
-                        padding-bottom: 20px;
-                        border-bottom: 3px solid #0d6efd;
+                        border-bottom: 2px solid #003366;
+                        padding-bottom: 15px;
                     }
-                    .header h1 { 
-                        color: #0d6efd; 
+                    .logo {
+                        width: 100px;
+                        height: 100px;
+                        margin-right: 20px;
+                    }
+                    .logo img {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                    .titulo {
+                        flex: 1;
+                        text-align: center;
+                    }
+                    .titulo h1 {
+                        color: #003366;
                         margin: 0;
-                        font-size: 28px;
+                        font-size: 18pt;
+                        font-weight: bold;
                     }
-                    .header h2 {
-                        color: #6c757d;
-                        font-size: 18px;
-                        margin: 5px 0 0;
+                    .titulo h2 {
+                        color: #003366;
+                        margin: 5px 0;
+                        font-size: 14pt;
                         font-weight: normal;
+                    }
+                    .titulo h3 {
+                        color: #003366;
+                        margin: 10px 0 0;
+                        font-size: 16pt;
+                        font-weight: bold;
                     }
                     .info-grid {
                         display: grid;
                         grid-template-columns: repeat(4, 1fr);
-                        gap: 15px;
-                        margin: 30px 0;
+                        gap: 10px;
+                        margin: 20px 0;
                         background: #f8f9fa;
-                        padding: 20px;
-                        border-radius: 10px;
+                        padding: 15px;
+                        border-radius: 8px;
+                        border: 1px solid #003366;
                     }
                     .info-item {
                         text-align: center;
                     }
                     .info-label {
                         font-weight: bold;
-                        color: #0d6efd;
-                        margin-bottom: 5px;
+                        color: #003366;
+                        margin-bottom: 3px;
+                        font-size: 10pt;
                     }
                     .info-value {
-                        font-size: 16px;
+                        font-size: 11pt;
                     }
                     .observaciones-box {
                         grid-column: span 4;
                         background: #e9ecef;
-                        padding: 15px;
-                        border-radius: 8px;
+                        padding: 10px;
+                        border-radius: 5px;
                         margin-top: 10px;
-                    }
-                    .observaciones-box .info-label {
-                        text-align: left;
+                        border-left: 4px solid #003366;
                     }
                     .stats-grid {
                         display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                        gap: 20px;
-                        margin: 30px 0;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 15px;
+                        margin: 25px 0;
                     }
                     .stat-card {
                         background: #f8f9fa;
-                        border-radius: 10px;
-                        padding: 20px;
+                        border-radius: 8px;
+                        padding: 15px;
                         text-align: center;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        border-left: 4px solid #0d6efd;
+                        border-left: 4px solid #003366;
+                        border: 1px solid #003366;
                     }
                     .stat-card h3 { 
-                        font-size: 2rem; 
+                        font-size: 24pt; 
                         margin: 0; 
-                        color: #0d6efd; 
+                        color: #003366; 
                     }
                     .stat-card p { 
                         margin: 5px 0 0; 
-                        color: #6c757d; 
+                        color: #666;
+                        font-weight: bold;
                     }
                     .stat-card .sub-stats {
-                        margin-top: 10px;
-                        font-size: 14px;
-                        color: #6c757d;
+                        margin-top: 8px;
+                        font-size: 10pt;
+                        color: #666;
+                        border-top: 1px dashed #ccc;
+                        padding-top: 5px;
                     }
                     .indicador-estado {
                         display: flex;
                         justify-content: space-around;
-                        margin-top: 15px;
-                        padding: 10px;
+                        margin: 20px 0;
+                        padding: 15px;
                         background: white;
                         border-radius: 8px;
+                        border: 1px solid #003366;
                     }
                     .indicador-item {
                         text-align: center;
@@ -256,98 +296,98 @@ const Reportes = (function () {
                         border-radius: 50%;
                         margin: 0 auto 5px;
                     }
-                    .color-excelente { background-color: #198754; }
-                    .color-bueno { background-color: #0dcaf0; }
+                    .color-excelente { background-color: #28a745; }
+                    .color-bueno { background-color: #17a2b8; }
                     .color-regular { background-color: #ffc107; }
                     .color-danado { background-color: #dc3545; }
                     .section-title {
-                        color: #0d6efd;
-                        font-size: 20px;
+                        color: #003366;
+                        font-size: 16pt;
                         margin: 30px 0 15px;
                         padding-bottom: 5px;
-                        border-bottom: 2px solid #0d6efd;
+                        border-bottom: 2px solid #003366;
+                        font-weight: bold;
                     }
                     table {
                         width: 100%;
                         border-collapse: collapse;
-                        margin: 20px 0;
-                        font-size: 14px;
+                        margin: 15px 0;
+                        font-size: 11pt;
                     }
                     th {
-                        background: #343a40;
+                        background: #003366;
                         color: white;
-                        padding: 12px;
+                        padding: 10px;
                         text-align: left;
+                        font-weight: bold;
                     }
                     td {
-                        padding: 10px;
-                        border-bottom: 1px solid #dee2e6;
+                        padding: 8px;
+                        border: 1px solid #999;
+                        vertical-align: top;
                     }
-                    tr:hover {
+                    tr:nth-child(even) {
                         background: #f8f9fa;
                     }
                     .badge {
-                        padding: 4px 8px;
+                        display: inline-block;
+                        padding: 3px 8px;
                         border-radius: 4px;
-                        font-size: 12px;
+                        font-size: 10pt;
                         font-weight: bold;
                     }
-                    .badge-excelente { background: #198754; color: white; }
-                    .badge-bueno { background: #0dcaf0; color: black; }
+                    .badge-excelente { background: #28a745; color: white; }
+                    .badge-bueno { background: #17a2b8; color: white; }
                     .badge-regular { background: #ffc107; color: black; }
                     .badge-danado { background: #dc3545; color: white; }
+                    .badge-success { background: #28a745; color: white; }
+                    .badge-warning { background: #ffc107; color: black; }
+                    .badge-danger { background: #dc3545; color: white; }
+                    .badge-info { background: #17a2b8; color: white; }
                     .resumen-tabla {
-                        margin-top: 20px;
+                        margin: 20px 0;
                         background: #f8f9fa;
                         padding: 15px;
                         border-radius: 8px;
+                        border: 1px solid #003366;
                     }
-                    .resumen-tabla table {
-                        margin: 0;
-                        background: white;
+                    .resumen-tabla h3 {
+                        color: #003366;
+                        margin-top: 0;
                     }
                     .footer {
                         text-align: center;
                         margin-top: 50px;
-                        color: #6c757d;
-                        font-size: 12px;
-                        border-top: 1px solid #dee2e6;
+                        color: #666;
+                        font-size: 10pt;
+                        border-top: 1px solid #003366;
                         padding-top: 20px;
                     }
                     @media print {
-                        body { margin: 20px; }
+                        body { margin: 2cm; }
                         .no-print { display: none; }
                     }
-                        .print-button {
-                text-align: center;
-                margin: 20px 0;
-            }
-            .print-button button {
-                background: #0d6efd;
-                color: white;
-                border: none;
-                padding: 12px 30px;
-                border-radius: 5px;
-                font-size: 16px;
-                cursor: pointer;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                transition: background 0.3s;
-            }
-            .print-button button:hover {
-                background: #0b5ed7;
-            }
-            @media print {
-                .no-print {
-                    display: none !important;
-                }
-            }
+                    .print-button {
+                        text-align: center;
+                        margin: 20px 0;
+                    }
+                    .print-button button {
+                        background: #003366;
+                        color: white;
+                        border: none;
+                        padding: 12px 30px;
+                        border-radius: 5px;
+                        font-size: 14px;
+                        cursor: pointer;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    }
+                    .print-button button:hover {
+                        background: #004499;
+                    }
                 </style>
             </head>
             <body>
-                <div class="header">
-                    <h1>📊 GESTIÓN DE SALONES DE CLASE</h1>
-                    <h2>${titulo}</h2>
-                </div>
+                ${generarHeaderConLogo(logoBase64, titulo, `Generado: ${fechaReporte} - ${horaReporte}`)}
 
                 <!-- Información del Reporte y Responsable -->
                 <div class="info-grid">
@@ -356,7 +396,7 @@ const Reportes = (function () {
                         <div class="info-value">${fechaReporte}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Hora del Reporte</div>
+                        <div class="info-label">Hora</div>
                         <div class="info-value">${horaReporte}</div>
                     </div>
                     <div class="info-item">
@@ -372,15 +412,15 @@ const Reportes = (function () {
                         <div class="info-value">${responsable?.numeroSalon || 'No asignado'}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Horario de Clase</div>
+                        <div class="info-label">Horario</div>
                         <div class="info-value">${horarioClase}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Fecha de Clase</div>
+                        <div class="info-label">Fecha Clase</div>
                         <div class="info-value">${responsable?.fecha || 'N/A'}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Estado del Salón</div>
+                        <div class="info-label">Estado Salón</div>
                         <div class="info-value">
                             <span class="badge badge-${(responsable?.estadoEquipo || '').toLowerCase()}">
                                 ${responsable?.estadoEquipo || 'N/A'}
@@ -389,7 +429,7 @@ const Reportes = (function () {
                     </div>
                     ${responsable?.observaciones ? `
                     <div class="observaciones-box">
-                        <div class="info-label">Observaciones del Responsable</div>
+                        <div class="info-label">Observaciones</div>
                         <div class="info-value">${responsable.observaciones}</div>
                     </div>
                     ` : ''}
@@ -405,17 +445,17 @@ const Reportes = (function () {
                     <div class="stat-card">
                         <h3>${totalPCs}</h3>
                         <p>Total PCs</p>
-                        <div class="sub-stats">Asignados: ${PCsAsignados} | Disponibles: ${totalPCs - PCsAsignados}</div>
+                        <div class="sub-stats">Asignados: ${PCsAsignados} | Libres: ${totalPCs - PCsAsignados}</div>
                     </div>
                     <div class="stat-card">
                         <h3>${datosFiltrados.puestosDocentes?.length || 0}</h3>
                         <p>Puestos Docentes</p>
-                        <div class="sub-stats">Equipos de computo docente</div>
+                        <div class="sub-stats">Equipos de cómputo docente</div>
                     </div>
                     <div class="stat-card">
                         <h3>${totalSillas}</h3>
                         <p>Total Sillas</p>
-                        <div class="sub-stats">Ocupadas: ${sillasOcupadas} | Disponibles: ${totalSillas - sillasOcupadas}</div>
+                        <div class="sub-stats">Ocupadas: ${sillasOcupadas} | Libres: ${totalSillas - sillasOcupadas}</div>
                     </div>
                     <div class="stat-card">
                         <h3>${totalEquipos}</h3>
@@ -457,8 +497,8 @@ const Reportes = (function () {
                             <tr>
                                 <th>Tipo</th>
                                 <th>Total</th>
-                                <th>Asignados/Ocupados</th>
-                                <th>Disponibles/Libres</th>
+                                <th>Asignados</th>
+                                <th>Disponibles</th>
                                 <th>% Ocupación</th>
                             </tr>
                         </thead>
@@ -481,17 +521,17 @@ const Reportes = (function () {
                     </table>
                 </div>
                 
-                <div class="footer no-print">
-                    <p>Reporte generado automáticamente - Sistema de Gestión de Salones v0.6</p>
+                <div class="footer">
+                    <p>Reporte generado por el Sistema de Gestión de Salones - SENA CEET</p>
                     <p>Total de registros: ${calcularTotalRegistros(datosFiltrados)}</p>
                 </div>
-                <!-- Botón para imprimir -->
-<div style="text-align: center; margin: 20px 0;" class="no-print">
-    <button onclick="window.print()" style="background: #0d6efd; color: white; border: none; padding: 12px 30px; border-radius: 5px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-        <i class="fas fa-print"></i> Imprimir / Guardar PDF
-    </button>
-</div>
 
+                <!-- Botón para imprimir -->
+                <div class="no-print print-button">
+                    <button onclick="window.print()">
+                        <i class="fas fa-print"></i> Imprimir / Guardar PDF
+                    </button>
+                </div>
             </body>
             </html>
         `;
@@ -518,7 +558,7 @@ const Reportes = (function () {
     function generarTablaPuestosDocentes(puestos) {
         if (!puestos || puestos.length === 0) return '';
 
-        let html = '<div class="section-title">👨‍🏫 Puestos Docentes (Equipos de Cómputo)</div>';
+        let html = '<div class="section-title">👨‍🏫 Puestos Docentes</div>';
         html += '<table><thead><tr><th>Nombre</th><th>Documento</th><th>Serial PC</th><th>Estado PC</th><th>Mouse</th><th>Teclado</th><th>Pantalla</th><th>Internet</th><th>Limpieza</th></tr></thead><tbody>';
 
         puestos.forEach(p => {
@@ -650,7 +690,7 @@ const Reportes = (function () {
 
         let html = '<div style="max-height: 400px; overflow-y: auto;">';
         html += '<table style="width: 100%; border-collapse: collapse;">';
-        html += '<thead><tr style="background: #343a40; color: white;"><th>Fecha</th><th>Hora</th><th>Acciones</th></tr></thead><tbody>';
+        html += '<thead><tr style="background: #003366; color: white;"><th>Fecha</th><th>Hora</th><th>Acciones</th></tr></thead><tbody>';
 
         historial.slice().reverse().forEach(h => {
             html += `
@@ -803,12 +843,12 @@ const Reportes = (function () {
         exportarHistorialCompleto
     };
 
-    console.log('✅ Reportes: API creada');
+    console.log('✅ Reportes v0.7: API creada');
     return api;
 })();
 
 if (typeof Reportes !== 'undefined') {
-    console.log('✅ Reportes v0.6 cargado correctamente');
+    console.log('✅ Reportes v0.7 cargado correctamente');
 } else {
     console.error('❌ Error cargando Reportes');
 }

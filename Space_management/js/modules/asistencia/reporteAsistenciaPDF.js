@@ -1,15 +1,51 @@
 // js/modules/asistencia/reporteAsistenciaPDF.js
-// Versión 3.1 - CON SOPORTE PARA HISTORIAL
+// Versión 4.0 - CON LOGO Y DISEÑO PROFESIONAL
 
 console.log('🔄 Cargando reporteAsistenciaPDF.js...');
 
 const ReporteAsistenciaPDF = (function() {
     
     /**
+     * Carga el logo para los reportes
+     */
+    async function cargarLogo() {
+        let logoBase64 = null;
+        if (typeof LogoUtils !== 'undefined') {
+            logoBase64 = await LogoUtils.cargarLogoDesdeArchivo();
+        }
+        return logoBase64;
+    }
+
+    /**
+     * Genera el header con logo
+     */
+    function generarHeaderConLogo(logoBase64, titulo, subtitulo = '') {
+        const logoHtml = logoBase64 ? 
+            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` : 
+            `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 24px; font-weight: bold;">
+                SENA
+            </div>`;
+
+        return `
+            <div class="header">
+                ${logoHtml}
+                <div class="titulo">
+                    <h1>SERVICIO NACIONAL DE APRENDIZAJE - SENA</h1>
+                    <h2>CENTRO DE ELECTRICIDAD, ELECTRÓNICA Y TELECOMUNICACIONES - CEET</h2>
+                    <h3>${titulo}</h3>
+                    ${subtitulo ? `<p>${subtitulo}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
      * Genera reporte PDF desde datos del historial
      */
-    function generarReporteDesdeHistorial(datosAsistencia) {
+    async function generarReporteDesdeHistorial(datosAsistencia) {
         console.log('📄 Generando reporte desde historial...');
+        
+        const logoBase64 = await cargarLogo();
         
         // Obtener nombre del curso
         const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
@@ -35,14 +71,16 @@ const ReporteAsistenciaPDF = (function() {
             }
         };
         
-        generarHTMLReporte(datos);
+        generarHTMLReporte(datos, logoBase64);
     }
 
     /**
      * Genera reporte PDF de asistencia diaria
      */
-    function generarReporteDiario() {
+    async function generarReporteDiario() {
         console.log('📄 Generando reporte diario de asistencia...');
+        
+        const logoBase64 = await cargarLogo();
         
         const curso = document.getElementById('cursoAsistencia')?.value;
         const fecha = document.getElementById('fechaAsistencia')?.value;
@@ -100,7 +138,7 @@ const ReporteAsistenciaPDF = (function() {
             }
         };
         
-        generarHTMLReporte(datos);
+        generarHTMLReporte(datos, logoBase64);
     }
 
     /**
@@ -108,6 +146,8 @@ const ReporteAsistenciaPDF = (function() {
      */
     async function generarReporteSemanal() {
         console.log('📄 Generando reporte semanal de asistencia...');
+        
+        const logoBase64 = await cargarLogo();
         
         const curso = document.getElementById('cursoAsistencia')?.value;
         const semanaInput = document.getElementById('semanaAsistencia')?.value;
@@ -133,11 +173,11 @@ const ReporteAsistenciaPDF = (function() {
         // Calcular fechas de la semana
         const [year, week] = semanaInput.split('-W');
         const fechaInicio = new Date(year, 0, 1 + (week - 1) * 7);
-        while (fechaInicio.getDay() !== 1) { // Buscar lunes
+        while (fechaInicio.getDay() !== 1) {
             fechaInicio.setDate(fechaInicio.getDate() + 1);
         }
         const fechaFin = new Date(fechaInicio);
-        fechaFin.setDate(fechaFin.getDate() + 4); // Viernes
+        fechaFin.setDate(fechaFin.getDate() + 4);
         
         const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
         const fechaFinStr = fechaFin.toISOString().split('T')[0];
@@ -226,17 +266,21 @@ const ReporteAsistenciaPDF = (function() {
                 totalUniforme,
                 porcentaje: porcentajeSemana
             }
-        });
+        }, logoBase64);
     }
 
     /**
      * Genera el HTML del reporte y abre ventana para PDF
      */
-    function generarHTMLReporte(datos) {
+    function generarHTMLReporte(datos, logoBase64) {
         const fechaActual = new Date().toLocaleString();
         const titulo = datos.tipo === 'diario' ? 
-            `REPORTE DIARIO DE ASISTENCIA - ${datos.fecha}` :
-            `REPORTE SEMANAL DE ASISTENCIA - Semana ${datos.semana}`;
+            `REPORTE DIARIO DE ASISTENCIA` :
+            `REPORTE SEMANAL DE ASISTENCIA`;
+        
+        const subtitulo = datos.tipo === 'diario' ?
+            `${datos.fecha} - Curso ${datos.curso}` :
+            `Semana ${datos.semana} (${datos.fechaInicio} al ${datos.fechaFin}) - Curso ${datos.curso}`;
         
         let contenido = '';
         
@@ -252,29 +296,59 @@ const ReporteAsistenciaPDF = (function() {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>${titulo}</title>
+                <title>${titulo} - ${datos.curso}</title>
                 <style>
                     body {
-                        font-family: 'Segoe UI', Arial, sans-serif;
-                        margin: 2cm;
+                        font-family: 'Times New Roman', Times, serif;
+                        margin: 2.5cm 2cm;
                         font-size: 12pt;
+                        line-height: 1.5;
                     }
-                    h1 {
-                        color: #0d6efd;
+                    .header {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #003366;
+                        padding-bottom: 15px;
+                    }
+                    .logo {
+                        width: 100px;
+                        height: 100px;
+                        margin-right: 20px;
+                    }
+                    .logo img {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                    .titulo {
+                        flex: 1;
                         text-align: center;
-                        border-bottom: 2px solid #0d6efd;
-                        padding-bottom: 10px;
                     }
-                    h2 {
-                        color: #0d6efd;
-                        margin-top: 25px;
+                    .titulo h1 {
+                        color: #003366;
+                        margin: 0;
+                        font-size: 18pt;
+                        font-weight: bold;
+                    }
+                    .titulo h2 {
+                        color: #003366;
+                        margin: 5px 0;
+                        font-size: 14pt;
+                        font-weight: normal;
+                    }
+                    .titulo h3 {
+                        color: #003366;
+                        margin: 10px 0 0;
+                        font-size: 16pt;
+                        font-weight: bold;
                     }
                     .info-box {
                         background: #f8f9fa;
                         padding: 15px;
                         border-radius: 8px;
                         margin: 20px 0;
-                        border-left: 4px solid #0d6efd;
+                        border-left: 4px solid #003366;
+                        border: 1px solid #003366;
                     }
                     .stats-grid {
                         display: grid;
@@ -287,29 +361,40 @@ const ReporteAsistenciaPDF = (function() {
                         padding: 15px;
                         border-radius: 8px;
                         text-align: center;
+                        border: 1px solid #003366;
                     }
                     .stat-card h3 {
                         margin: 0;
-                        color: #0d6efd;
+                        color: #003366;
                         font-size: 24px;
+                        font-weight: bold;
+                    }
+                    .stat-card p {
+                        margin: 5px 0 0;
+                        font-weight: bold;
                     }
                     table {
                         width: 100%;
                         border-collapse: collapse;
                         margin: 20px 0;
+                        font-size: 11pt;
                     }
                     th {
-                        background: #343a40;
+                        background: #003366;
                         color: white;
                         padding: 10px;
                         text-align: left;
+                        font-weight: bold;
                     }
                     td {
                         padding: 8px;
-                        border-bottom: 1px solid #dee2e6;
+                        border: 1px solid #999;
+                    }
+                    tr:nth-child(even) {
+                        background: #f8f9fa;
                     }
                     .presente {
-                        color: #198754;
+                        color: #28a745;
                         font-weight: bold;
                     }
                     .ausente {
@@ -321,10 +406,11 @@ const ReporteAsistenciaPDF = (function() {
                         padding: 20px;
                         border-radius: 8px;
                         margin: 20px 0;
+                        border: 1px solid #003366;
                     }
                     .dia-card {
                         background: white;
-                        border: 1px solid #dee2e6;
+                        border: 1px solid #003366;
                         border-radius: 5px;
                         padding: 10px;
                         margin: 5px 0;
@@ -335,29 +421,54 @@ const ReporteAsistenciaPDF = (function() {
                         margin: -10px -10px 10px -10px;
                         border-radius: 5px 5px 0 0;
                         font-weight: bold;
+                        border-bottom: 1px solid #003366;
                     }
                     .footer {
                         text-align: center;
                         margin-top: 50px;
-                        color: #6c757d;
+                        color: #666;
                         font-size: 10pt;
+                        border-top: 1px solid #003366;
+                        padding-top: 20px;
+                    }
+                    .print-button {
+                        text-align: center;
+                        margin: 30px 0;
+                    }
+                    .print-button button {
+                        background: #003366;
+                        color: white;
+                        border: none;
+                        padding: 12px 30px;
+                        border-radius: 5px;
+                        font-size: 14px;
+                        cursor: pointer;
+                        margin-right: 10px;
+                    }
+                    .print-button button:hover {
+                        background: #004499;
                     }
                     @media print {
+                        body { margin: 2cm; }
                         .no-print { display: none; }
                     }
                 </style>
             </head>
             <body>
-                <h1>${titulo}</h1>
-                <p style="text-align: center;">Generado: ${fechaActual}</p>
+                ${generarHeaderConLogo(logoBase64, titulo, subtitulo)}
                 
                 ${contenido}
                 
-                <div class="no-print" style="text-align: center; margin-top: 30px;">
-                    <button onclick="window.print()" style="padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                <div class="footer">
+                    <p>Reporte generado por el Sistema de Gestión de Salones - SENA CEET</p>
+                    <p>Fecha de generación: ${fechaActual}</p>
+                </div>
+                
+                <div class="no-print print-button">
+                    <button onclick="window.print()">
                         🖨️ GUARDAR PDF
                     </button>
-                    <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    <button onclick="window.close()">
                         ❌ CERRAR
                     </button>
                 </div>
@@ -475,13 +586,13 @@ const ReporteAsistenciaPDF = (function() {
                 const registro = est.dias[dia.fecha];
                 if (registro) {
                     fila += `<td style="text-align: center;">
-                        <span style="color: ${registro.asistio ? '#198754' : '#dc3545'}; font-weight: bold;">
+                        <span style="color: ${registro.asistio ? '#28a745' : '#dc3545'}; font-weight: bold;">
                             ${registro.asistio ? '✅' : '❌'}
                         </span>
-                        ${registro.uniforme ? '<br><small style="color: #0d6efd;">👕</small>' : ''}
+                        ${registro.uniforme ? '<br><small style="color: #003366;">👕</small>' : ''}
                     </td>`;
                 } else {
-                    fila += `<td style="text-align: center; color: #6c757d;">—</td>`;
+                    fila += `<td style="text-align: center; color: #666;">—</td>`;
                 }
             });
             
@@ -523,7 +634,7 @@ const ReporteAsistenciaPDF = (function() {
 
             <h2>Detalle de Asistencia por Estudiante</h2>
             <div style="overflow-x: auto;">
-                <table style="font-size: 12px;">
+                <table style="font-size: 11px;">
                     <thead>
                         <tr>
                             <th>Documento</th>
@@ -554,8 +665,8 @@ const ReporteAsistenciaPDF = (function() {
                         <p><strong>Total:</strong> ${dia.registros} | 
                            <span class="presente">Presentes: ${dia.presentes}</span> | 
                            <span class="ausente">Ausentes: ${dia.ausentes}</span></p>
-                        <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 5px;">
-                            <div style="background: #198754; width: ${dia.porcentaje}%; height: 100%; text-align: center; color: white; font-size: 12px;">
+                        <div style="background: #e9ecef; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 5px; border: 1px solid #003366;">
+                            <div style="background: #28a745; width: ${dia.porcentaje}%; height: 100%; text-align: center; color: white; font-size: 11px;">
                                 ${dia.porcentaje}%
                             </div>
                         </div>
@@ -573,5 +684,5 @@ const ReporteAsistenciaPDF = (function() {
     };
 })();
 
-console.log('✅ ReporteAsistenciaPDF v3.1 cargado');
+console.log('✅ ReporteAsistenciaPDF v4.0 cargado');
 window.ReporteAsistenciaPDF = ReporteAsistenciaPDF;
