@@ -202,6 +202,12 @@
                             <option value="">Seleccione un curso</option>
                         </select>
                     </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <!-- NUEVO BOTÓN DE VALIDACIÓN -->
+                        <button class="btn btn-outline-primary" onclick="PuestosModule.validarConfiguracion()">
+                            <i class="fas fa-check-circle"></i> Validar Configuración
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Puestos del Docente -->
@@ -586,7 +592,7 @@
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <label class="form-label">Curso</label>
-                        <select class="form-select" id="cursoLlamados" onchange="cargarEstudiantesLlamados()">
+                        <select class="form-select" id="cursoLlamados" onchange="LlamadosUI.cargarEstudiantesLlamados()">
                             <option value="">Seleccione un curso</option>
                         </select>
                     </div>
@@ -606,18 +612,19 @@
                     </div>
                 </div>
                 <!-- En la pestaña de Llamados, agregar botones -->
-<div class="row mb-3">
-    <div class="col-12">
-        <button class="btn btn-outline-success btn-sm me-2" onclick="LlamadosData.exportarLlamados()">
-            <i class="fas fa-download"></i> Exportar Llamados
-        </button>
-        
-        <label class="btn btn-outline-warning btn-sm">
-            <i class="fas fa-upload"></i> Importar Llamados
-            <input type="file" id="importarLlamados" accept=".json" style="display: none;" onchange="importarLlamadosArchivo(event)">
-        </label>
-    </div>
-</div>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <button class="btn btn-outline-success btn-sm me-2" onclick="LlamadosData.exportarLlamados()">
+                            <i class="fas fa-download"></i> Exportar Llamados
+                        </button>
+
+                        <label class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-upload"></i> Importar Llamados
+                            <input type="file" id="importarLlamados" accept=".json" style="display: none;"
+                                onchange="importarLlamadosArchivo(event)">
+                        </label>
+                    </div>
+                </div>
 
                 <!-- Tabla de llamados -->
                 <div id="contenedorLlamados">
@@ -710,8 +717,9 @@
                                 <div class="mb-3">
                                     <label for="numeroSalon" class="form-label">Número de Salón <span
                                             class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="numeroSalon" placeholder="Ej: 304"
-                                        required>
+                                    <select class="form-select" id="numeroSalon" required>
+                                        <option value="">Seleccione un salón</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="col-md-6">

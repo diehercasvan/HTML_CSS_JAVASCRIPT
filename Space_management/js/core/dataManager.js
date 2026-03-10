@@ -9,6 +9,7 @@ const DataManager = (function () {
     // ===== ESTADO DE LA APLICACIÓN =====
     let state = {
         cursos: [],
+        salones: [],
         responsables: [],
         puestosDocentes: [],
         mesas: [],
@@ -941,11 +942,54 @@ const DataManager = (function () {
         const curso = state.cursos?.find(c => c.id === cursoId);
         return curso?.competencias || [];
     }
+    // ===== NUEVAS FUNCIONES DE SALONES =====
+    /**
+     * Carga los salones desde el archivo JSON
+     */
+    async function cargarSalones() {
+        try {
+            console.log('🏢 DataManager.cargarSalones() llamado');
+            const response = await fetch('data/salones.json');
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            state.salones = data.salones || [];
+            console.log(`✅ ${state.salones.length} salones cargados`);
+            return state.salones;
+
+        } catch (error) {
+            console.error('❌ Error cargando salones:', error);
+            state.salones = [];
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene la lista de salones
+     */
+    function getSalones() {
+        return state.salones || [];
+    }
+
+    /**
+     * Obtiene un salón por su ID
+     */
+    function getSalonPorId(id) {
+        return state.salones?.find(s => s.id === id) || null;
+    }
     // ===== API PÚBLICA =====
     const api = {
         // Cursos
         cargarCursos,
         getCursos,
+
+        // Salones
+        cargarSalones,
+        getSalones,
+        getSalonPorId,
 
         // Responsables
         cargarResponsables,

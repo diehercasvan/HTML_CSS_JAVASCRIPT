@@ -1,7 +1,7 @@
 // js/modules/llamados/llamadosData.js
-// Versión 3.0 - COMPLETA - CON TODAS LAS FUNCIONES
+// Versión 3.1 - CON SOPORTE MEJORADO PARA DOCENTES
 
-console.log('🔄 Cargando módulo llamadosData.js...');
+console.log('🔄 Cargando módulo llamadosData.js v3.1...');
 
 const LlamadosData = (function() {
     
@@ -48,6 +48,11 @@ const LlamadosData = (function() {
      */
     function agregarLlamado(llamado) {
         try {
+            // Validar que tenga docente
+            if (!llamado.docente || !llamado.docente.nombre) {
+                console.warn('⚠️ Llamado sin docente asignado');
+            }
+            
             const nuevoLlamado = {
                 id: Date.now(),
                 ...llamado,
@@ -127,15 +132,24 @@ const LlamadosData = (function() {
             const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
             
+            // Preservar el ID y la fecha de creación
+            const llamadoOriginal = llamados[index];
+            
             llamados[index] = {
-                ...llamados[index],
+                ...llamadoOriginal,
                 ...nuevosDatos,
                 fechaModificacion: new Date().toISOString()
             };
             
+            // Asegurar que el docente esté presente
+            if (!llamados[index].docente) {
+                llamados[index].docente = { nombre: 'No asignado', documento: '' };
+            }
+            
             llamados[index].historial.push({
                 fecha: new Date().toISOString(),
-                accion: 'actualizado'
+                accion: 'actualizado',
+                usuario: nuevosDatos.docente?.nombre || 'Sistema'
             });
             
             guardarLlamados();
@@ -206,7 +220,7 @@ const LlamadosData = (function() {
      */
     function exportarLlamados() {
         const datos = {
-            version: "3.0",
+            version: "3.1",
             fechaExportacion: new Date().toISOString(),
             total: llamados.length,
             llamados: llamados
@@ -307,5 +321,5 @@ const LlamadosData = (function() {
     };
 })();
 
-console.log('✅ Módulo LlamadosData v3.0 cargado');
+console.log('✅ Módulo LlamadosData v3.1 cargado');
 window.LlamadosData = LlamadosData;

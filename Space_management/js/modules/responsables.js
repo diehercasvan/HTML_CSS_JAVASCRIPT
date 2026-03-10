@@ -1,7 +1,7 @@
 // responsables.js - Módulo de gestión de responsables
-// VERSIÓN 0.6 - COMPLETA Y CORREGIDA
+// VERSIÓN 0.7 - CON LISTA DE SALONES DESDE JSON
 
-console.log('🔄 Iniciando carga de responsables.js...');
+console.log('🔄 Iniciando carga de responsables.js v0.7...');
 
 // Verificar dependencias
 if (typeof DataManager === 'undefined') {
@@ -13,8 +13,32 @@ if (typeof DataManager === 'undefined') {
 const ResponsablesModule = (function() {
     console.log('📦 Ejecutando IIFE de ResponsablesModule...');
     
-    // Variable local para almacenar responsables cargados
+    // Variable local para almacenar responsables y salones cargados
     let responsables = [];
+    let salones = [];
+
+    /**
+     * Carga los salones desde DataManager
+     */
+    async function cargarSalones() {
+        console.log('🏢 Cargando salones en módulo...');
+        try {
+            if (DataManager.getSalones) {
+                salones = DataManager.getSalones() || [];
+            }
+            
+            if (salones.length === 0 && DataManager.cargarSalones) {
+                salones = await DataManager.cargarSalones() || [];
+            }
+            
+            console.log(`✅ ${salones.length} salones cargados en módulo`);
+            return salones;
+        } catch (error) {
+            console.error('❌ Error cargando salones:', error);
+            salones = [];
+            return [];
+        }
+    }
 
     /**
      * Carga los responsables desde DataManager
@@ -24,7 +48,6 @@ const ResponsablesModule = (function() {
         try {
             const data = await DataManager.cargarResponsables?.() || [];
             
-            // Normalizar nombres de propiedades
             responsables = data.map(r => ({
                 numeroCurso: r.numeroCurso || r._numerocurso || r.numero_curso || '',
                 nombre: r.nombre || '',
@@ -37,9 +60,6 @@ const ResponsablesModule = (function() {
             }));
             
             console.log(`✅ ${responsables.length} responsables cargados en módulo`);
-            if (responsables.length > 0) {
-                console.log('📋 Ejemplo:', responsables[0]);
-            }
             return responsables;
         } catch (error) {
             console.error('❌ Error cargando responsables:', error);
@@ -65,9 +85,6 @@ const ResponsablesModule = (function() {
             const elemento = document.getElementById(campo.id);
             if (elemento) {
                 elemento.value = '';
-                console.log(`✅ Campo ${campo.nombre} limpiado`);
-            } else {
-                console.warn(`⚠️ Campo ${campo.nombre} (${campo.id}) no encontrado`);
             }
         });
     }
@@ -81,33 +98,16 @@ const ResponsablesModule = (function() {
         const cursoSelect = document.getElementById('cursoResponsable');
         const docenteSelect = document.getElementById('docenteResponsable');
         
-        if (!cursoSelect) {
-            console.warn('❌ Selector de curso no encontrado');
-            return;
-        }
-        
-        if (!docenteSelect) {
-            console.warn('❌ Selector de docente no encontrado');
-            return;
-        }
+        if (!cursoSelect || !docenteSelect) return;
         
         const cursoId = cursoSelect.value;
-        console.log('📚 Curso seleccionado:', cursoId);
         
-        // Limpiar select de docentes
         docenteSelect.innerHTML = '<option value="">Seleccione un docente</option>';
-        
-        // Limpiar campos de datos del docente
         limpiarCamposDocente();
         
-        if (!cursoId) {
-            console.log('⚠️ No hay curso seleccionado');
-            return;
-        }
+        if (!cursoId) return;
         
-        // Filtrar responsables por curso
         const docentesFiltrados = responsables.filter(r => r.numeroCurso === cursoId);
-        console.log(`📚 Docentes encontrados:`, docentesFiltrados.length);
         
         if (docentesFiltrados.length === 0) {
             docenteSelect.innerHTML = '<option value="">No hay docentes para este curso</option>';
@@ -137,10 +137,7 @@ const ResponsablesModule = (function() {
         
         const docenteSelect = document.getElementById('docenteResponsable');
         
-        if (!docenteSelect) {
-            console.warn('⚠️ Selector de docente no encontrado');
-            return;
-        }
+        if (!docenteSelect) return;
         
         const selectedIndex = docenteSelect.selectedIndex;
         
@@ -151,25 +148,14 @@ const ResponsablesModule = (function() {
         
         const selectedOption = docenteSelect.options[selectedIndex];
         
-        // Obtener valores con validación
         const nombre = selectedOption.getAttribute('data-nombre') || '';
         const documento = selectedOption.getAttribute('data-documento') || '';
         const horarioInicio = selectedOption.getAttribute('data-horarioInicio') || '';
         const horarioFin = selectedOption.getAttribute('data-horarioFin') || '';
         
-        console.log('📝 Datos a cargar:', { nombre, documento, horarioInicio, horarioFin });
-        
-        // Asignar valores con verificación de existencia
         const asignarSiExiste = (id, valor) => {
             const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.value = valor;
-                console.log(`✅ ${id} asignado:`, valor);
-                return true;
-            } else {
-                console.warn(`⚠️ Campo ${id} no encontrado`);
-                return false;
-            }
+            if (elemento) elemento.value = valor;
         };
         
         asignarSiExiste('nombreResponsable', nombre);
@@ -179,12 +165,57 @@ const ResponsablesModule = (function() {
     }
 
     /**
+     * Carga el selector de salones en el formulario
+     */
+    async function cargarSelectorSalones() {
+        console.log('🏢 Cargando selector de salones...');
+        
+        const salonSelect = document.getElementById('numeroSalon');
+        if (!salonSelect) {
+            console.warn('⚠️ Selector de salón no encontrado');
+            return;
+        }
+        
+        // Guardar el valor actual si existe
+        const valorActual = salonSelect.value;
+        
+        salonSelect.innerHTML = '<option value="">Seleccione un salón</option>';
+        
+        if (salones.length === 0) {
+            await cargarSalones();
+        }
+        
+        if (salones.length === 0) {
+            salonSelect.innerHTML = '<option value="">No hay salones disponibles</option>';
+            return;
+        }
+        
+        salones.forEach(salon => {
+            const option = document.createElement('option');
+            option.value = salon.id;
+            option.textContent = salon.nombre;
+            salonSelect.appendChild(option);
+        });
+        
+        // Restaurar el valor si existe
+        if (valorActual) {
+            for (let i = 0; i < salonSelect.options.length; i++) {
+                if (salonSelect.options[i].value === valorActual) {
+                    salonSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        console.log(`✅ Selector de salones cargado con ${salones.length} opciones`);
+    }
+
+    /**
      * Muestra el formulario para nuevo responsable
      */
-    function mostrarFormulario() {
+    async function mostrarFormulario() {
         console.log('📝 Mostrando formulario de responsable');
         
-        // Verificar que Utils existe
         const fecha = (typeof Utils !== 'undefined' && Utils.fechaActual) ? 
                       Utils.fechaActual() : 
                       new Date().toISOString().split('T')[0];
@@ -206,48 +237,44 @@ const ResponsablesModule = (function() {
             docenteSelect.innerHTML = '<option value="">Seleccione un docente</option>';
         }
         
+        // Cargar salones en el selector
+        await cargarSelectorSalones();
+        
         // Mostrar modal
         if (typeof ModalManager !== 'undefined') {
             ModalManager.showModal('responsable');
-        } else {
-            console.error('❌ ModalManager no disponible');
-            alert('Error: ModalManager no disponible');
         }
     }
 
     /**
      * Edita un responsable existente
      */
-    function editar(id) {
+    async function editar(id) {
         console.log('✏️ Editando responsable ID:', id);
         
         const responsablesList = DataManager.getResponsables?.() || [];
         const responsable = responsablesList.find(r => r.id == id);
         
         if (!responsable) {
-            console.error('❌ Responsable no encontrado');
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('error', 'Responsable no encontrado');
             }
             return;
         }
         
-        console.log('📝 Datos del responsable:', responsable);
-        
         // Función auxiliar para asignar valor
         const asignarValor = (id, valor) => {
             const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.value = valor || '';
-                console.log(`✅ Campo ${id} asignado:`, valor);
-            } else {
-                console.warn(`⚠️ Campo ${id} no encontrado`);
-            }
+            if (elemento) elemento.value = valor || '';
         };
         
         asignarValor('responsableId', responsable.id);
         asignarValor('cursoResponsable', responsable.numeroCurso || '');
+        
+        // Primero cargar los salones y luego asignar el valor
+        await cargarSelectorSalones();
         asignarValor('numeroSalon', responsable.numeroSalon || '');
+        
         asignarValor('fecha', responsable.fecha || '');
         asignarValor('horarioInicio', responsable.horarioInicio || '');
         asignarValor('horarioFin', responsable.horarioFin || '');
@@ -266,7 +293,6 @@ const ResponsablesModule = (function() {
                     if (docenteSelect.options[i].value === responsable.documento) {
                         docenteSelect.selectedIndex = i;
                         cargarDatosDocente();
-                        console.log('✅ Docente seleccionado:', responsable.documento);
                         break;
                     }
                 }
@@ -281,18 +307,32 @@ const ResponsablesModule = (function() {
     /**
      * Guarda un responsable (nuevo o editado)
      */
-    function guardar() {
+    async function guardar() {
         console.log('💾 Guardando responsable...');
         
         const responsableId = document.getElementById('responsableId')?.value;
         const curso = document.getElementById('cursoResponsable')?.value;
+        const salon = document.getElementById('numeroSalon')?.value;
         const docenteSelect = document.getElementById('docenteResponsable');
+        
+        // Validaciones
+        if (!curso) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione un curso');
+            }
+            return;
+        }
+        
+        if (!salon) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione un número de salón');
+            }
+            return;
+        }
         
         if (!docenteSelect || docenteSelect.selectedIndex <= 0) {
             if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Seleccione un curso y un docente');
-            } else {
-                alert('Seleccione un curso y un docente');
+                Utils.showToast('warning', 'Seleccione un docente');
             }
             return;
         }
@@ -302,7 +342,7 @@ const ResponsablesModule = (function() {
             numeroCurso: curso,
             nombre: selectedOption.getAttribute('data-nombre') || '',
             documento: selectedOption.value || '',
-            numeroSalon: document.getElementById('numeroSalon')?.value || '',
+            numeroSalon: salon,
             fecha: document.getElementById('fecha')?.value || '',
             horarioInicio: document.getElementById('horarioInicio')?.value || '',
             horarioFin: document.getElementById('horarioFin')?.value || '',
@@ -311,12 +351,10 @@ const ResponsablesModule = (function() {
             observaciones: document.getElementById('observaciones')?.value || ''
         };
         
-        // Validaciones
-        if (!responsableData.numeroSalon || !responsableData.fecha) {
+        // Validar fechas
+        if (!responsableData.fecha) {
             if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Complete todos los campos');
-            } else {
-                alert('Complete todos los campos');
+                Utils.showToast('warning', 'Seleccione una fecha');
             }
             return;
         }
@@ -325,8 +363,6 @@ const ResponsablesModule = (function() {
             responsableData.horarioFin <= responsableData.horarioInicio) {
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('warning', 'El horario final debe ser posterior');
-            } else {
-                alert('El horario final debe ser posterior');
             }
             return;
         }
@@ -389,9 +425,19 @@ const ResponsablesModule = (function() {
         confirmar();
     }
 
-    // Inicializar - cargar responsables al inicio
+    /**
+     * Inicializa el módulo - cargar responsables y salones
+     */
+    async function inicializar() {
+        console.log('🔄 Inicializando módulo de responsables...');
+        await cargarResponsables();
+        await cargarSalones();
+        console.log('✅ Módulo de responsables inicializado');
+    }
+
+    // Inicializar
     setTimeout(() => {
-        cargarResponsables();
+        inicializar();
     }, 300);
 
     // Exponer funciones globalmente
@@ -404,7 +450,9 @@ const ResponsablesModule = (function() {
 
     // API pública del módulo
     const api = {
+        inicializar,
         cargarResponsables,
+        cargarSalones,
         cargarDocentesPorCurso,
         cargarDatosDocente,
         mostrarFormulario,
@@ -413,16 +461,15 @@ const ResponsablesModule = (function() {
         eliminar
     };
     
-    console.log('✅ ResponsablesModule: API creada');
+    console.log('✅ ResponsablesModule v0.7: API creada');
     return api;
 })();
 
 // Verificar carga
 if (typeof ResponsablesModule !== 'undefined') {
-    console.log('✅ ResponsablesModule v0.6 cargado correctamente');
+    console.log('✅ ResponsablesModule v0.7 cargado correctamente');
 } else {
     console.error('❌ Error cargando ResponsablesModule');
 }
 
-// Exponer globalmente
 window.ResponsablesModule = ResponsablesModule;

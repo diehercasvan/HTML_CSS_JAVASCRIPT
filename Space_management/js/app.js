@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             UIManager.renderizarEquipos();
             UIManager.renderizarSillas();
         }
-         // ===== INICIALIZAR MÓDULO DE LLAMADOS =====
+        // ===== INICIALIZAR MÓDULO DE LLAMADOS =====
         console.log('🔄 Inicializando módulo de llamados...');
         if (typeof LlamadosUI !== 'undefined') {
             // Pequeño retraso para asegurar que el DOM está listo
@@ -81,6 +81,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (toggleText) toggleText.textContent = 'Ocultar';
 
         console.log('✅ Aplicación v0.6 inicializada correctamente');
+        // Cargar salones
+        console.log('🔄 Cargando salones...');
+        if (DataManager.cargarSalones) {
+            await DataManager.cargarSalones();
+            console.log('✅ Salones cargados');
+        }
 
     } catch (error) {
         console.error('❌ Error en inicialización:', error);
@@ -433,12 +439,12 @@ window.actualizarVistasDespuesDeImportar = function () {
 /**
  * Actualiza el panel de validación con el estado de los módulos
  */
-window.actualizarPanelValidacion = function() {
+window.actualizarPanelValidacion = function () {
     console.log('🔄 Actualizando panel de validación...');
-    
+
     const panel = document.getElementById('contenidoValidacion');
     if (!panel) return;
-    
+
     // Verificar módulos core
     const modulos = [
         { nombre: 'DataManager', objeto: window.DataManager, grupo: 'core' },
@@ -451,7 +457,7 @@ window.actualizarPanelValidacion = function() {
         { nombre: 'SillasModule', objeto: window.SillasModule, grupo: 'modulos' },
         { nombre: 'Reportes', objeto: window.Reportes, grupo: 'modulos' }
     ];
-    
+
     // Módulos de asistencia
     const modulosAsistencia = [
         { nombre: 'AsistenciaData', objeto: window.AsistenciaData, grupo: 'asistencia' },
@@ -459,13 +465,13 @@ window.actualizarPanelValidacion = function() {
         { nombre: 'ExportarAsistencia', objeto: window.ExportarAsistencia, grupo: 'asistencia' },
         { nombre: 'HistorialAsistencia', objeto: window.HistorialAsistencia, grupo: 'asistencia' }
     ];
-    
+
     // Módulos de llamados
     const modulosLlamados = [
         { nombre: 'LlamadosData', objeto: window.LlamadosData, grupo: 'llamados' },
         { nombre: 'LlamadosUI', objeto: window.LlamadosUI, grupo: 'llamados' }
     ];
-    
+
     // Verificar datos en localStorage
     let datosGuardados = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0, llamados: 0 };
     try {
@@ -481,18 +487,18 @@ window.actualizarPanelValidacion = function() {
                 asistencias: parsed.asistencia?.length || 0
             };
         }
-        
+
         // Verificar llamados en localStorage aparte
         const savedLlamados = localStorage.getItem('gestionLlamados');
         if (savedLlamados) {
             const parsed = JSON.parse(savedLlamados);
             datosGuardados.llamados = parsed.length || 0;
         }
-        
+
     } catch (e) {
         console.error('Error leyendo localStorage:', e);
     }
-    
+
     // Verificar datos en memoria
     let datosMemoria = { responsables: 0, puestos: 0, mesas: 0, equipos: 0, sillas: 0, asistencias: 0, llamados: 0 };
     if (window.DataManager) {
@@ -505,42 +511,42 @@ window.actualizarPanelValidacion = function() {
             asistencias: DataManager.getTodasAsistencias?.().length || 0
         };
     }
-    
+
     if (window.LlamadosData) {
         datosMemoria.llamados = LlamadosData.cargarLlamados?.().length || 0;
     }
-    
+
     // ⚠️ IMPORTANTE: Declarar html ANTES de usarlo
     let html = '<table style="width:100%; border-collapse: collapse; font-size: 11px;">';
-    
+
     // Módulos Core
     html += '<tr style="background: #0d6efd; color: white;"><th colspan="2" style="padding: 5px;">📦 MÓDULOS CORE</th></tr>';
     modulos.filter(m => m.grupo === 'core').forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
         html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
-    
+
     // Módulos Funcionales
     html += '<tr style="background: #198754; color: white;"><th colspan="2" style="padding: 5px;">🔧 MÓDULOS FUNCIONALES</th></tr>';
     modulos.filter(m => m.grupo === 'modulos').forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
         html += `<tr><td style="padding: 3px;">${mod.nombre.replace('Module', '')}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
-    
+
     // Módulos de Asistencia
     html += '<tr style="background: #6f42c1; color: white;"><th colspan="2" style="padding: 5px;">📅 MÓDULOS ASISTENCIA</th></tr>';
     modulosAsistencia.forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
         html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
-    
+
     // Módulos de Llamados
     html += '<tr style="background: #dc3545; color: white;"><th colspan="2" style="padding: 5px;">⚠️ MÓDULOS LLAMADOS</th></tr>';
     modulosLlamados.forEach(mod => {
         const estado = typeof mod.objeto !== 'undefined' ? '✅' : '❌';
         html += `<tr><td style="padding: 3px;">${mod.nombre}</td><td style="text-align: right;">${estado}</td></tr>`;
     });
-    
+
     // Datos en memoria
     html += '<tr style="background: #fd7e14; color: white;"><th colspan="2" style="padding: 5px;">💾 DATOS EN MEMORIA</th></tr>';
     html += `<tr><td>Responsables</td><td style="text-align: right;">${datosMemoria.responsables}</td></tr>`;
@@ -550,7 +556,7 @@ window.actualizarPanelValidacion = function() {
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosMemoria.sillas}</td></tr>`;
     html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosMemoria.asistencias}</td></tr>`;
     html += `<tr><td>Llamados</td><td style="text-align: right; font-weight: bold; color: #dc3545;">${datosMemoria.llamados}</td></tr>`;
-    
+
     // Datos en localStorage
     html += '<tr style="background: #6c757d; color: white;"><th colspan="2" style="padding: 5px;">💿 LOCALSTORAGE</th></tr>';
     html += `<tr><td>Responsables</td><td style="text-align: right;">${datosGuardados.responsables}</td></tr>`;
@@ -560,9 +566,9 @@ window.actualizarPanelValidacion = function() {
     html += `<tr><td>Sillas</td><td style="text-align: right;">${datosGuardados.sillas}</td></tr>`;
     html += `<tr><td>Asistencias</td><td style="text-align: right; font-weight: bold;">${datosGuardados.asistencias}</td></tr>`;
     html += `<tr><td>Llamados</td><td style="text-align: right; font-weight: bold; color: #dc3545;">${datosGuardados.llamados}</td></tr>`;
-    
+
     html += '</table>';
-    
+
     panel.innerHTML = html;
     console.log('✅ Panel de validación actualizado');
 };
@@ -620,7 +626,7 @@ window.validarSistema = function () {
 };
 
 // Funciones para la pestaña de llamados
-window.cargarEstudiantesLlamados = async function() {
+window.cargarEstudiantesLlamados = async function () {
     console.log('🔄 cargarEstudiantesLlamados llamado');
     if (typeof LlamadosUI !== 'undefined') {
         await LlamadosUI.cargarEstudiantes();
@@ -629,7 +635,7 @@ window.cargarEstudiantesLlamados = async function() {
     }
 };
 
-window.cargarLlamadosEstudiante = function() {
+window.cargarLlamadosEstudiante = function () {
     console.log('🔄 cargarLlamadosEstudiante llamado');
     if (typeof LlamadosUI !== 'undefined') {
         LlamadosUI.cargarLlamadosEstudiante();
@@ -639,7 +645,7 @@ window.cargarLlamadosEstudiante = function() {
     }
 };
 
-window.mostrarModalNuevoLlamado = function() {
+window.mostrarModalNuevoLlamado = function () {
     console.log('🔄 mostrarModalNuevoLlamado llamado');
     if (typeof LlamadosUI !== 'undefined') {
         LlamadosUI.mostrarModalNuevoLlamado();
@@ -674,9 +680,9 @@ window.marcarTodos = () => AsistenciaDiaria.marcarTodos();
 window.desmarcarTodos = () => AsistenciaDiaria.desmarcarTodos();
 // En app.js, buscar y corregir la función exportarTodo
 
-window.exportarTodo = function() {
+window.exportarTodo = function () {
     console.log('📤 Exportando todas las asistencias...');
-    
+
     if (typeof AsistenciaData !== 'undefined' && typeof AsistenciaData.exportarAsistencias === 'function') {
         AsistenciaData.exportarAsistencias();
     } else {
@@ -691,10 +697,10 @@ window.exportarTodo = function() {
 
 // En app.js, agregar función para importar historial completo
 
-window.importarHistorialCompleto = function(event) {
+window.importarHistorialCompleto = function (event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     if (!file.name.endsWith('.json')) {
         Swal.fire({
             icon: 'error',
@@ -704,13 +710,13 @@ window.importarHistorialCompleto = function(event) {
         event.target.value = '';
         return;
     }
-    
+
     // Mostrar vista previa del archivo
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const datos = JSON.parse(e.target.result);
-            
+
             // Validar estructura
             if (!datos.asistencias || !Array.isArray(datos.asistencias)) {
                 Swal.fire({
@@ -721,7 +727,7 @@ window.importarHistorialCompleto = function(event) {
                 event.target.value = '';
                 return;
             }
-            
+
             // Mostrar resumen
             Swal.fire({
                 title: '¿Importar historial?',
@@ -763,7 +769,7 @@ window.importarHistorialCompleto = function(event) {
                         });
                 }
             });
-            
+
         } catch (error) {
             Swal.fire({
                 icon: 'error',
@@ -778,7 +784,7 @@ window.importarHistorialCompleto = function(event) {
 
 // En app.js, agregar función para descargar plantilla
 
-window.descargarPlantillaHistorial = function() {
+window.descargarPlantillaHistorial = function () {
     const plantilla = {
         version: "3.0",
         fechaExportacion: new Date().toISOString(),
@@ -814,7 +820,7 @@ window.descargarPlantillaHistorial = function() {
             }
         ]
     };
-    
+
     const blob = new Blob([JSON.stringify(plantilla, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -824,7 +830,7 @@ window.descargarPlantillaHistorial = function() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     Swal.fire({
         icon: 'success',
         title: 'Plantilla descargada',
@@ -883,10 +889,10 @@ window.diagnosticarSistema = function () {
 
 // En app.js, agregar o actualizar estas funciones
 
-window.importarListaAsistencia = function(event) {
+window.importarListaAsistencia = function (event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     if (!file.name.endsWith('.json')) {
         Swal.fire({
             icon: 'error',
@@ -896,7 +902,7 @@ window.importarListaAsistencia = function(event) {
         event.target.value = '';
         return;
     }
-    
+
     AsistenciaData.importarAsistencias(file)
         .then(() => {
             const curso = document.getElementById('cursoAsistencia')?.value;
@@ -939,10 +945,10 @@ setTimeout(() => {
 
 // En app.js, agregar:
 
-window.importarLlamadosArchivo = function(event) {
+window.importarLlamadosArchivo = function (event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     LlamadosData.importarLlamados(file)
         .then(() => {
             const curso = document.getElementById('cursoLlamados')?.value;

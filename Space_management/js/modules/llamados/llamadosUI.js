@@ -1,17 +1,209 @@
 // js/modules/llamados/llamadosUI.js
-// Versión 3.3 - Con funcionalidad de EDITAR completada
+// Versión 3.13 - CARGA CORRECTA DE RESPONSABLES DESDE JSON
 
-console.log('🔄 Cargando módulo llamadosUI.js...');
+console.log('🔄 Cargando módulo llamadosUI.js v3.13...');
 
 const LlamadosUI = (function() {
     
     let estudiantesCache = {};
+    let docentesCache = {};
+    let todosLosResponsables = [];
+
+    /**
+     * Cargar todos los responsables al iniciar (VERSIÓN CORREGIDA)
+     */
+    async function cargarTodosLosResponsables() {
+        console.log('👨‍🏫 Cargando todos los responsables...');
+        
+        try {
+            // 1. Intentar cargar desde JSON directamente (FUENTE PRINCIPAL)
+            console.log('🔄 Intentando carga desde JSON directo...');
+            try {
+                const response = await fetch('data/responsables.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    const jsonResponsables = data.responsables || [];
+                    console.log(`📊 JSON directo: ${jsonResponsables.length} responsables`);
+                    
+                    if (jsonResponsables.length > 0) {
+                        todosLosResponsables = jsonResponsables.map(r => ({
+                            numeroCurso: String(r.numeroCurso || '').trim(),
+                            nombre: r.nombre || '',
+                            documento: r.documento || '',
+                            materia: r.materia || 'Sin materia',
+                            horarioInicio: r.horarioInicio || '',
+                            horarioFin: r.horarioFin || '',
+                            email: r.email || '',
+                            telefono: r.telefono || ''
+                        }));
+                        
+                        console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde JSON`);
+                        console.log('📋 Lista completa:');
+                        todosLosResponsables.forEach(r => {
+                            console.log(`   - ${r.nombre} (Curso: ${r.numeroCurso}, Materia: ${r.materia})`);
+                        });
+                        return todosLosResponsables;
+                    }
+                } else {
+                    console.warn('⚠️ No se pudo cargar responsables.json');
+                }
+            } catch (e) {
+                console.error('❌ Error cargando JSON:', e);
+            }
+            
+            // 2. Si falla el JSON, intentar con DataManager.getResponsables
+            if (DataManager.getResponsables) {
+                console.log('🔄 Intentando con DataManager.getResponsables...');
+                const dataManagerResponsables = DataManager.getResponsables() || [];
+                console.log(`📊 DataManager.getResponsables: ${dataManagerResponsables.length} responsables`);
+                
+                if (dataManagerResponsables.length > 0) {
+                    todosLosResponsables = dataManagerResponsables.map(r => ({
+                        numeroCurso: String(r.numeroCurso || '').trim(),
+                        nombre: r.nombre || '',
+                        documento: r.documento || '',
+                        materia: r.materia || 'Sin materia',
+                        horarioInicio: r.horarioInicio || '',
+                        horarioFin: r.horarioFin || '',
+                        email: r.email || '',
+                        telefono: r.telefono || ''
+                    }));
+                    
+                    console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde DataManager`);
+                    return todosLosResponsables;
+                }
+            }
+            
+            // 3. Último recurso: usar cargarResponsables
+            if (DataManager.cargarResponsables) {
+                console.log('🔄 Usando DataManager.cargarResponsables...');
+                const cargados = await DataManager.cargarResponsables() || [];
+                todosLosResponsables = cargados.map(r => ({
+                    numeroCurso: String(r.numeroCurso || '').trim(),
+                    nombre: r.nombre || '',
+                    documento: r.documento || '',
+                    materia: r.materia || 'Sin materia',
+                    horarioInicio: r.horarioInicio || '',
+                    horarioFin: r.horarioFin || '',
+                    email: r.email || '',
+                    telefono: r.telefono || ''
+                }));
+                
+                console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde cargarResponsables`);
+                return todosLosResponsables;
+            }
+            
+            console.warn('⚠️ No se pudieron cargar responsables de ninguna fuente');
+            todosLosResponsables = [];
+            return [];
+            
+        } catch (error) {
+            console.error('❌ Error cargando responsables:', error);
+            todosLosResponsables = [];
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene los docentes de un curso (con logging mejorado)
+     */
+    function getDocentesPorCurso(cursoId) {
+        console.log(`🔍 getDocentesPorCurso llamado para curso: "${cursoId}"`);
+        console.log(`📊 Total responsables en memoria: ${todosLosResponsables.length}`);
+        
+        if (!cursoId) {
+            console.log('⚠️ cursoId vacío');
+            return [];
+        }
+        
+        // Mostrar todos los cursos disponibles para debugging
+        const cursosDisponibles = [...new Set(todosLosResponsables.map(r => r.numeroCurso))];
+        console.log('📌 Cursos con docentes:', cursosDisponibles);
+        
+        // Mostrar todos los responsables para debugging
+        console.log('📋 Todos los responsables:');
+        todosLosResponsables.forEach((r, i) => {
+            console.log(`   ${i+1}. ${r.nombre} - Curso: "${r.numeroCurso}" (${typeof r.numeroCurso})`);
+        });
+        
+        // Filtrar por curso (comparación exacta)
+        const docentes = todosLosResponsables.filter(r => {
+            const coincide = String(r.numeroCurso).trim() === String(cursoId).trim();
+            if (coincide) {
+                console.log(`✅ Coincidencia: ${r.nombre} para curso ${cursoId}`);
+            }
+            return coincide;
+        });
+        
+        console.log(`🎯 Resultado: ${docentes.length} docentes para curso ${cursoId}`);
+        
+        // Guardar en caché
+        if (!docentesCache[cursoId]) {
+            docentesCache[cursoId] = docentes;
+        }
+        
+        return docentes;
+    }
+
+    /**
+     * Carga los docentes en el modal con setTimeout
+     */
+    function cargarDocentesEnModalConRetraso() {
+        console.log('⏱️ Programando carga de docentes con setTimeout...');
+        
+        setTimeout(() => {
+            console.log('🔄 Ejecutando carga de docentes después del retraso...');
+            
+            const cursoSelect = document.getElementById('cursoLlamados');
+            const docenteSelect = document.getElementById('nuevoDocenteLlamado');
+            
+            if (!cursoSelect || !docenteSelect) {
+                console.warn('⚠️ Selector de docentes no encontrado en el modal');
+                return;
+            }
+            
+            const cursoId = cursoSelect.value;
+            console.log(`📌 Curso seleccionado: "${cursoId}"`);
+            
+            if (!cursoId) {
+                docenteSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
+                return;
+            }
+            
+            // Obtener docentes del curso
+            const docentes = getDocentesPorCurso(cursoId);
+            
+            // Limpiar y llenar el selector
+            docenteSelect.innerHTML = '<option value="">Seleccione un docente</option>';
+            
+            if (docentes.length === 0) {
+                docenteSelect.innerHTML = '<option value="">No hay docentes para este curso</option>';
+                console.warn(`⚠️ No hay docentes para el curso ${cursoId}`);
+                return;
+            }
+            
+            docentes.forEach(docente => {
+                const option = document.createElement('option');
+                option.value = docente.documento || '';
+                option.setAttribute('data-nombre', docente.nombre || '');
+                option.setAttribute('data-materia', docente.materia || 'Sin materia');
+                option.textContent = `${docente.nombre} (${docente.materia})`;
+                docenteSelect.appendChild(option);
+            });
+            
+            console.log(`✅ ${docentes.length} docentes cargados en el modal`);
+            console.log('📋 Opciones:', Array.from(docenteSelect.options).map(o => o.text));
+            
+        }, 200); // Aumentado a 200ms para mayor seguridad
+    }
 
     /**
      * Inicializa selectores
      */
     async function inicializarSelectores() {
         console.log('🔄 Inicializando selectores de llamados...');
+        
+        await cargarTodosLosResponsables();
         
         const cursoSelect = document.getElementById('cursoLlamados');
         if (!cursoSelect) return;
@@ -27,15 +219,16 @@ const LlamadosUI = (function() {
         });
         
         cursoSelect.addEventListener('change', function() {
-            cargarEstudiantes();
+            console.log('📌 Curso cambiado a:', this.value);
+            cargarEstudiantesLlamados();
         });
     }
 
     /**
      * Carga estudiantes del curso
      */
-    async function cargarEstudiantes() {
-        console.log('🔄 Cargando estudiantes...');
+    async function cargarEstudiantesLlamados() {
+        console.log('🔄 Cargando estudiantes para llamados...');
         
         const cursoSelect = document.getElementById('cursoLlamados');
         const estudianteSelect = document.getElementById('estudianteLlamados');
@@ -122,6 +315,7 @@ const LlamadosUI = (function() {
                             <th>Fecha</th>
                             <th>Tipo</th>
                             <th>Nivel</th>
+                            <th>Docente</th>
                             <th>Motivo</th>
                             <th>Compromisos</th>
                             <th>Estado</th>
@@ -144,30 +338,31 @@ const LlamadosUI = (function() {
                     <td>${l.fecha}</td>
                     <td><span class="badge ${badgeTipo}">${l.tipo}</span></td>
                     <td><span class="badge bg-secondary">${l.nivel || 1}</span></td>
+                    <td><span class="badge bg-primary">${l.docente?.nombre || 'No asignado'}${l.docente?.materia ? ` (${l.docente.materia})` : ''}</span></td>
                     <td>${l.motivo}</td>
                     <td>${compromisos}</td>
                     <td><span class="badge ${badgeEstado}">${l.estado}</span></td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-primary" onclick="LlamadosUI.verDetalle('${l.id}')" title="Ver detalle">
+                            <button class="btn btn-sm btn-primary" onclick="LlamadosUI.verDetalle('${l.id}')">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-warning" onclick="LlamadosUI.cambiarEstado('${l.id}')" title="Cambiar estado">
+                            <button class="btn btn-sm btn-warning" onclick="LlamadosUI.cambiarEstado('${l.id}')">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="GeneradorPDF.generarPDFLlamado('${l.id}')" title="Generar PDF">
+                            <button class="btn btn-sm btn-danger" onclick="GeneradorPDF.generarPDFLlamado('${l.id}')">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
-                            <button class="btn btn-sm btn-success" onclick="LlamadosUI.mostrarOpcionesCompartir('${l.id}', '${estudiante.telefono}', '${estudiante.correo}')" title="Compartir">
+                            <button class="btn btn-sm btn-success" onclick="LlamadosUI.mostrarOpcionesCompartir('${l.id}', '${estudiante.telefono}', '${estudiante.correo}')">
                                 <i class="fas fa-share-alt"></i>
                             </button>
-                            <button class="btn btn-sm btn-info" onclick="LlamadosUI.editarLlamado('${l.id}')" title="Editar">
+                            <button class="btn btn-sm btn-info" onclick="LlamadosUI.editarLlamado('${l.id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-secondary" onclick="LlamadosUI.duplicarLlamado('${l.id}')" title="Duplicar">
+                            <button class="btn btn-sm btn-secondary" onclick="LlamadosUI.duplicarLlamado('${l.id}')">
                                 <i class="fas fa-copy"></i>
                             </button>
-                            <button class="btn btn-sm btn-dark" onclick="LlamadosUI.eliminarLlamado('${l.id}')" title="Eliminar">
+                            <button class="btn btn-sm btn-dark" onclick="LlamadosUI.eliminarLlamado('${l.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -211,6 +406,7 @@ const LlamadosUI = (function() {
                             <p><strong>Fecha:</strong> ${llamado.fecha}</p>
                             <p><strong>Tipo:</strong> <span class="badge ${llamado.tipo === 'academico' ? 'bg-info' : 'bg-danger'}">${llamado.tipo}</span></p>
                             <p><strong>Nivel:</strong> ${llamado.nivel || 1}</p>
+                            <p><strong>Docente:</strong> <span class="badge bg-primary">${llamado.docente?.nombre || 'No asignado'}${llamado.docente?.materia ? ` (${llamado.docente.materia})` : ''}</span></p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>Estudiante:</strong> ${llamado.estudiante?.nombre}</p>
@@ -233,7 +429,6 @@ const LlamadosUI = (function() {
                         </div>
                     ` : ''}
                     <div class="mt-3">
-                        <p><strong>Docente:</strong> ${llamado.docente?.nombre || 'N/A'}</p>
                         <p><strong>Estado:</strong> <span class="badge ${llamado.estado === 'activo' ? 'bg-warning' : 'bg-success'}">${llamado.estado}</span></p>
                     </div>
                 </div>
@@ -283,7 +478,7 @@ const LlamadosUI = (function() {
     }
 
     /**
-     * FUNCIÓN DE EDITAR COMPLETADA
+     * Editar llamado
      */
     function editarLlamado(id) {
         console.log('✏️ Editando llamado:', id);
@@ -294,7 +489,16 @@ const LlamadosUI = (function() {
             return;
         }
         
-        // Generar HTML para compromisos existentes
+        const cursoId = llamado.curso;
+        const docentes = getDocentesPorCurso(cursoId);
+        
+        const opcionesDocentes = docentes.length > 0 ? 
+            docentes.map(d => {
+                const selected = d.documento === llamado.docente?.documento ? 'selected' : '';
+                return `<option value="${d.documento}" data-nombre="${d.nombre}" data-materia="${d.materia}" ${selected}>${d.nombre} (${d.materia})</option>`;
+            }).join('') :
+            '<option value="">No hay docentes disponibles</option>';
+        
         let compromisosHtml = '';
         if (llamado.compromisos && llamado.compromisos.length > 0) {
             llamado.compromisos.forEach((comp, idx) => {
@@ -347,6 +551,14 @@ const LlamadosUI = (function() {
                     </div>
                     
                     <div class="mb-3">
+                        <label class="form-label fw-bold">Docente que realiza el llamado</label>
+                        <select class="form-select" id="editDocenteLlamado">
+                            <option value="">Seleccione un docente</option>
+                            ${opcionesDocentes}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label class="form-label fw-bold">Motivo</label>
                         <textarea class="form-control" id="editMotivo" rows="3">${llamado.motivo || ''}</textarea>
                     </div>
@@ -380,13 +592,12 @@ const LlamadosUI = (function() {
             confirmButtonText: '💾 Guardar Cambios',
             cancelButtonText: 'Cancelar',
             didOpen: () => {
-                // Guardar el contador de compromisos inicial
                 window.editCompromisoCount = llamado.compromisos?.length || 1;
             },
             preConfirm: () => {
-                // Recoger datos del formulario
                 const tipo = document.getElementById('editTipoLlamado').value;
                 const nivel = parseInt(document.getElementById('editNivelLlamado').value);
+                const docenteSelect = document.getElementById('editDocenteLlamado');
                 const motivo = document.getElementById('editMotivo').value;
                 const observaciones = document.getElementById('editObservaciones').value;
                 const estado = document.getElementById('editEstadoLlamado').value;
@@ -396,7 +607,16 @@ const LlamadosUI = (function() {
                     return false;
                 }
                 
-                // Recoger compromisos
+                let docente = null;
+                if (docenteSelect && docenteSelect.selectedIndex > 0) {
+                    const selectedOption = docenteSelect.options[docenteSelect.selectedIndex];
+                    docente = {
+                        documento: selectedOption.value,
+                        nombre: selectedOption.getAttribute('data-nombre') || selectedOption.text.split(' (')[0],
+                        materia: selectedOption.getAttribute('data-materia') || 'Sin materia'
+                    };
+                }
+                
                 const compromisos = [];
                 let i = 0;
                 while (document.getElementById(`edit_compromiso_${i}`)) {
@@ -415,6 +635,7 @@ const LlamadosUI = (function() {
                 return {
                     tipo: tipo,
                     nivel: nivel,
+                    docente: docente || llamado.docente,
                     motivo: motivo,
                     compromisos: compromisos,
                     observaciones: observaciones,
@@ -423,7 +644,6 @@ const LlamadosUI = (function() {
             }
         }).then((result) => {
             if (result.isConfirmed && result.value) {
-                // Actualizar el llamado
                 const actualizado = LlamadosData.actualizarLlamado(id, result.value);
                 
                 if (actualizado) {
@@ -435,7 +655,6 @@ const LlamadosUI = (function() {
                         showConfirmButton: false
                     });
                     
-                    // Recargar la tabla
                     cargarLlamadosEstudiante();
                 } else {
                     Swal.fire({
@@ -449,7 +668,156 @@ const LlamadosUI = (function() {
     }
 
     /**
-     * Función para compartir
+     * Mostrar modal nuevo llamado
+     */
+    function mostrarModalNuevoLlamado() {
+        console.log('📝 mostrarModalNuevoLlamado llamado');
+        
+        const cursoSelect = document.getElementById('cursoLlamados');
+        const estudianteSelect = document.getElementById('estudianteLlamados');
+        
+        if (!cursoSelect.value || !estudianteSelect.value) {
+            Swal.fire('Seleccione un estudiante', '', 'warning');
+            return;
+        }
+        
+        const cursoId = cursoSelect.value;
+        const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
+        const estudiante = {
+            documento: estudianteSelect.value,
+            nombre: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`,
+            telefono: selectedOption.getAttribute('data-telefono'),
+            correo: selectedOption.getAttribute('data-correo')
+        };
+        
+        Swal.fire({
+            title: '📝 Nuevo Llamado',
+            html: `
+                <form id="formNuevoLlamado" class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Tipo de Llamado</label>
+                        <select class="form-select" id="nuevoTipoLlamado">
+                            <option value="academico">📚 Académico</option>
+                            <option value="disciplinario">⚠️ Disciplinario</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nivel</label>
+                        <select class="form-select" id="nuevoNivelLlamado">
+                            <option value="1">Primer Llamado</option>
+                            <option value="2">Segundo Llamado</option>
+                            <option value="3">Tercer Llamado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Docente que realiza el llamado</label>
+                        <select class="form-select" id="nuevoDocenteLlamado" required>
+                            <option value="">Seleccione un docente</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Motivo</label>
+                        <textarea class="form-control" id="nuevoMotivo" rows="3" placeholder="Describa el motivo del llamado..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Compromisos</label>
+                        <div id="compromisosContainer">
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" placeholder="Compromiso 1" id="compromiso_0">
+                                <button class="btn btn-outline-success" type="button" onclick="agregarCampoCompromiso()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" id="nuevoObservaciones" rows="2"></textarea>
+                    </div>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            width: '600px',
+            didOpen: () => {
+                console.log('📌 Modal abierto, programando carga de docentes...');
+                cargarDocentesEnModalConRetraso();
+            },
+            preConfirm: () => {
+                const tipo = document.getElementById('nuevoTipoLlamado').value;
+                const nivel = parseInt(document.getElementById('nuevoNivelLlamado').value);
+                const docenteSelect = document.getElementById('nuevoDocenteLlamado');
+                const motivo = document.getElementById('nuevoMotivo').value;
+                const observaciones = document.getElementById('nuevoObservaciones').value;
+                
+                if (!docenteSelect || docenteSelect.selectedIndex <= 0) {
+                    Swal.showValidationMessage('Debe seleccionar un docente');
+                    return false;
+                }
+                
+                if (!motivo) {
+                    Swal.showValidationMessage('El motivo es obligatorio');
+                    return false;
+                }
+                
+                const selectedOption = docenteSelect.options[docenteSelect.selectedIndex];
+                const docente = {
+                    documento: selectedOption.value,
+                    nombre: selectedOption.getAttribute('data-nombre') || selectedOption.text.split(' (')[0],
+                    materia: selectedOption.getAttribute('data-materia') || 'Sin materia'
+                };
+                
+                const compromisos = [];
+                let i = 0;
+                while (document.getElementById(`compromiso_${i}`)) {
+                    const desc = document.getElementById(`compromiso_${i}`).value;
+                    if (desc && desc.trim()) {
+                        compromisos.push({
+                            descripcion: desc.trim(),
+                            estado: 'pendiente'
+                        });
+                    }
+                    i++;
+                }
+                
+                return {
+                    curso: cursoId,
+                    estudiante: estudiante,
+                    fecha: new Date().toISOString().split('T')[0],
+                    tipo: tipo,
+                    nivel: nivel,
+                    docente: docente,
+                    motivo: motivo,
+                    compromisos: compromisos,
+                    observaciones: observaciones,
+                    estado: 'activo'
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const nuevoLlamado = LlamadosData.agregarLlamado(result.value);
+                if (nuevoLlamado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Llamado guardado',
+                        text: 'El llamado ha sido registrado exitosamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    cargarLlamadosEstudiante();
+                }
+            }
+        });
+    }
+
+    /**
+     * Mostrar opciones de compartir
      */
     function mostrarOpcionesCompartir(id, telefono, correo) {
         console.log('📱 Mostrando opciones de compartir:', id);
@@ -467,6 +835,7 @@ const LlamadosUI = (function() {
                     <p><strong>Estudiante:</strong> ${llamado.estudiante?.nombre}</p>
                     <p><strong>Documento:</strong> ${llamado.estudiante?.documento}</p>
                     <p><strong>Curso:</strong> ${llamado.curso}</p>
+                    <p><strong>Docente:</strong> ${llamado.docente?.nombre || 'No asignado'}${llamado.docente?.materia ? ` (${llamado.docente.materia})` : ''}</p>
                     <p><strong>Tipo:</strong> ${llamado.tipo === 'academico' ? '📚 Académico' : '⚠️ Disciplinario'}</p>
                     <hr>
                     <p>¿Cómo desea compartir este llamado?</p>
@@ -519,7 +888,7 @@ const LlamadosUI = (function() {
     }
 
     /**
-     * Funciones internas de compartir
+     * Compartir por WhatsApp
      */
     function compartirWhatsAppDirecto(llamado, telefono) {
         const mensaje = prepararMensaje(llamado);
@@ -536,6 +905,9 @@ const LlamadosUI = (function() {
         });
     }
 
+    /**
+     * Compartir por Email
+     */
     function compartirEmailDirecto(llamado, correo) {
         const mensaje = prepararMensaje(llamado);
         const asunto = `Llamado de Atención - ${llamado.estudiante?.nombre}`;
@@ -551,6 +923,9 @@ const LlamadosUI = (function() {
         });
     }
 
+    /**
+     * Prepara mensaje para compartir
+     */
     function prepararMensaje(llamado) {
         const estado = llamado.estado === 'activo' ? '🟡 Activo' : '✅ Cumplido';
         
@@ -561,6 +936,7 @@ const LlamadosUI = (function() {
 *Estudiante:* ${llamado.estudiante?.nombre}
 *Documento:* ${llamado.estudiante?.documento}
 *Curso:* ${llamado.curso}
+*Docente:* ${llamado.docente?.nombre || 'No asignado'}${llamado.docente?.materia ? ` (${llamado.docente.materia})` : ''}
 *Tipo:* ${llamado.tipo === 'academico' ? '📚 Académico' : '⚠️ Disciplinario'}
 *Fecha:* ${llamado.fecha}
 *Estado:* ${estado}
@@ -572,8 +948,6 @@ ${llamado.motivo}
 ${llamado.compromisos?.map(c => `• ${c.descripcion} (${c.estado})`).join('\n') || 'Ninguno'}
 
 *Observaciones:* ${llamado.observaciones || 'Ninguna'}
-
-*Docente:* ${llamado.docente?.nombre || 'N/A'}
 
 --- 
 Documento generado automáticamente.
@@ -626,139 +1000,15 @@ Documento generado automáticamente.
         });
     }
 
-    /**
-     * Mostrar modal nuevo llamado
-     */
-    function mostrarModalNuevoLlamado() {
-        const cursoSelect = document.getElementById('cursoLlamados');
-        const estudianteSelect = document.getElementById('estudianteLlamados');
-        
-        if (!cursoSelect.value || !estudianteSelect.value) {
-            Swal.fire('Seleccione un estudiante', '', 'warning');
-            return;
-        }
-        
-        const selectedOption = estudianteSelect.options[estudianteSelect.selectedIndex];
-        const estudiante = {
-            documento: estudianteSelect.value,
-            nombre: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`,
-            telefono: selectedOption.getAttribute('data-telefono'),
-            correo: selectedOption.getAttribute('data-correo')
-        };
-        
-        Swal.fire({
-            title: '📝 Nuevo Llamado',
-            html: `
-                <form id="formNuevoLlamado" class="text-start">
-                    <div class="mb-3">
-                        <label class="form-label">Tipo de Llamado</label>
-                        <select class="form-select" id="nuevoTipoLlamado">
-                            <option value="academico">📚 Académico</option>
-                            <option value="disciplinario">⚠️ Disciplinario</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nivel</label>
-                        <select class="form-select" id="nuevoNivelLlamado">
-                            <option value="1">Primer Llamado</option>
-                            <option value="2">Segundo Llamado</option>
-                            <option value="3">Tercer Llamado</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Motivo</label>
-                        <textarea class="form-control" id="nuevoMotivo" rows="3" placeholder="Describa el motivo del llamado..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Compromisos</label>
-                        <div id="compromisosContainer">
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control" placeholder="Compromiso 1" id="compromiso_0">
-                                <button class="btn btn-outline-success" type="button" onclick="agregarCampoCompromiso()">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="nuevoObservaciones" rows="2"></textarea>
-                    </div>
-                </form>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            width: '600px',
-            preConfirm: () => {
-                const tipo = document.getElementById('nuevoTipoLlamado').value;
-                const nivel = parseInt(document.getElementById('nuevoNivelLlamado').value);
-                const motivo = document.getElementById('nuevoMotivo').value;
-                const observaciones = document.getElementById('nuevoObservaciones').value;
-                
-                const compromisos = [];
-                let i = 0;
-                while (document.getElementById(`compromiso_${i}`)) {
-                    const desc = document.getElementById(`compromiso_${i}`).value;
-                    if (desc && desc.trim()) {
-                        compromisos.push({
-                            descripcion: desc.trim(),
-                            estado: 'pendiente'
-                        });
-                    }
-                    i++;
-                }
-                
-                if (!motivo) {
-                    Swal.showValidationMessage('El motivo es obligatorio');
-                    return false;
-                }
-                
-                const curso = cursoSelect.value;
-                const responsables = DataManager.getResponsablesPorCurso ? 
-                    DataManager.getResponsablesPorCurso(curso) : [];
-                const docente = responsables.length > 0 ? {
-                    nombre: responsables[0].nombre,
-                    documento: responsables[0].documento
-                } : { nombre: 'Docente', documento: 'N/A' };
-                
-                return {
-                    curso: curso,
-                    estudiante: estudiante,
-                    fecha: new Date().toISOString().split('T')[0],
-                    tipo: tipo,
-                    nivel: nivel,
-                    motivo: motivo,
-                    compromisos: compromisos,
-                    observaciones: observaciones,
-                    docente: docente,
-                    estado: 'activo'
-                };
-            }
-        }).then((result) => {
-            if (result.isConfirmed && result.value) {
-                const nuevoLlamado = LlamadosData.agregarLlamado(result.value);
-                if (nuevoLlamado) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Llamado guardado',
-                        text: 'El llamado ha sido registrado exitosamente',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    cargarLlamadosEstudiante();
-                }
-            }
-        });
-    }
-
     // Auto-inicializar
-    setTimeout(inicializarSelectores, 1000);
+    setTimeout(() => {
+        inicializarSelectores();
+    }, 1000);
 
     // API pública
     return {
         inicializarSelectores,
-        cargarEstudiantes,
+        cargarEstudiantesLlamados,
         cargarLlamadosEstudiante,
         renderizarTablaLlamados,
         verDetalle,
@@ -825,5 +1075,5 @@ window.cambiarEstadoCompromiso = function(btn, index) {
     }
 };
 
-console.log('✅ Módulo LlamadosUI v3.3 cargado correctamente');
+console.log('✅ Módulo LlamadosUI v3.13 cargado correctamente');
 window.LlamadosUI = LlamadosUI;

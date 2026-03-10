@@ -1,7 +1,7 @@
 // puestos.js - Módulo de puestos docentes y mesas
-// VERSIÓN 0.6 - COMPLETA Y CORREGIDA
+// VERSIÓN 0.8 - CON ACTUALIZACIÓN EN TIEMPO REAL
 
-console.log('🔄 Iniciando carga de puestos.js...');
+console.log('🔄 Iniciando carga de puestos.js v0.8...');
 
 // Verificar dependencias
 if (typeof DataManager === 'undefined') {
@@ -13,7 +13,447 @@ if (typeof DataManager === 'undefined') {
 const PuestosModule = (function () {
     console.log('📦 Ejecutando IIFE de PuestosModule...');
 
-    // ===== FUNCIONES PARA PUESTOS DOCENTES =====
+    // ===== FUNCIÓN DE VALIDACIÓN =====
+    
+    /**
+     * Valida que exista al menos un puesto docente y mesas de estudiantes configuradas
+     */
+    function validarConfiguracion() {
+        console.log('🔍 Validando configuración de puestos y mesas...');
+        
+        // Obtener datos actuales
+        const puestosDocentes = DataManager.getPuestosDocentes ? DataManager.getPuestosDocentes() : [];
+        const mesas = DataManager.getMesas ? DataManager.getMesas() : [];
+        
+        // Obtener curso seleccionado (si hay)
+        const cursoSelect = document.getElementById('cursoPuestoDocente');
+        const cursoSeleccionado = cursoSelect?.value || 'todos';
+        
+        // Filtrar por curso si hay uno seleccionado
+        let puestosFiltrados = puestosDocentes;
+        let mesasFiltradas = mesas;
+        
+        if (cursoSeleccionado && cursoSeleccionado !== 'todos' && cursoSeleccionado !== '') {
+            puestosFiltrados = puestosDocentes.filter(p => p.curso === cursoSeleccionado);
+            mesasFiltradas = mesas.filter(m => m.curso === cursoSeleccionado);
+        }
+        
+        // Resultados de validación
+        const tienePuestoDocente = puestosFiltrados.length > 0;
+        const tieneMesas = mesasFiltradas.length > 0;
+        
+        // Calcular estadísticas adicionales
+        const totalPCs = mesasFiltradas.reduce((acc, mesa) => acc + (mesa.pcs?.length || 0), 0);
+        const pcsAsignados = mesasFiltradas.reduce((acc, mesa) => 
+            acc + (mesa.pcs?.filter(pc => pc.estudiante).length || 0), 0);
+        
+        // Generar mensajes según el resultado
+        let mensaje = '';
+        let icono = 'success';
+        let titulo = '✅ Configuración Completa';
+        
+        if (!tienePuestoDocente && !tieneMesas) {
+            icono = 'error';
+            titulo = '❌ Configuración Incompleta';
+            mensaje = `
+                <div class="alert alert-danger mb-3">
+                    <strong>No hay configuración de puestos docentes ni mesas de estudiantes.</strong>
+                </div>
+                <p>Debe realizar las siguientes acciones:</p>
+                <ol class="text-start">
+                    <li><strong>Configurar puesto docente:</strong> Seleccione un curso y use el botón "Agregar Puesto Docente"</li>
+                    <li><strong>Crear mesas de estudiantes:</strong> En la sección "Configuración de Mesas", seleccione un curso y configure la distribución</li>
+                </ol>
+            `;
+        } else if (!tienePuestoDocente) {
+            icono = 'warning';
+            titulo = '⚠️ Falta Puesto Docente';
+            mensaje = `
+                <div class="alert alert-warning mb-3">
+                    <strong>Las mesas de estudiantes están configuradas, pero falta el puesto docente.</strong>
+                </div>
+                <p>Acciones requeridas:</p>
+                <ol class="text-start">
+                    <li><strong>Configurar puesto docente:</strong> Seleccione un curso y use el botón "Agregar Puesto Docente"</li>
+                    <li>Complete los datos del docente y guarde</li>
+                </ol>
+                <div class="mt-3 p-2 bg-light rounded">
+                    <strong>📊 Mesas configuradas:</strong> ${mesasFiltradas.length} mesas, ${totalPCs} PCs (${pcsAsignados} asignados)
+                </div>
+            `;
+        } else if (!tieneMesas) {
+            icono = 'warning';
+            titulo = '⚠️ Faltan Mesas de Estudiantes';
+            mensaje = `
+                <div class="alert alert-warning mb-3">
+                    <strong>El puesto docente está configurado, pero no hay mesas de estudiantes.</strong>
+                </div>
+                <p>Acciones requeridas:</p>
+                <ol class="text-start">
+                    <li><strong>Crear mesas de estudiantes:</strong> En la sección "Configuración de Mesas"</li>
+                    <li>Seleccione el curso ${cursoSeleccionado ? cursoSeleccionado : 'correspondiente'}</li>
+                    <li>Configure filas, columnas y PCs por mesa</li>
+                    <li>Haga clic en "Crear Distribución"</li>
+                </ol>
+                <div class="mt-3 p-2 bg-light rounded">
+                    <strong>👨‍🏫 Puesto docente:</strong> ${puestosFiltrados.length} configurado(s)
+                </div>
+            `;
+        } else {
+            // Todo está configurado
+            const totalPuestos = puestosFiltrados.length;
+            const detallesPuestos = puestosFiltrados.map(p => 
+                `• ${p.nombre} - PC: ${p.serial} (${p.estado})`
+            ).join('<br>');
+            
+            mensaje = `
+                <div class="alert alert-success mb-3">
+                    <strong>✓ La configuración es correcta y completa.</strong>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <strong>👨‍🏫 Puestos Docentes (${totalPuestos})</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>${detallesPuestos}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <strong>🖥️ Mesas de Estudiantes (${mesasFiltradas.length})</strong>
+                            </div>
+                            <div class="card-body">
+                                <small>
+                                    • Total PCs: ${totalPCs}<br>
+                                    • PCs Asignados: ${pcsAsignados}<br>
+                                    • PCs Disponibles: ${totalPCs - pcsAsignados}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="mt-3 text-success">
+                    <i class="fas fa-check-circle"></i> El salón está listo para funcionar.
+                </p>
+            `;
+        }
+        
+        // Mostrar resultado con SweetAlert2
+        Swal.fire({
+            title: titulo,
+            html: mensaje,
+            icon: icono,
+            width: '700px',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#0d6efd'
+        });
+        
+        // También mostrar en consola para debugging
+        console.log('📊 Resultado de validación:', {
+            tienePuestoDocente,
+            tieneMesas,
+            puestos: puestosFiltrados.length,
+            mesas: mesasFiltradas.length,
+            totalPCs,
+            pcsAsignados
+        });
+        
+        return {
+            valido: tienePuestoDocente && tieneMesas,
+            tienePuestoDocente,
+            tieneMesas,
+            puestos: puestosFiltrados,
+            mesas: mesasFiltradas
+        };
+    }
+
+    /**
+     * Obtiene el estado actual de la configuración
+     */
+    function obtenerEstadoConfiguracion() {
+        const puestosDocentes = DataManager.getPuestosDocentes ? DataManager.getPuestosDocentes() : [];
+        const mesas = DataManager.getMesas ? DataManager.getMesas() : [];
+        
+        const cursoSelect = document.getElementById('cursoPuestoDocente');
+        const cursoSeleccionado = cursoSelect?.value;
+        
+        let puestosFiltrados = puestosDocentes;
+        let mesasFiltradas = mesas;
+        
+        if (cursoSeleccionado && cursoSeleccionado !== '') {
+            puestosFiltrados = puestosDocentes.filter(p => p.curso === cursoSeleccionado);
+            mesasFiltradas = mesas.filter(m => m.curso === cursoSeleccionado);
+        }
+        
+        return {
+            tienePuesto: puestosFiltrados.length > 0,
+            tieneMesas: mesasFiltradas.length > 0,
+            totalPuestos: puestosFiltrados.length,
+            totalMesas: mesasFiltradas.length,
+            curso: cursoSeleccionado || 'todos'
+        };
+    }
+
+    /**
+     * NUEVA VERSIÓN: Mostrar indicador de estado con actualización en tiempo real
+     */
+    function mostrarIndicadorEstado() {
+        const estado = obtenerEstadoConfiguracion();
+        console.log('🔄 Actualizando indicador de estado:', estado);
+        
+        let indicador = document.getElementById('estadoConfiguracionPuestos');
+        
+        if (!indicador) {
+            // Crear el indicador si no existe
+            const container = document.querySelector('.tab-pane#puestos .row:first-child .col-md-4:last-child');
+            if (container) {
+                // Crear una nueva fila para el indicador
+                const row = document.createElement('div');
+                row.className = 'row mt-3';
+                row.innerHTML = `
+                    <div class="col-12">
+                        <div id="estadoConfiguracionPuestos" class="alert alert-info d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Estado de configuración:</strong>
+                            </span>
+                            <div>
+                                <span class="badge ${estado.tienePuesto ? 'bg-success' : 'bg-danger'} me-2" id="badgePuestoDocente">
+                                    Puesto Docente: ${estado.tienePuesto ? '✅' : '❌'}
+                                </span>
+                                <span class="badge ${estado.tieneMesas ? 'bg-success' : 'bg-danger'} me-2" id="badgeMesasEstudiantes">
+                                    Mesas: ${estado.tieneMesas ? '✅' : '❌'}
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="PuestosModule.validarConfiguracion()">
+                                    <i class="fas fa-sync-alt"></i> Validar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Insertar después del primer row
+                const primerRow = document.querySelector('.tab-pane#puestos .row:first-child');
+                if (primerRow && primerRow.parentNode) {
+                    primerRow.parentNode.insertBefore(row, primerRow.nextSibling);
+                }
+                
+                indicador = document.getElementById('estadoConfiguracionPuestos');
+            }
+        } else {
+            // Actualizar indicador existente
+            const badgePuesto = document.getElementById('badgePuestoDocente') || indicador.querySelector('.badge:first-of-type');
+            const badgeMesas = document.getElementById('badgeMesasEstudiantes') || indicador.querySelector('.badge:last-of-type');
+            
+            if (badgePuesto) {
+                badgePuesto.className = `badge ${estado.tienePuesto ? 'bg-success' : 'bg-danger'} me-2`;
+                badgePuesto.innerHTML = `Puesto Docente: ${estado.tienePuesto ? '✅' : '❌'}`;
+            }
+            
+            if (badgeMesas) {
+                badgeMesas.className = `badge ${estado.tieneMesas ? 'bg-success' : 'bg-danger'} me-2`;
+                badgeMesas.innerHTML = `Mesas: ${estado.tieneMesas ? '✅' : '❌'}`;
+            }
+        }
+    }
+
+    // ===== FUNCIONES EXISTENTES MODIFICADAS =====
+
+    /**
+     * Guarda un puesto docente (MODIFICADO para actualizar estado)
+     */
+    function guardarPuestoDocente() {
+        console.log('💾 Guardando puesto docente...');
+
+        const select = document.getElementById('selectDocente');
+
+        if (!select || select.selectedIndex <= 0) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione un docente');
+            }
+            return;
+        }
+
+        const serial = document.getElementById('serialPC')?.value;
+        if (!serial) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Ingrese el serial del PC');
+            }
+            return;
+        }
+
+        const opt = select.options[select.selectedIndex];
+        const puesto = {
+            nombre: opt.getAttribute('data-nombre') || '',
+            documento: opt.value || '',
+            serial: serial,
+            estado: document.getElementById('estadoPC')?.value || 'Excelente',
+            mouse: document.getElementById('mousePC')?.value || 'Bueno',
+            teclado: document.getElementById('tecladoPC')?.value || 'Bueno',
+            pantalla: document.getElementById('pantallaPC')?.value || 'Bueno',
+            internet: document.getElementById('internet')?.value || 'Funciona',
+            estadoLimpieza: document.getElementById('estadoLimpiezaPC')?.value || 'Bueno',
+            observaciones: document.getElementById('observacionesPC')?.value || '',
+            curso: document.getElementById('cursoPuestoDocente')?.value || ''
+        };
+
+        DataManager.agregarPuestoDocente(puesto);
+
+        if (typeof UIManager !== 'undefined') {
+            UIManager.renderizarPuestosDocentes();
+        }
+
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.hideModal('puestoDocente');
+        }
+
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', 'Puesto guardado');
+        }
+        
+        // ACTUALIZAR INDICADOR INMEDIATAMENTE
+        setTimeout(() => {
+            mostrarIndicadorEstado();
+        }, 100);
+    }
+
+    /**
+     * Elimina un puesto (MODIFICADO para actualizar estado)
+     */
+    function eliminarPuestoDocente(index) {
+        const confirmar = async () => {
+            if (typeof Utils !== 'undefined') {
+                const result = await Utils.showConfirm('¿Eliminar puesto?', 'Esta acción no se puede deshacer');
+                return result.isConfirmed;
+            }
+            return confirm('¿Eliminar puesto?');
+        };
+
+        confirmar().then(ok => {
+            if (ok) {
+                DataManager.eliminarPuestoDocente(index);
+                if (typeof UIManager !== 'undefined') {
+                    UIManager.renderizarPuestosDocentes();
+                }
+                if (typeof Utils !== 'undefined') {
+                    Utils.showToast('success', 'Puesto eliminado');
+                }
+                // ACTUALIZAR INDICADOR INMEDIATAMENTE
+                setTimeout(() => {
+                    mostrarIndicadorEstado();
+                }, 100);
+            }
+        });
+    }
+
+    /**
+     * Crea distribución de mesas (MODIFICADO para actualizar estado)
+     */
+    function crearDistribucionMesas() {
+        const curso = sessionStorage.getItem('cursoMesasSeleccionado');
+
+        if (!curso) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Seleccione un curso');
+            }
+            return;
+        }
+
+        const filas = parseInt(document.getElementById('filas')?.value) || 3;
+        const cols = parseInt(document.getElementById('columnas')?.value) || 2;
+        const pcs = parseInt(document.getElementById('pcsPorMesa')?.value) || 2;
+
+        if (filas > 10 || cols > 6 || pcs > 6) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Límites: 10 filas, 6 columnas, 6 PCs');
+            }
+            return;
+        }
+
+        DataManager.configurarMesas(filas, cols, pcs, curso);
+
+        if (typeof UIManager !== 'undefined') {
+            UIManager.renderizarMesas();
+        }
+
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', `Mesas creadas para el curso ${curso}`);
+        }
+        
+        // ACTUALIZAR INDICADOR INMEDIATAMENTE
+        setTimeout(() => {
+            mostrarIndicadorEstado();
+        }, 100);
+    }
+
+    /**
+     * Inicializa selector de cursos (MODIFICADO con evento change mejorado)
+     */
+    async function inicializarSelectorCursos() {
+        console.log('🔄 Inicializando selector de cursos para puestos...');
+
+        const cursoSelect = document.getElementById('cursoPuestoDocente');
+        if (!cursoSelect) {
+            console.warn('⚠️ Selector no encontrado');
+            return;
+        }
+
+        const cursos = DataManager.getCursos?.() || [];
+
+        cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
+
+        cursos.forEach(curso => {
+            const option = document.createElement('option');
+            option.value = curso.id;
+            option.textContent = `${curso.id} - ${curso.nombre}`;
+            cursoSelect.appendChild(option);
+        });
+
+        console.log(`✅ Selector con ${cursos.length} cursos`);
+        
+        // Agregar evento para actualizar indicador al cambiar curso
+        cursoSelect.addEventListener('change', function() {
+            console.log('📌 Curso cambiado a:', this.value);
+            // Actualizar el curso en sessionStorage para mesas
+            if (this.value) {
+                sessionStorage.setItem('cursoMesasSeleccionado', this.value);
+            }
+            // Actualizar indicador
+            mostrarIndicadorEstado();
+        });
+    }
+
+    /**
+     * Inicializar todo el módulo
+     */
+    async function inicializar() {
+        console.log('🔄 Inicializando módulo de puestos...');
+        await inicializarSelectorCursos();
+        
+        // Crear indicador de estado después de un pequeño retraso
+        setTimeout(() => {
+            mostrarIndicadorEstado();
+        }, 500);
+        
+        // Agregar listener para cuando se muestre la pestaña
+        const tabButton = document.querySelector('button[data-bs-target="#puestos"]');
+        if (tabButton) {
+            tabButton.addEventListener('shown.bs.tab', function() {
+                console.log('📌 Pestaña Puestos activada - Actualizando estado...');
+                setTimeout(() => {
+                    mostrarIndicadorEstado();
+                }, 200);
+            });
+        }
+        
+        console.log('✅ Módulo de puestos inicializado');
+    }
+
+    // ===== FUNCIONES EXISTENTES (sin cambios) =====
 
     /**
      * Carga los docentes para el puesto según el curso seleccionado
@@ -120,112 +560,6 @@ const PuestosModule = (function () {
     }
 
     /**
-     * Guarda un puesto docente
-     */
-    function guardarPuestoDocente() {
-        console.log('💾 Guardando puesto docente...');
-
-        const select = document.getElementById('selectDocente');
-
-        if (!select || select.selectedIndex <= 0) {
-            if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Seleccione un docente');
-            }
-            return;
-        }
-
-        const serial = document.getElementById('serialPC')?.value;
-        if (!serial) {
-            if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Ingrese el serial del PC');
-            }
-            return;
-        }
-
-        const opt = select.options[select.selectedIndex];
-        const puesto = {
-            nombre: opt.getAttribute('data-nombre') || '',
-            documento: opt.value || '',
-            serial: serial,
-            estado: document.getElementById('estadoPC')?.value || 'Excelente',
-            mouse: document.getElementById('mousePC')?.value || 'Bueno',
-            teclado: document.getElementById('tecladoPC')?.value || 'Bueno',
-            pantalla: document.getElementById('pantallaPC')?.value || 'Bueno',
-            internet: document.getElementById('internet')?.value || 'Funciona',
-            estadoLimpieza: document.getElementById('estadoLimpiezaPC')?.value || 'Bueno',
-            observaciones: document.getElementById('observacionesPC')?.value || '',
-            curso: document.getElementById('cursoPuestoDocente')?.value || ''
-        };
-
-        DataManager.agregarPuestoDocente(puesto);
-
-        if (typeof UIManager !== 'undefined') {
-            UIManager.renderizarPuestosDocentes();
-        }
-
-        if (typeof ModalManager !== 'undefined') {
-            ModalManager.hideModal('puestoDocente');
-        }
-
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('success', 'Puesto guardado');
-        }
-    }
-
-    /**
-     * Elimina un puesto
-     */
-    function eliminarPuestoDocente(index) {
-        const confirmar = async () => {
-            if (typeof Utils !== 'undefined') {
-                const result = await Utils.showConfirm('¿Eliminar puesto?', 'Esta acción no se puede deshacer');
-                return result.isConfirmed;
-            }
-            return confirm('¿Eliminar puesto?');
-        };
-
-        confirmar().then(ok => {
-            if (ok) {
-                DataManager.eliminarPuestoDocente(index);
-                if (typeof UIManager !== 'undefined') {
-                    UIManager.renderizarPuestosDocentes();
-                }
-                if (typeof Utils !== 'undefined') {
-                    Utils.showToast('success', 'Puesto eliminado');
-                }
-            }
-        });
-    }
-
-    /**
-     * Inicializa selector de cursos
-     */
-    async function inicializarSelectorCursos() {
-        console.log('🔄 Inicializando selector de cursos para puestos...');
-
-        const cursoSelect = document.getElementById('cursoPuestoDocente');
-        if (!cursoSelect) {
-            console.warn('⚠️ Selector no encontrado');
-            return;
-        }
-
-        const cursos = DataManager.getCursos?.() || [];
-
-        cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
-
-        cursos.forEach(curso => {
-            const option = document.createElement('option');
-            option.value = curso.id;
-            option.textContent = `${curso.id} - ${curso.nombre}`;
-            cursoSelect.appendChild(option);
-        });
-
-        console.log(`✅ Selector con ${cursos.length} cursos`);
-    }
-
-    // ===== FUNCIONES PARA MESAS =====
-
-    /**
      * Carga estudiantes para mesas
      */
     async function cargarEstudiantesParaMesas() {
@@ -266,41 +600,6 @@ const PuestosModule = (function () {
 
         sessionStorage.setItem('cursoMesasSeleccionado', cursoId);
         console.log(`✅ Curso seleccionado para mesas: ${cursoId}`);
-    }
-
-    /**
-     * Crea distribución de mesas
-     */
-    function crearDistribucionMesas() {
-        const curso = sessionStorage.getItem('cursoMesasSeleccionado');
-
-        if (!curso) {
-            if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Seleccione un curso');
-            }
-            return;
-        }
-
-        const filas = parseInt(document.getElementById('filas')?.value) || 3;
-        const cols = parseInt(document.getElementById('columnas')?.value) || 2;
-        const pcs = parseInt(document.getElementById('pcsPorMesa')?.value) || 2;
-
-        if (filas > 10 || cols > 6 || pcs > 6) {
-            if (typeof Utils !== 'undefined') {
-                Utils.showToast('warning', 'Límites: 10 filas, 6 columnas, 6 PCs');
-            }
-            return;
-        }
-
-        DataManager.configurarMesas(filas, cols, pcs, curso);
-
-        if (typeof UIManager !== 'undefined') {
-            UIManager.renderizarMesas();
-        }
-
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('success', `Mesas creadas para el curso ${curso}`);
-        }
     }
 
     /**
@@ -416,81 +715,66 @@ const PuestosModule = (function () {
     }
 
     /**
-  * Guarda la configuración de un PC
-  */
-  /**
- * Guarda la configuración de un PC
- */
-function guardarConfiguracionPC() {
-    console.log('💾 Guardando configuración de PC...');
-    
-    const mesaId = document.getElementById('mesaId')?.value;
-    const idx = parseInt(document.getElementById('pcIndex')?.value);
-    const serial = document.getElementById('pcSerial')?.value;
-    
-    if (!serial) {
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('warning', 'Serial requerido');
+     * Guarda la configuración de un PC
+     */
+    function guardarConfiguracionPC() {
+        console.log('💾 Guardando configuración de PC...');
+        
+        const mesaId = document.getElementById('mesaId')?.value;
+        const idx = parseInt(document.getElementById('pcIndex')?.value);
+        const serial = document.getElementById('pcSerial')?.value;
+        
+        if (!serial) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Serial requerido');
+            }
+            return;
         }
-        return;
-    }
-    
-    const data = {
-        serial: serial,
-        estudiante: document.getElementById('pcEstudiante')?.value || '',
-        documento: document.getElementById('pcDocumento')?.value || '',
-        estado: document.getElementById('pcEstado')?.value || 'Excelente',
-        mouse: document.getElementById('pcMouse')?.value || 'Bueno',
-        teclado: document.getElementById('pcTeclado')?.value || 'Bueno',
-        pantalla: document.getElementById('pcPantalla')?.value || 'Bueno',
-        internet: document.getElementById('pcInternet')?.value || 'Funciona',
-        estadoLimpieza: document.getElementById('pcLimpieza')?.value || 'Bueno',
-        observaciones: document.getElementById('pcObservaciones')?.value || ''
-    };
-    
-    console.log('📦 Datos a guardar:', data);
-    
-    // IMPORTANTE: Verificar que DataManager existe
-    if (typeof DataManager === 'undefined') {
-        console.error('❌ DataManager no está disponible');
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('error', 'Error: DataManager no disponible');
+        
+        const data = {
+            serial: serial,
+            estudiante: document.getElementById('pcEstudiante')?.value || '',
+            documento: document.getElementById('pcDocumento')?.value || '',
+            estado: document.getElementById('pcEstado')?.value || 'Excelente',
+            mouse: document.getElementById('pcMouse')?.value || 'Bueno',
+            teclado: document.getElementById('pcTeclado')?.value || 'Bueno',
+            pantalla: document.getElementById('pcPantalla')?.value || 'Bueno',
+            internet: document.getElementById('pcInternet')?.value || 'Funciona',
+            estadoLimpieza: document.getElementById('pcLimpieza')?.value || 'Bueno',
+            observaciones: document.getElementById('pcObservaciones')?.value || ''
+        };
+        
+        if (typeof DataManager === 'undefined') {
+            console.error('❌ DataManager no está disponible');
+            return;
         }
-        return;
-    }
-    
-    // IMPORTANTE: Usar el nombre EXACTO de la función (con c minúscula)
-    if (typeof DataManager.actualizarPcEstudiante !== 'function') {
-        console.error('❌ DataManager.actualizarPcEstudiante no es una función');
-        console.log('Funciones disponibles en DataManager:', Object.keys(DataManager));
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('error', 'Error: función no disponible');
+        
+        if (typeof DataManager.actualizarPcEstudiante !== 'function') {
+            console.error('❌ DataManager.actualizarPcEstudiante no es una función');
+            return;
         }
-        return;
-    }
-    
-    // Llamada correcta
-    const resultado = DataManager.actualizarPcEstudiante(mesaId, idx, data);
-    
-    if (!resultado) {
-        if (typeof Utils !== 'undefined') {
-            Utils.showToast('warning', 'Estudiante ya asignado');
+        
+        const resultado = DataManager.actualizarPcEstudiante(mesaId, idx, data);
+        
+        if (!resultado) {
+            if (typeof Utils !== 'undefined') {
+                Utils.showToast('warning', 'Estudiante ya asignado');
+            }
+            return;
         }
-        return;
+        
+        if (typeof UIManager !== 'undefined') {
+            UIManager.renderizarMesas();
+        }
+        
+        if (typeof ModalManager !== 'undefined') {
+            ModalManager.hideModal('configurarPC');
+        }
+        
+        if (typeof Utils !== 'undefined') {
+            Utils.showToast('success', 'PC configurado');
+        }
     }
-    
-    if (typeof UIManager !== 'undefined') {
-        UIManager.renderizarMesas();
-    }
-    
-    if (typeof ModalManager !== 'undefined') {
-        ModalManager.hideModal('configurarPC');
-    }
-    
-    if (typeof Utils !== 'undefined') {
-        Utils.showToast('success', 'PC configurado');
-    }
-}
 
     /**
      * Carga datos del estudiante en PC
@@ -514,7 +798,7 @@ function guardarConfiguracionPC() {
 
     // Inicializar
     setTimeout(() => {
-        inicializarSelectorCursos();
+        inicializar();
     }, 300);
 
     // Exponer funciones
@@ -530,6 +814,9 @@ function guardarConfiguracionPC() {
     window.editarPC = editarPC;
     window.guardarConfiguracionPC = guardarConfiguracionPC;
     window.cargarDatosEstudiantePC = cargarDatosEstudiantePC;
+    
+    // NUEVAS funciones expuestas
+    window.validarConfiguracionPuestos = validarConfiguracion;
 
     const api = {
         cargarDocentesParaPuesto,
@@ -540,15 +827,20 @@ function guardarConfiguracionPC() {
         crearDistribucionMesas,
         abrirConfiguracionMesa,
         editarPC,
-        guardarConfiguracionPC
+        guardarConfiguracionPC,
+        // NUEVAS funciones en API
+        validarConfiguracion,
+        obtenerEstadoConfiguracion,
+        mostrarIndicadorEstado,
+        inicializar
     };
 
-    console.log('✅ PuestosModule: API creada');
+    console.log('✅ PuestosModule v0.8: API creada');
     return api;
 })();
 
 if (typeof PuestosModule !== 'undefined') {
-    console.log('✅ PuestosModule v0.6 cargado correctamente');
+    console.log('✅ PuestosModule v0.8 cargado correctamente');
 } else {
     console.error('❌ Error cargando PuestosModule');
 }

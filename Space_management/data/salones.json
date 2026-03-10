@@ -1,0 +1,24 @@
+{
+    "salones": [
+        { "id": "101", "nombre": "Salón 101 - Primer Piso" },
+        { "id": "102", "nombre": "Salón 102 - Primer Piso" },
+        { "id": "103", "nombre": "Salón 103 - Primer Piso" },
+        { "id": "104", "nombre": "Salón 104 - Primer Piso" },
+        { "id": "105", "nombre": "Salón 105 - Primer Piso" },
+        { "id": "201", "nombre": "Salón 201 - Segundo Piso" },
+        { "id": "202", "nombre": "Salón 202 - Segundo Piso" },
+        { "id": "203", "nombre": "Salón 203 - Segundo Piso" },
+        { "id": "204", "nombre": "Salón 204 - Segundo Piso" },
+        { "id": "205", "nombre": "Salón 205 - Segundo Piso" },
+        { "id": "301", "nombre": "Salón 301 - Tercer Piso" },
+        { "id": "302", "nombre": "Salón 302 - Tercer Piso" },
+        { "id": "303", "nombre": "Salón 303 - Tercer Piso" },
+        { "id": "304", "nombre": "Salón 304 - Tercer Piso" },
+        { "id": "305", "nombre": "Salón 305 - Tercer Piso" },
+        { "id": "LAB-1", "nombre": "Laboratorio de Sistemas 1" },
+        { "id": "LAB-2", "nombre": "Laboratorio de Sistemas 2" },
+        { "id": "LAB-3", "nombre": "Laboratorio de Redes" },
+        { "id": "AUD-1", "nombre": "Auditorio Principal" },
+        { "id": "AUD-2", "nombre": "Auditorio Secundario" }
+    ]
+}
