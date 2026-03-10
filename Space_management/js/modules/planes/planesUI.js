@@ -1,11 +1,135 @@
 // js/modules/planes/planesUI.js
-// Versión 2.0 - CON OPCIONES DE COMPARTIR
+// Versión 2.2 - CORRECCIÓN DE CARGA DE INSTRUCTORES Y ERROR DE INICIALIZACIÓN
 
-console.log('🔄 Cargando módulo planesUI.js...');
+console.log('🔄 Cargando módulo planesUI.js v2.2...');
 
 const PlanesUI = (function () {
 
     let estudiantesCache = {};
+    let instructoresCache = {};
+    let todosLosResponsables = [];
+
+    // ========== NUEVA FUNCIÓN: Cargar todos los responsables ==========
+    
+    async function cargarTodosLosResponsables() {
+        console.log('👨‍🏫 Cargando todos los responsables para planes...');
+        
+        try {
+            // Intentar desde JSON directo primero
+            console.log('🔄 Intentando carga desde JSON directo...');
+            try {
+                const response = await fetch('data/responsables.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    const jsonResponsables = data.responsables || [];
+                    console.log(`📊 JSON directo: ${jsonResponsables.length} responsables`);
+                    
+                    if (jsonResponsables.length > 0) {
+                        todosLosResponsables = jsonResponsables.map(r => ({
+                            numeroCurso: String(r.numeroCurso || '').trim(),
+                            nombre: r.nombre || '',
+                            documento: r.documento || '',
+                            materia: r.materia || 'Sin materia',
+                            horarioInicio: r.horarioInicio || '',
+                            horarioFin: r.horarioFin || '',
+                            email: r.email || '',
+                            telefono: r.telefono || ''
+                        }));
+                        
+                        console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde JSON`);
+                        return todosLosResponsables;
+                    }
+                }
+            } catch (e) {
+                console.error('❌ Error cargando JSON:', e);
+            }
+            
+            // Si falla el JSON, intentar con DataManager
+            if (DataManager.getResponsables) {
+                console.log('🔄 Intentando con DataManager.getResponsables...');
+                const dataManagerResponsables = DataManager.getResponsables() || [];
+                todosLosResponsables = dataManagerResponsables.map(r => ({
+                    numeroCurso: String(r.numeroCurso || '').trim(),
+                    nombre: r.nombre || '',
+                    documento: r.documento || '',
+                    materia: r.materia || 'Sin materia'
+                }));
+                console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde DataManager`);
+            }
+            
+            return todosLosResponsables;
+            
+        } catch (error) {
+            console.error('❌ Error cargando responsables:', error);
+            todosLosResponsables = [];
+            return [];
+        }
+    }
+
+    // ========== NUEVA FUNCIÓN: Obtener instructores por curso ==========
+    
+    function getInstructoresPorCurso(cursoId) {
+        console.log(`🔍 Buscando instructores para curso ${cursoId}`);
+        
+        if (!cursoId) return [];
+        
+        const instructores = todosLosResponsables.filter(r => 
+            String(r.numeroCurso).trim() === String(cursoId).trim()
+        );
+        
+        console.log(`✅ Encontrados: ${instructores.length} instructores para curso ${cursoId}`);
+        
+        // Guardar en caché
+        instructoresCache[cursoId] = instructores;
+        
+        return instructores;
+    }
+
+    // ========== NUEVA FUNCIÓN: Cargar instructores en el modal ==========
+    
+    function cargarInstructoresEnModal() {
+        console.log('👨‍🏫 Cargando instructores en el modal de planes...');
+        
+        const cursoSelect = document.getElementById('cursoPlanes');
+        const instructoresSelect = document.getElementById('planInstructores');
+        
+        if (!cursoSelect || !instructoresSelect) {
+            console.warn('⚠️ Selector de instructores no encontrado');
+            return;
+        }
+        
+        const cursoId = cursoSelect.value;
+        
+        if (!cursoId) {
+            instructoresSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
+            return;
+        }
+        
+        const instructores = getInstructoresPorCurso(cursoId);
+        
+        instructoresSelect.innerHTML = '';
+        
+        if (instructores.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.disabled = true;
+            option.textContent = 'No hay instructores para este curso';
+            instructoresSelect.appendChild(option);
+            return;
+        }
+        
+        instructores.forEach(instructor => {
+            const option = document.createElement('option');
+            option.value = instructor.documento;
+            option.setAttribute('data-nombre', instructor.nombre);
+            option.setAttribute('data-materia', instructor.materia);
+            option.textContent = `${instructor.nombre} - ${instructor.materia}`;
+            option.selected = true;
+            instructoresSelect.appendChild(option);
+        });
+        
+        console.log(`✅ ${instructores.length} instructores cargados en el modal`);
+    }
 
     // ========== FUNCIONES AUXILIARES ==========
 
@@ -22,14 +146,14 @@ const PlanesUI = (function () {
         div.innerHTML = `
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <span><strong>Competencia ${index + 1}</strong></span>
-                <button type="button" class="btn btn-sm btn-danger" onclick="PlanesUI.eliminarCompetencia(this)">
+                <button type="button" class="btn btn-sm btn-danger" onclick="if(window.PlanesUI) PlanesUI.eliminarCompetencia(this)">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="card-body">
                 <div class="mb-2">
                     <label class="form-label">Seleccione la competencia no superada:</label>
-                    <select class="form-select" id="comp_select_${index}" onchange="PlanesUI.cargarResultadosCompetencia(${index})">
+                    <select class="form-select" id="comp_select_${index}" onchange="if(window.PlanesUI) PlanesUI.cargarResultadosCompetencia(${index})">
                         <option value="">Seleccione una competencia</option>
                         ${competencias.map(c => {
             const resultadosStr = JSON.stringify(c.resultados).replace(/'/g, "&#39;");
@@ -44,7 +168,7 @@ const PlanesUI = (function () {
                 <div class="mt-3">
                     <label class="form-label fw-bold">Actividades de Mejoramiento:</label>
                     <div id="actividades_container_${index}" class="actividades-container"></div>
-                    <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="PlanesUI.agregarActividad(${index})">
+                    <button type="button" class="btn btn-sm btn-outline-success mt-1" onclick="if(window.PlanesUI) PlanesUI.agregarActividad(${index})">
                         <i class="fas fa-plus"></i> Agregar Actividad
                     </button>
                 </div>
@@ -154,8 +278,8 @@ const PlanesUI = (function () {
         const selectInstructores = document.getElementById('planInstructores');
         const instructoresSeleccionados = Array.from(selectInstructores.selectedOptions).map(opt => ({
             documento: opt.value,
-            nombre: opt.text.split(' - ')[0],
-            materia: opt.text.includes(' - ') ? opt.text.split(' - ')[1] : ''
+            nombre: opt.getAttribute('data-nombre') || opt.text.split(' - ')[0],
+            materia: opt.getAttribute('data-materia') || (opt.text.includes(' - ') ? opt.text.split(' - ')[1] : 'Sin materia')
         }));
 
         const recursos = [];
@@ -252,34 +376,21 @@ const PlanesUI = (function () {
     async function inicializarSelectores() {
         console.log('🔄 ===== INICIANDO INICIALIZACIÓN DE PLANES =====');
 
+        await cargarTodosLosResponsables();
+
         const cursoSelect = document.getElementById('cursoPlanes');
-        console.log('📌 Elemento cursoPlanes:', cursoSelect);
-
         if (!cursoSelect) {
-            console.error('❌ CRÍTICO: Selector de cursos no encontrado en el DOM');
-            return;
-        }
-
-        if (typeof DataManager === 'undefined') {
-            console.error('❌ DataManager no está disponible');
-            cursoSelect.innerHTML = '<option value="">Error: DataManager no disponible</option>';
+            console.error('❌ Selector de cursos no encontrado');
             return;
         }
 
         let cursos = DataManager.getCursos ? DataManager.getCursos() : [];
-        console.log('📚 getCursos() retornó:', cursos.length, 'cursos');
-
+        
         if (cursos.length === 0 && DataManager.cargarCursos) {
-            console.log('🔄 Intentando cargar cursos...');
             cursos = await DataManager.cargarCursos();
         }
 
         cursoSelect.innerHTML = '<option value="">Seleccione un curso</option>';
-
-        if (cursos.length === 0) {
-            cursoSelect.innerHTML = '<option value="">No hay cursos disponibles</option>';
-            return;
-        }
 
         cursos.forEach(curso => {
             const option = document.createElement('option');
@@ -291,6 +402,7 @@ const PlanesUI = (function () {
         console.log(`✅ Selector inicializado con ${cursos.length} cursos`);
 
         cursoSelect.addEventListener('change', function () {
+            console.log('📌 Curso cambiado a:', this.value);
             cargarEstudiantes();
         });
     }
@@ -338,7 +450,7 @@ const PlanesUI = (function () {
     }
 
     /**
-     * Muestra formulario nuevo plan
+     * Muestra formulario nuevo plan (MODIFICADO)
      */
     async function mostrarFormularioNuevo() {
         console.log('📝 Mostrando formulario nuevo plan');
@@ -358,7 +470,6 @@ const PlanesUI = (function () {
         const cursoId = cursoSelect.value;
         const cursoNombre = cursoSelect.options[cursoSelect.selectedIndex]?.textContent || cursoId;
 
-        // Obtener competencias del curso
         const competencias = await DataManager.getCompetenciasPorCurso ?
             await DataManager.getCompetenciasPorCurso(cursoId) : [];
 
@@ -381,28 +492,13 @@ const PlanesUI = (function () {
             nombreCompleto: `${selectedOption.getAttribute('data-nombres')} ${selectedOption.getAttribute('data-apellidos')}`
         };
 
-        // Cargar instructores
-        let instructores = DataManager.getResponsablesPorCurso ?
-            DataManager.getResponsablesPorCurso(cursoId) : [];
-
-        if (instructores.length === 0) {
-            const todosLosResponsables = await DataManager.cargarResponsables() || [];
-            instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
-        }
-
         const hoy = new Date();
         const plazo = new Date(hoy);
         plazo.setDate(hoy.getDate() + 20);
         const fechaPlazo = plazo.toISOString().split('T')[0];
         const fechaHoy = hoy.toISOString().split('T')[0];
 
-        const opcionesInstructores = instructores.length > 0 ?
-            instructores.map(i =>
-                `<option value="${i.documento}" selected>${i.nombre} - ${i.materia || 'Sin materia'}</option>`
-            ).join('') :
-            '<option value="" disabled>No hay instructores para este curso</option>';
-
-        const { value: formValues, isConfirmed } = await Swal.fire({
+        Swal.fire({
             title: '📋 NUEVO PLAN DE MEJORAMIENTO',
             width: '1000px',
             html: `
@@ -458,7 +554,7 @@ const PlanesUI = (function () {
                     <div class="col-md-6">
                         <label class="form-label fw-bold">INSTRUCTOR(ES):</label>
                         <select class="form-select" id="planInstructores" multiple size="3">
-                            ${opcionesInstructores}
+                            <!-- Se llenará en didOpen -->
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -510,31 +606,35 @@ const PlanesUI = (function () {
             cancelButtonText: '❌ Cancelar',
             confirmButtonColor: '#28a745',
             didOpen: () => {
+                console.log('📌 Modal abierto, cargando instructores...');
                 window.competenciasDelCurso = competencias;
                 agregarCompetenciaSelector();
+                setTimeout(() => {
+                    cargarInstructoresEnModal();
+                }, 200);
             },
             preConfirm: () => {
                 return validarYGuardarPlan(estudiante, cursoId, cursoNombre);
             }
-        });
-
-        if (isConfirmed && formValues) {
-            const resultado = PlanesData.agregarPlan(formValues);
-            if (resultado) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '✅ Plan guardado',
-                    text: 'El plan de mejoramiento ha sido creado exitosamente',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                verPlanes();
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const resultado = PlanesData.agregarPlan(result.value);
+                if (resultado) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Plan guardado',
+                        text: 'El plan de mejoramiento ha sido creado exitosamente',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    verPlanes();
+                }
             }
-        }
+        });
     }
 
     /**
-     * NUEVA FUNCIÓN: Preparar mensaje para compartir
+     * Preparar mensaje para compartir
      */
     function prepararMensajePlan(plan) {
         const estado = plan.estado === 'en_curso' ? '🟡 En Curso' : 
@@ -546,7 +646,6 @@ const PlanesUI = (function () {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const diasRestantes = diffDays > 0 ? `${diffDays} días restantes` : 'PLAZO VENCIDO';
         
-        // Resumen de competencias y actividades
         const totalCompetencias = plan.competencias.length;
         const totalActividades = plan.competencias.reduce((acc, c) => 
             acc + (c.actividades?.length || 0), 0);
@@ -586,7 +685,7 @@ ${plan.recursos?.map(r => `• ${r}`).join('\n') || '• No se registraron recur
 ${plan.observaciones ? `*OBSERVACIONES:*\n${plan.observaciones}` : ''}
 
 *INSTRUCTOR(ES):*
-${plan.instructores.map(i => `• ${i.nombre}`).join('\n')}
+${plan.instructores.map(i => `• ${i.nombre} (${i.materia})`).join('\n')}
 
 ---
 Documento generado por el Sistema de Gestión de Salones - SENA CEET
@@ -596,7 +695,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
     }
 
     /**
-     * NUEVA FUNCIÓN: Mostrar opciones para compartir plan
+     * Mostrar opciones para compartir plan
      */
     function mostrarOpcionesCompartir(id) {
         console.log('📱 Mostrando opciones de compartir para plan:', id);
@@ -683,7 +782,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
     }
 
     /**
-     * NUEVA FUNCIÓN: Compartir por WhatsApp
+     * Compartir por WhatsApp
      */
     function compartirWhatsAppPlan(plan, telefono) {
         const mensaje = prepararMensajePlan(plan);
@@ -701,7 +800,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
     }
 
     /**
-     * NUEVA FUNCIÓN: Compartir por Email
+     * Compartir por Email
      */
     function compartirEmailPlan(plan, correo) {
         const mensaje = prepararMensajePlan(plan);
@@ -719,7 +818,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
     }
 
     /**
-     * Ver planes del estudiante (ACTUALIZADO con botón de compartir)
+     * Ver planes del estudiante
      */
     function verPlanes() {
         console.log('📋 Ver planes del estudiante...');
@@ -772,7 +871,6 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
             
             const progreso = totalActividades > 0 ? Math.round((actividadesCompletadas / totalActividades) * 100) : 0;
             
-            // Calcular días restantes
             const hoy = new Date();
             const plazo = new Date(p.plazoEjecucion);
             const diffTime = plazo - hoy;
@@ -919,7 +1017,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
                     
                     <h6 class="fw-bold">Instructores:</h6>
                     <div class="mb-3">
-                        ${plan.instructores.map(i => `<span class="badge bg-info me-1">${i.nombre}</span>`).join('')}
+                        ${plan.instructores.map(i => `<span class="badge bg-info me-1">${i.nombre} (${i.materia})</span>`).join('')}
                     </div>
                     
                     <h6 class="fw-bold">Competencias y Actividades:</h6>
@@ -963,29 +1061,18 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
         const cursoId = plan.curso.id;
         const cursoNombre = plan.curso.nombre;
 
-        // Obtener competencias del curso
         const competencias = await DataManager.getCompetenciasPorCurso ?
             await DataManager.getCompetenciasPorCurso(cursoId) : [];
 
-        // Obtener instructores actualizados
-        let instructores = DataManager.getResponsablesPorCurso ?
-            DataManager.getResponsablesPorCurso(cursoId) : [];
+        const instructores = getInstructoresPorCurso(cursoId);
 
-        if (instructores.length === 0) {
-            const todosLosResponsables = await DataManager.cargarResponsables() || [];
-            instructores = todosLosResponsables.filter(r => r.numeroCurso === cursoId);
-        }
-
-        // Generar opciones de instructores con los seleccionados actualmente
         const opcionesInstructores = instructores.length > 0 ?
             instructores.map(i => {
                 const selected = plan.instructores?.some(ins => ins.documento === i.documento) ? 'selected' : '';
-                return `<option value="${i.documento}" ${selected}>${i.nombre} - ${i.materia || 'Sin materia'}</option>`;
+                return `<option value="${i.documento}" data-nombre="${i.nombre}" data-materia="${i.materia}" ${selected}>${i.nombre} - ${i.materia}</option>`;
             }).join('') :
             '<option value="" disabled>No hay instructores para este curso</option>';
 
-        // Generar HTML para competencias existentes
-        let competenciasHtml = '';
         window.competenciasDelCurso = competencias;
 
         const { value: formValues, isConfirmed } = await Swal.fire({
@@ -1099,11 +1186,9 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
             confirmButtonColor: '#28a745',
             didOpen: () => {
                 window.competenciasDelCurso = competencias;
-                // Cargar competencias existentes
                 setTimeout(() => {
                     plan.competencias.forEach(comp => {
                         agregarCompetenciaSelector();
-                        // Aquí habría que seleccionar la competencia y sus resultados
                     });
                 }, 100);
             },
@@ -1129,7 +1214,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
     }
 
     /**
-     * Eliminar plan con confirmación
+     * Eliminar plan
      */
     function eliminarPlan(id) {
         console.log('🗑️ Eliminando plan:', id);
@@ -1267,6 +1352,8 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
 
         const estudianteSelect = document.getElementById('estudiantePlanes');
         console.log('5. Selector de estudiantes:', estudianteSelect ? '✅' : '❌');
+        
+        console.log('6. Total instructores en memoria:', todosLosResponsables.length);
 
         return '✅ Diagnóstico completado';
     }
@@ -1327,7 +1414,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
 
 })();
 
-console.log('✅ Módulo PlanesUI v2.0 cargado correctamente');
+console.log('✅ Módulo PlanesUI v2.2 cargado correctamente');
 window.PlanesUI = PlanesUI;
 window.probarCursos = () => PlanesUI.diagnosticarCursos();
 window.diagnosticarPlanes = () => PlanesUI.diagnosticarPlanes();
