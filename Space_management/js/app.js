@@ -32,6 +32,62 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     try {
+        // Inicializar Logger primero (DEBE IR AQUÍ, DESPUÉS DE VERIFICAR DEPENDENCIAS)
+        if (typeof Logger !== 'undefined') {
+            Logger.info('Logger inicializado');
+        }
+
+        // Inicializar autenticación
+        await Auth.init();
+
+        // Verificar si hay sesión activa
+        if (!Auth.isAuthenticated()) {
+            Logger.info('No hay sesión activa, mostrando login...');
+            // Mostrar overlay
+            if (typeof AuthOverlay !== 'undefined') {
+                AuthOverlay.show();
+            }
+            setTimeout(() => {
+                LoginModal.show();
+            }, 500);
+        } else {
+            const user = Auth.getCurrentUser();
+            Logger.success(`Sesión activa: ${user.nombre}`);
+            // Ocultar overlay si existe
+    if (typeof AuthOverlay !== 'undefined') {
+        AuthOverlay.hide();
+    }
+        }
+        // Inicializar protector de módulos
+        if (typeof AuthGuard !== 'undefined') {
+            // Configurar guardia de UI
+            AuthGuard.setupUIGuard();
+            Logger.info('AuthGuard inicializado');
+
+            // Proteger módulos globales
+            window.Protegidos = {
+                LlamadosUI: AuthGuard.protectModule('LlamadosUI', LlamadosUI, ['inicializarSelectores']),
+                PlanesUI: AuthGuard.protectModule('PlanesUI', PlanesUI, ['inicializarSelectores']),
+                ResponsablesModule: AuthGuard.protectModule('ResponsablesModule', ResponsablesModule),
+                PuestosModule: AuthGuard.protectModule('PuestosModule', PuestosModule),
+                EquiposModule: AuthGuard.protectModule('EquiposModule', EquiposModule),
+                SillasModule: AuthGuard.protectModule('SillasModule', SillasModule),
+                AsistenciaDiaria: AuthGuard.protectModule('AsistenciaDiaria', AsistenciaDiaria),
+                Reportes: AuthGuard.protectModule('Reportes', Reportes)
+            };
+
+            // Reemplazar módulos originales con versiones protegidas
+            window.LlamadosUI = window.Protegidos.LlamadosUI;
+            window.PlanesUI = window.Protegidos.PlanesUI;
+            window.ResponsablesModule = window.Protegidos.ResponsablesModule;
+            window.PuestosModule = window.Protegidos.PuestosModule;
+            window.EquiposModule = window.Protegidos.EquiposModule;
+            window.SillasModule = window.Protegidos.SillasModule;
+            window.AsistenciaDiaria = window.Protegidos.AsistenciaDiaria;
+            window.Reportes = window.Protegidos.Reportes;
+
+            Logger.success('Módulos protegidos con autenticación');
+        }
         // Cargar datos guardados
         console.log('🔄 Cargando datos desde localStorage...');
         await DataManager.cargarDeLocalStorage();
@@ -80,7 +136,16 @@ document.addEventListener('DOMContentLoaded', async function () {
         const toggleText = document.getElementById('toggleConfigText');
         if (toggleText) toggleText.textContent = 'Ocultar';
 
-        console.log('✅ Aplicación v0.6 inicializada correctamente');
+        // Inicializar panel de validación (solo desarrollo)
+        if (Logger.isDev()) {
+            setTimeout(() => {
+                ValidationPanel.init();
+                Logger.info('Panel de validación disponible (Ctrl+Shift+V)');
+            }, 2000);
+        }
+
+        Logger.success('Aplicación v0.8 inicializada correctamente');
+
         // Cargar salones
         console.log('🔄 Cargando salones...');
         if (DataManager.cargarSalones) {
@@ -89,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
     } catch (error) {
-        console.error('❌ Error en inicialización:', error);
+        Logger?.error('Error en inicialización:', error);
     }
 });
 
@@ -433,12 +498,7 @@ window.actualizarVistasDespuesDeImportar = function () {
 /**
  * Actualiza el panel de validación con el estado de los módulos
  */
-/**
- * Actualiza el panel de validación con el estado de los módulos
- */
-/**
- * Actualiza el panel de validación con el estado de los módulos
- */
+
 window.actualizarPanelValidacion = function () {
     console.log('🔄 Actualizando panel de validación...');
 
@@ -680,6 +740,56 @@ window.marcarTodos = () => AsistenciaDiaria.marcarTodos();
 window.desmarcarTodos = () => AsistenciaDiaria.desmarcarTodos();
 // En app.js, buscar y corregir la función exportarTodo
 
+/**
+ * Función para forzar login (útil para pruebas)
+ */
+window.mostrarLogin = function () {
+    if (typeof LoginModal !== 'undefined') {
+        LoginModal.show();
+    } else {
+        console.error('LoginModal no disponible');
+    }
+};
+
+/**
+ * Función para mostrar información de sesión
+ */
+window.mostrarSesion = function () {
+    if (typeof LoginModal !== 'undefined') {
+        LoginModal.showSessionInfo();
+    } else {
+        console.error('LoginModal no disponible');
+    }
+};
+
+/**
+ * Función para mostrar panel de validación (solo desarrollo)
+ */
+window.mostrarPanel = function () {
+    if (typeof Logger !== 'undefined' && Logger.isDev()) {
+        if (typeof ValidationPanel !== 'undefined') {
+            ValidationPanel.toggle();
+        } else {
+            console.error('ValidationPanel no disponible');
+        }
+    } else {
+        console.log('Panel solo disponible en desarrollo');
+    }
+};
+
+// Script para actualizar el botón de usuario según estado de autenticación
+if (typeof Auth !== 'undefined') {
+    Auth.addListener((user) => {
+        const userNameSpan = document.getElementById('userName');
+        if (userNameSpan) {
+            if (user) {
+                userNameSpan.textContent = user.nombre.split(' ')[0];
+            } else {
+                userNameSpan.textContent = 'Iniciar Sesión';
+            }
+        }
+    });
+}
 window.exportarTodo = function () {
     console.log('📤 Exportando todas las asistencias...');
 
