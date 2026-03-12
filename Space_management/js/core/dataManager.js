@@ -612,7 +612,7 @@ const DataManager = (function () {
 
     function getEstadisticasSillas(curso) {
         const sillas = getSillasPorCurso(curso);
-
+        //console.log('📊 Estadísticas calculadas:', estadisticas);
         return {
             total: sillas.length,
             ocupadas: sillas.filter(s => s.documento).length,
@@ -622,8 +622,6 @@ const DataManager = (function () {
             regular: sillas.filter(s => s.estado === 'Regular').length,
             malo: sillas.filter(s => s.estado === 'Malo').length
         };
-        console.log('📊 Estadísticas calculadas:', estadisticas);
-        return estadisticas;
     }
 
     // ===== FUNCIONES DE ASISTENCIA =====

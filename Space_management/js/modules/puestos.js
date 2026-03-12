@@ -814,8 +814,6 @@ const PuestosModule = (function () {
     window.editarPC = editarPC;
     window.guardarConfiguracionPC = guardarConfiguracionPC;
     window.cargarDatosEstudiantePC = cargarDatosEstudiantePC;
-
-    // NUEVAS funciones expuestas
     window.validarConfiguracionPuestos = validarConfiguracion;
 
     const api = {
@@ -828,7 +826,6 @@ const PuestosModule = (function () {
         abrirConfiguracionMesa,
         editarPC,
         guardarConfiguracionPC,
-        // NUEVAS funciones en API
         validarConfiguracion,
         obtenerEstadoConfiguracion,
         mostrarIndicadorEstado,
@@ -844,5 +841,4 @@ if (typeof PuestosModule !== 'undefined') {
 } else {
     console.error('❌ Error cargando PuestosModule');
 }
-
 window.PuestosModule = PuestosModule;

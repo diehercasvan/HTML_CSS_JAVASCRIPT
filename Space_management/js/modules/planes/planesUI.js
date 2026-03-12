@@ -1415,6 +1415,6 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
 })();
 
 console.log('✅ Módulo PlanesUI v2.2 cargado correctamente');
-window.PlanesUI = PlanesUI;
 window.probarCursos = () => PlanesUI.diagnosticarCursos();
 window.diagnosticarPlanes = () => PlanesUI.diagnosticarPlanes();
+window.PlanesUI = PlanesUI;

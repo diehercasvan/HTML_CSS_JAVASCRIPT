@@ -542,7 +542,6 @@ if (typeof SillasModule !== 'undefined') {
     console.error('❌ Error cargando SillasModule');
 }
 
-window.SillasModule = SillasModule;
 window.actualizarEstadisticasSillasManual = function () {
     const curso = document.getElementById('cursoSillas')?.value;
     if (!curso) {
@@ -558,3 +557,4 @@ window.actualizarEstadisticasSillasManual = function () {
         Utils.showToast('success', 'Estadísticas actualizadas');
     }
 };
+window.SillasModule = SillasModule;
