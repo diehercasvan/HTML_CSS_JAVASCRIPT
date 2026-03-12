@@ -5,13 +5,13 @@ body {
 }
 
 .navbar {
-    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
 }
 
 .tab-content {
     background-color: white;
     min-height: 500px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilos para tablas */
@@ -20,7 +20,7 @@ body {
     overflow-y: auto;
     border: 1px solid #dee2e6;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .table th {
@@ -47,7 +47,7 @@ body {
     border: 1px solid #dee2e6;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
     height: 100%;
@@ -58,7 +58,7 @@ body {
 
 .mesa-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .mesa-header {
@@ -151,7 +151,7 @@ body {
 
 .silla-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .silla-card .card-header {
@@ -184,21 +184,25 @@ body {
     color: white;
 }
 
-.badge-excelente, .bg-success {
+.badge-excelente,
+.bg-success {
     background-color: #198754 !important;
 }
 
-.badge-bueno, .bg-info {
+.badge-bueno,
+.bg-info {
     background-color: #0dcaf0 !important;
     color: #000 !important;
 }
 
-.badge-regular, .bg-warning {
+.badge-regular,
+.bg-warning {
     background-color: #ffc107 !important;
     color: #000 !important;
 }
 
-.badge-danado, .bg-danger {
+.badge-danado,
+.bg-danger {
     background-color: #dc3545 !important;
 }
 
@@ -257,16 +261,16 @@ body {
     .table {
         font-size: 0.85rem;
     }
-    
+
     .table .btn-sm {
         padding: 0.2rem 0.4rem;
         font-size: 0.75rem;
     }
-    
+
     .mesa-card {
         min-height: 200px;
     }
-    
+
     .col-md-2-4 {
         width: 50%;
     }
@@ -278,6 +282,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -305,6 +310,7 @@ body {
         width: 50%;
     }
 }
+
 /* Estilos adicionales para el módulo de sillas */
 .silla-card {
     cursor: pointer;
@@ -316,7 +322,7 @@ body {
 
 .silla-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .silla-card .card-header {
@@ -364,6 +370,7 @@ body {
     margin: 10px 0;
     border-left: 4px solid #0d6efd;
 }
+
 /* Estilos adicionales para la tabla semanal */
 .detalle-semana {
     font-size: 11px;
@@ -396,4 +403,28 @@ body {
 
 .asistio-false {
     background-color: #dc3545;
+}
+
+/* Estilos de emergencia para diagnóstico */
+.diagnostico-bar {
+    background: #f8f9fa;
+    padding: 5px 15px;
+    border-bottom: 2px solid #0d6efd;
+    font-size: 12px;
+    color: #333;
+}
+
+.diagnostico-bar span {
+    display: inline-block;
+    margin-right: 15px;
+}
+
+.diagnostico-bar .ok {
+    color: #198754;
+    font-weight: bold;
+}
+
+.diagnostico-bar .error {
+    color: #dc3545;
+    font-weight: bold;
 }

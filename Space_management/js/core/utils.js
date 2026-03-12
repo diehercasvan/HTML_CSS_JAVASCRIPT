@@ -1,12 +1,12 @@
 // utils.js - Utilidades comunes
 console.log('🔄 Iniciando carga de utils.js...');
 
-const Utils = (function() {
+const Utils = (function () {
     console.log('📦 Ejecutando IIFE de Utils...');
-    
+
     function getBadgeClass(estado) {
         if (!estado) return 'bg-secondary';
-        switch(estado.toLowerCase()) {
+        switch (estado.toLowerCase()) {
             case 'excelente': return 'bg-success';
             case 'bueno': return 'bg-info';
             case 'regular': return 'bg-warning text-dark';
@@ -25,7 +25,7 @@ const Utils = (function() {
 
     function fechaActual() {
         const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     const api = { getBadgeClass, showToast, showConfirm, fechaActual };

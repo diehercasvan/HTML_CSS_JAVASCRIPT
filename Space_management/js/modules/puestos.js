@@ -14,44 +14,44 @@ const PuestosModule = (function () {
     console.log('📦 Ejecutando IIFE de PuestosModule...');
 
     // ===== FUNCIÓN DE VALIDACIÓN =====
-    
+
     /**
      * Valida que exista al menos un puesto docente y mesas de estudiantes configuradas
      */
     function validarConfiguracion() {
         console.log('🔍 Validando configuración de puestos y mesas...');
-        
+
         // Obtener datos actuales
         const puestosDocentes = DataManager.getPuestosDocentes ? DataManager.getPuestosDocentes() : [];
         const mesas = DataManager.getMesas ? DataManager.getMesas() : [];
-        
+
         // Obtener curso seleccionado (si hay)
         const cursoSelect = document.getElementById('cursoPuestoDocente');
         const cursoSeleccionado = cursoSelect?.value || 'todos';
-        
+
         // Filtrar por curso si hay uno seleccionado
         let puestosFiltrados = puestosDocentes;
         let mesasFiltradas = mesas;
-        
+
         if (cursoSeleccionado && cursoSeleccionado !== 'todos' && cursoSeleccionado !== '') {
             puestosFiltrados = puestosDocentes.filter(p => p.curso === cursoSeleccionado);
             mesasFiltradas = mesas.filter(m => m.curso === cursoSeleccionado);
         }
-        
+
         // Resultados de validación
         const tienePuestoDocente = puestosFiltrados.length > 0;
         const tieneMesas = mesasFiltradas.length > 0;
-        
+
         // Calcular estadísticas adicionales
         const totalPCs = mesasFiltradas.reduce((acc, mesa) => acc + (mesa.pcs?.length || 0), 0);
-        const pcsAsignados = mesasFiltradas.reduce((acc, mesa) => 
+        const pcsAsignados = mesasFiltradas.reduce((acc, mesa) =>
             acc + (mesa.pcs?.filter(pc => pc.estudiante).length || 0), 0);
-        
+
         // Generar mensajes según el resultado
         let mensaje = '';
         let icono = 'success';
         let titulo = '✅ Configuración Completa';
-        
+
         if (!tienePuestoDocente && !tieneMesas) {
             icono = 'error';
             titulo = '❌ Configuración Incompleta';
@@ -102,10 +102,10 @@ const PuestosModule = (function () {
         } else {
             // Todo está configurado
             const totalPuestos = puestosFiltrados.length;
-            const detallesPuestos = puestosFiltrados.map(p => 
+            const detallesPuestos = puestosFiltrados.map(p =>
                 `• ${p.nombre} - PC: ${p.serial} (${p.estado})`
             ).join('<br>');
-            
+
             mensaje = `
                 <div class="alert alert-success mb-3">
                     <strong>✓ La configuración es correcta y completa.</strong>
@@ -141,7 +141,7 @@ const PuestosModule = (function () {
                 </p>
             `;
         }
-        
+
         // Mostrar resultado con SweetAlert2
         Swal.fire({
             title: titulo,
@@ -151,7 +151,7 @@ const PuestosModule = (function () {
             confirmButtonText: 'Entendido',
             confirmButtonColor: '#0d6efd'
         });
-        
+
         // También mostrar en consola para debugging
         console.log('📊 Resultado de validación:', {
             tienePuestoDocente,
@@ -161,7 +161,7 @@ const PuestosModule = (function () {
             totalPCs,
             pcsAsignados
         });
-        
+
         return {
             valido: tienePuestoDocente && tieneMesas,
             tienePuestoDocente,
@@ -177,18 +177,18 @@ const PuestosModule = (function () {
     function obtenerEstadoConfiguracion() {
         const puestosDocentes = DataManager.getPuestosDocentes ? DataManager.getPuestosDocentes() : [];
         const mesas = DataManager.getMesas ? DataManager.getMesas() : [];
-        
+
         const cursoSelect = document.getElementById('cursoPuestoDocente');
         const cursoSeleccionado = cursoSelect?.value;
-        
+
         let puestosFiltrados = puestosDocentes;
         let mesasFiltradas = mesas;
-        
+
         if (cursoSeleccionado && cursoSeleccionado !== '') {
             puestosFiltrados = puestosDocentes.filter(p => p.curso === cursoSeleccionado);
             mesasFiltradas = mesas.filter(m => m.curso === cursoSeleccionado);
         }
-        
+
         return {
             tienePuesto: puestosFiltrados.length > 0,
             tieneMesas: mesasFiltradas.length > 0,
@@ -204,9 +204,9 @@ const PuestosModule = (function () {
     function mostrarIndicadorEstado() {
         const estado = obtenerEstadoConfiguracion();
         console.log('🔄 Actualizando indicador de estado:', estado);
-        
+
         let indicador = document.getElementById('estadoConfiguracionPuestos');
-        
+
         if (!indicador) {
             // Crear el indicador si no existe
             const container = document.querySelector('.tab-pane#puestos .row:first-child .col-md-4:last-child');
@@ -235,25 +235,25 @@ const PuestosModule = (function () {
                         </div>
                     </div>
                 `;
-                
+
                 // Insertar después del primer row
                 const primerRow = document.querySelector('.tab-pane#puestos .row:first-child');
                 if (primerRow && primerRow.parentNode) {
                     primerRow.parentNode.insertBefore(row, primerRow.nextSibling);
                 }
-                
+
                 indicador = document.getElementById('estadoConfiguracionPuestos');
             }
         } else {
             // Actualizar indicador existente
             const badgePuesto = document.getElementById('badgePuestoDocente') || indicador.querySelector('.badge:first-of-type');
             const badgeMesas = document.getElementById('badgeMesasEstudiantes') || indicador.querySelector('.badge:last-of-type');
-            
+
             if (badgePuesto) {
                 badgePuesto.className = `badge ${estado.tienePuesto ? 'bg-success' : 'bg-danger'} me-2`;
                 badgePuesto.innerHTML = `Puesto Docente: ${estado.tienePuesto ? '✅' : '❌'}`;
             }
-            
+
             if (badgeMesas) {
                 badgeMesas.className = `badge ${estado.tieneMesas ? 'bg-success' : 'bg-danger'} me-2`;
                 badgeMesas.innerHTML = `Mesas: ${estado.tieneMesas ? '✅' : '❌'}`;
@@ -314,7 +314,7 @@ const PuestosModule = (function () {
         if (typeof Utils !== 'undefined') {
             Utils.showToast('success', 'Puesto guardado');
         }
-        
+
         // ACTUALIZAR INDICADOR INMEDIATAMENTE
         setTimeout(() => {
             mostrarIndicadorEstado();
@@ -383,7 +383,7 @@ const PuestosModule = (function () {
         if (typeof Utils !== 'undefined') {
             Utils.showToast('success', `Mesas creadas para el curso ${curso}`);
         }
-        
+
         // ACTUALIZAR INDICADOR INMEDIATAMENTE
         setTimeout(() => {
             mostrarIndicadorEstado();
@@ -414,9 +414,9 @@ const PuestosModule = (function () {
         });
 
         console.log(`✅ Selector con ${cursos.length} cursos`);
-        
+
         // Agregar evento para actualizar indicador al cambiar curso
-        cursoSelect.addEventListener('change', function() {
+        cursoSelect.addEventListener('change', function () {
             console.log('📌 Curso cambiado a:', this.value);
             // Actualizar el curso en sessionStorage para mesas
             if (this.value) {
@@ -433,23 +433,23 @@ const PuestosModule = (function () {
     async function inicializar() {
         console.log('🔄 Inicializando módulo de puestos...');
         await inicializarSelectorCursos();
-        
+
         // Crear indicador de estado después de un pequeño retraso
         setTimeout(() => {
             mostrarIndicadorEstado();
         }, 500);
-        
+
         // Agregar listener para cuando se muestre la pestaña
         const tabButton = document.querySelector('button[data-bs-target="#puestos"]');
         if (tabButton) {
-            tabButton.addEventListener('shown.bs.tab', function() {
+            tabButton.addEventListener('shown.bs.tab', function () {
                 console.log('📌 Pestaña Puestos activada - Actualizando estado...');
                 setTimeout(() => {
                     mostrarIndicadorEstado();
                 }, 200);
             });
         }
-        
+
         console.log('✅ Módulo de puestos inicializado');
     }
 
@@ -719,18 +719,18 @@ const PuestosModule = (function () {
      */
     function guardarConfiguracionPC() {
         console.log('💾 Guardando configuración de PC...');
-        
+
         const mesaId = document.getElementById('mesaId')?.value;
         const idx = parseInt(document.getElementById('pcIndex')?.value);
         const serial = document.getElementById('pcSerial')?.value;
-        
+
         if (!serial) {
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('warning', 'Serial requerido');
             }
             return;
         }
-        
+
         const data = {
             serial: serial,
             estudiante: document.getElementById('pcEstudiante')?.value || '',
@@ -743,34 +743,34 @@ const PuestosModule = (function () {
             estadoLimpieza: document.getElementById('pcLimpieza')?.value || 'Bueno',
             observaciones: document.getElementById('pcObservaciones')?.value || ''
         };
-        
+
         if (typeof DataManager === 'undefined') {
             console.error('❌ DataManager no está disponible');
             return;
         }
-        
+
         if (typeof DataManager.actualizarPcEstudiante !== 'function') {
             console.error('❌ DataManager.actualizarPcEstudiante no es una función');
             return;
         }
-        
+
         const resultado = DataManager.actualizarPcEstudiante(mesaId, idx, data);
-        
+
         if (!resultado) {
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('warning', 'Estudiante ya asignado');
             }
             return;
         }
-        
+
         if (typeof UIManager !== 'undefined') {
             UIManager.renderizarMesas();
         }
-        
+
         if (typeof ModalManager !== 'undefined') {
             ModalManager.hideModal('configurarPC');
         }
-        
+
         if (typeof Utils !== 'undefined') {
             Utils.showToast('success', 'PC configurado');
         }
@@ -814,7 +814,7 @@ const PuestosModule = (function () {
     window.editarPC = editarPC;
     window.guardarConfiguracionPC = guardarConfiguracionPC;
     window.cargarDatosEstudiantePC = cargarDatosEstudiantePC;
-    
+
     // NUEVAS funciones expuestas
     window.validarConfiguracionPuestos = validarConfiguracion;
 

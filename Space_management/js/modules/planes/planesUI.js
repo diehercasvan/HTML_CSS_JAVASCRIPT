@@ -10,10 +10,10 @@ const PlanesUI = (function () {
     let todosLosResponsables = [];
 
     // ========== NUEVA FUNCIÓN: Cargar todos los responsables ==========
-    
+
     async function cargarTodosLosResponsables() {
         console.log('👨‍🏫 Cargando todos los responsables para planes...');
-        
+
         try {
             // Intentar desde JSON directo primero
             console.log('🔄 Intentando carga desde JSON directo...');
@@ -23,7 +23,7 @@ const PlanesUI = (function () {
                     const data = await response.json();
                     const jsonResponsables = data.responsables || [];
                     console.log(`📊 JSON directo: ${jsonResponsables.length} responsables`);
-                    
+
                     if (jsonResponsables.length > 0) {
                         todosLosResponsables = jsonResponsables.map(r => ({
                             numeroCurso: String(r.numeroCurso || '').trim(),
@@ -35,7 +35,7 @@ const PlanesUI = (function () {
                             email: r.email || '',
                             telefono: r.telefono || ''
                         }));
-                        
+
                         console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde JSON`);
                         return todosLosResponsables;
                     }
@@ -43,7 +43,7 @@ const PlanesUI = (function () {
             } catch (e) {
                 console.error('❌ Error cargando JSON:', e);
             }
-            
+
             // Si falla el JSON, intentar con DataManager
             if (DataManager.getResponsables) {
                 console.log('🔄 Intentando con DataManager.getResponsables...');
@@ -56,9 +56,9 @@ const PlanesUI = (function () {
                 }));
                 console.log(`✅ Cargados ${todosLosResponsables.length} responsables desde DataManager`);
             }
-            
+
             return todosLosResponsables;
-            
+
         } catch (error) {
             console.error('❌ Error cargando responsables:', error);
             todosLosResponsables = [];
@@ -67,48 +67,48 @@ const PlanesUI = (function () {
     }
 
     // ========== NUEVA FUNCIÓN: Obtener instructores por curso ==========
-    
+
     function getInstructoresPorCurso(cursoId) {
         console.log(`🔍 Buscando instructores para curso ${cursoId}`);
-        
+
         if (!cursoId) return [];
-        
-        const instructores = todosLosResponsables.filter(r => 
+
+        const instructores = todosLosResponsables.filter(r =>
             String(r.numeroCurso).trim() === String(cursoId).trim()
         );
-        
+
         console.log(`✅ Encontrados: ${instructores.length} instructores para curso ${cursoId}`);
-        
+
         // Guardar en caché
         instructoresCache[cursoId] = instructores;
-        
+
         return instructores;
     }
 
     // ========== NUEVA FUNCIÓN: Cargar instructores en el modal ==========
-    
+
     function cargarInstructoresEnModal() {
         console.log('👨‍🏫 Cargando instructores en el modal de planes...');
-        
+
         const cursoSelect = document.getElementById('cursoPlanes');
         const instructoresSelect = document.getElementById('planInstructores');
-        
+
         if (!cursoSelect || !instructoresSelect) {
             console.warn('⚠️ Selector de instructores no encontrado');
             return;
         }
-        
+
         const cursoId = cursoSelect.value;
-        
+
         if (!cursoId) {
             instructoresSelect.innerHTML = '<option value="">Primero seleccione un curso</option>';
             return;
         }
-        
+
         const instructores = getInstructoresPorCurso(cursoId);
-        
+
         instructoresSelect.innerHTML = '';
-        
+
         if (instructores.length === 0) {
             const option = document.createElement('option');
             option.value = '';
@@ -117,7 +117,7 @@ const PlanesUI = (function () {
             instructoresSelect.appendChild(option);
             return;
         }
-        
+
         instructores.forEach(instructor => {
             const option = document.createElement('option');
             option.value = instructor.documento;
@@ -127,7 +127,7 @@ const PlanesUI = (function () {
             option.selected = true;
             instructoresSelect.appendChild(option);
         });
-        
+
         console.log(`✅ ${instructores.length} instructores cargados en el modal`);
     }
 
@@ -385,7 +385,7 @@ const PlanesUI = (function () {
         }
 
         let cursos = DataManager.getCursos ? DataManager.getCursos() : [];
-        
+
         if (cursos.length === 0 && DataManager.cargarCursos) {
             cursos = await DataManager.cargarCursos();
         }
@@ -637,19 +637,19 @@ const PlanesUI = (function () {
      * Preparar mensaje para compartir
      */
     function prepararMensajePlan(plan) {
-        const estado = plan.estado === 'en_curso' ? '🟡 En Curso' : 
-                      plan.estado === 'aprobado' ? '✅ Aprobado' : '❌ No Aprobado';
-        
+        const estado = plan.estado === 'en_curso' ? '🟡 En Curso' :
+            plan.estado === 'aprobado' ? '✅ Aprobado' : '❌ No Aprobado';
+
         const hoy = new Date();
         const plazo = new Date(plan.plazoEjecucion);
         const diffTime = plazo - hoy;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         const diasRestantes = diffDays > 0 ? `${diffDays} días restantes` : 'PLAZO VENCIDO';
-        
+
         const totalCompetencias = plan.competencias.length;
-        const totalActividades = plan.competencias.reduce((acc, c) => 
+        const totalActividades = plan.competencias.reduce((acc, c) =>
             acc + (c.actividades?.length || 0), 0);
-        
+
         let mensaje = `
 *SENA - Sistema de Gestión*
 *PLAN DE MEJORAMIENTO ACADÉMICO*
@@ -673,9 +673,9 @@ const PlanesUI = (function () {
 ${plan.competencias.map(c => `• ${c.nombre}`).join('\n')}
 
 *ACTIVIDADES: (${totalActividades})*
-${plan.competencias.map(c => 
-    c.actividades?.map(a => `  - ${a.descripcion} (Entrega: ${a.fechaEntrega || 'N/A'})`).join('\n')
-).filter(a => a).join('\n') || '  No hay actividades registradas'}
+${plan.competencias.map(c =>
+            c.actividades?.map(a => `  - ${a.descripcion} (Entrega: ${a.fechaEntrega || 'N/A'})`).join('\n')
+        ).filter(a => a).join('\n') || '  No hay actividades registradas'}
 
 *RECURSOS DE APOYO:*
 ${plan.recursos?.map(r => `• ${r}`).join('\n') || '• No se registraron recursos adicionales'}
@@ -690,7 +690,7 @@ ${plan.instructores.map(i => `• ${i.nombre} (${i.materia})`).join('\n')}
 ---
 Documento generado por el Sistema de Gestión de Salones - SENA CEET
         `.trim();
-        
+
         return mensaje;
     }
 
@@ -699,16 +699,16 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
      */
     function mostrarOpcionesCompartir(id) {
         console.log('📱 Mostrando opciones de compartir para plan:', id);
-        
+
         const plan = PlanesData.getPlanPorId(id);
         if (!plan) {
             Swal.fire('Error', 'Plan no encontrado', 'error');
             return;
         }
-        
+
         const telefono = plan.aprendiz.telefono;
         const correo = plan.aprendiz.correo;
-        
+
         Swal.fire({
             title: '📤 Compartir Plan de Mejoramiento',
             html: `
@@ -758,7 +758,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
                         });
                     }
                 });
-                
+
                 document.getElementById('btnCompartirEmail').addEventListener('click', () => {
                     if (correo) {
                         compartirEmailPlan(plan, correo);
@@ -770,7 +770,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
                         });
                     }
                 });
-                
+
                 document.getElementById('btnCompartirPDF').addEventListener('click', () => {
                     Swal.close();
                     setTimeout(() => {
@@ -789,7 +789,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
         const numero = telefono.replace(/\D/g, '');
         const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
         window.open(url, '_blank');
-        
+
         Swal.fire({
             icon: 'success',
             title: 'WhatsApp abierto',
@@ -807,7 +807,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
         const asunto = `Plan de Mejoramiento - ${plan.aprendiz.nombre}`;
         const url = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
         window.location.href = url;
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Cliente de correo abierto',
@@ -822,10 +822,10 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
      */
     function verPlanes() {
         console.log('📋 Ver planes del estudiante...');
-        
+
         const estudianteSelect = document.getElementById('estudiantePlanes');
         const contenedor = document.getElementById('contenedorPlanes');
-        
+
         if (!estudianteSelect || !estudianteSelect.value) {
             Swal.fire({
                 icon: 'warning',
@@ -834,15 +834,15 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
             });
             return;
         }
-        
+
         const documento = estudianteSelect.value;
         const planes = PlanesData.getPlanesPorEstudiante(documento);
-        
+
         if (planes.length === 0) {
             contenedor.innerHTML = '<p class="text-muted">No hay planes de mejoramiento para este estudiante</p>';
             return;
         }
-        
+
         let html = `
             <div class="table-responsive">
                 <table class="table table-striped table-hover table-bordered">
@@ -861,33 +861,33 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
                     </thead>
                     <tbody>
         `;
-        
+
         planes.forEach(p => {
-            const totalActividades = p.competencias?.reduce((acc, c) => 
+            const totalActividades = p.competencias?.reduce((acc, c) =>
                 acc + (c.actividades?.length || 0), 0) || 0;
-            
-            const actividadesCompletadas = p.competencias?.reduce((acc, c) => 
+
+            const actividadesCompletadas = p.competencias?.reduce((acc, c) =>
                 acc + (c.actividades?.filter(a => a.estado === 'completada').length || 0), 0) || 0;
-            
+
             const progreso = totalActividades > 0 ? Math.round((actividadesCompletadas / totalActividades) * 100) : 0;
-            
+
             const hoy = new Date();
             const plazo = new Date(p.plazoEjecucion);
             const diffTime = plazo - hoy;
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            const diasRestantes = diffDays > 0 ? 
-                `<span class="badge ${diffDays <= 5 ? 'bg-danger' : diffDays <= 10 ? 'bg-warning' : 'bg-success'}">${diffDays}d</span>` : 
+
+            const diasRestantes = diffDays > 0 ?
+                `<span class="badge ${diffDays <= 5 ? 'bg-danger' : diffDays <= 10 ? 'bg-warning' : 'bg-success'}">${diffDays}d</span>` :
                 '<span class="badge bg-danger">Vencido</span>';
-            
+
             const estadoMap = {
                 'en_curso': { clase: 'bg-warning', texto: 'En Curso' },
                 'aprobado': { clase: 'bg-success', texto: 'Aprobado' },
                 'no_aprobado': { clase: 'bg-danger', texto: 'No Aprobado' }
             };
-            
+
             const estado = estadoMap[p.estado] || { clase: 'bg-secondary', texto: p.estado || 'N/A' };
-            
+
             html += `
                 <tr>
                     <td>${p.fechaSuscripcion || 'N/A'}</td>
@@ -931,7 +931,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
                 </tr>
             `;
         });
-        
+
         html += '</tbody></table></div>';
         contenedor.innerHTML = html;
     }
@@ -1352,7 +1352,7 @@ Documento generado por el Sistema de Gestión de Salones - SENA CEET
 
         const estudianteSelect = document.getElementById('estudiantePlanes');
         console.log('5. Selector de estudiantes:', estudianteSelect ? '✅' : '❌');
-        
+
         console.log('6. Total instructores en memoria:', todosLosResponsables.length);
 
         return '✅ Diagnóstico completado';

@@ -3,8 +3,8 @@
 
 console.log('🔄 Iniciando carga de authGuard.js...');
 
-const AuthGuard = (function() {
-    
+const AuthGuard = (function () {
+
     /**
      * Verifica si el usuario está autenticado
      */
@@ -15,7 +15,7 @@ const AuthGuard = (function() {
         }
         return true;
     }
-    
+
     /**
      * Muestra mensaje de autenticación requerida
      */
@@ -40,20 +40,20 @@ const AuthGuard = (function() {
             }
         });
     }
-    
+
     /**
      * Envuelve una función para requerir autenticación
      */
     function requireAuth(fn, context = null) {
-        return function(...args) {
+        return function (...args) {
             if (!Auth.isAuthenticated()) {
                 showAuthRequired();
                 return null;
             }
-            
+
             // Refrescar token si es necesario
             Auth.refreshTokenIfNeeded();
-            
+
             // Ejecutar la función original
             if (context) {
                 return fn.apply(context, args);
@@ -62,13 +62,13 @@ const AuthGuard = (function() {
             }
         };
     }
-    
+
     /**
      * Verifica autenticación para eventos de UI
      */
     function setupUIGuard() {
         // Interceptar todos los clics en elementos con data-auth="required"
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             const target = e.target.closest('[data-auth="required"]');
             if (target) {
                 if (!Auth.isAuthenticated()) {
@@ -77,21 +77,21 @@ const AuthGuard = (function() {
                     showAuthRequired();
                     return false;
                 }
-                
+
                 // Refrescar token
                 Auth.refreshTokenIfNeeded();
             }
         }, true); // Usar captura para interceptar antes
     }
-    
+
     /**
      * Protege un módulo completo
      */
     function protectModule(moduleName, moduleObj, excludeMethods = []) {
         if (!moduleObj) return moduleObj;
-        
+
         const protectedModule = {};
-        
+
         Object.keys(moduleObj).forEach(key => {
             if (typeof moduleObj[key] === 'function' && !excludeMethods.includes(key)) {
                 // Envolver funciones con requireAuth
@@ -101,10 +101,10 @@ const AuthGuard = (function() {
                 protectedModule[key] = moduleObj[key];
             }
         });
-        
+
         return protectedModule;
     }
-    
+
     // API pública
     return {
         checkAuth,
@@ -113,7 +113,7 @@ const AuthGuard = (function() {
         setupUIGuard,
         protectModule
     };
-    
+
 })();
 
 window.AuthGuard = AuthGuard;

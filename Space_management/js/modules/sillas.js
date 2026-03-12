@@ -543,16 +543,16 @@ if (typeof SillasModule !== 'undefined') {
 }
 
 window.SillasModule = SillasModule;
-window.actualizarEstadisticasSillasManual = function() {
+window.actualizarEstadisticasSillasManual = function () {
     const curso = document.getElementById('cursoSillas')?.value;
     if (!curso) {
         console.warn('No hay curso seleccionado');
         return;
     }
-    
+
     const estadisticas = DataManager.getEstadisticasSillas?.(curso);
     console.log('📊 Estadísticas calculadas:', estadisticas);
-    
+
     if (estadisticas && typeof UIManager !== 'undefined') {
         UIManager.actualizarEstadisticasSillas(estadisticas);
         Utils.showToast('success', 'Estadísticas actualizadas');

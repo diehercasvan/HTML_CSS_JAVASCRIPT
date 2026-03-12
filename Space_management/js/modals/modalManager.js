@@ -3,9 +3,9 @@
 
 console.log('🔄 Iniciando carga de modalManager.js...');
 
-const ModalManager = (function() {
+const ModalManager = (function () {
     console.log('📦 Ejecutando IIFE de ModalManager...');
-    
+
     // Almacenamiento de modales
     const modales = {};
 
@@ -14,13 +14,13 @@ const ModalManager = (function() {
      */
     function inicializarModales() {
         console.log('🔄 Inicializando modales...');
-        
+
         // Verificar que bootstrap está disponible
         if (typeof bootstrap === 'undefined') {
             console.error('❌ Bootstrap no está disponible');
             return;
         }
-        
+
         const modalesConfig = [
             { id: 'modalResponsable', nombre: 'responsable' },
             { id: 'modalPuestoDocente', nombre: 'puestoDocente' },
@@ -28,10 +28,10 @@ const ModalManager = (function() {
             { id: 'modalConfigurarPC', nombre: 'configurarPC' },
             { id: 'modalAsignarSilla', nombre: 'asignarSilla' }
         ];
-        
+
         let contador = 0;
         let errores = 0;
-        
+
         modalesConfig.forEach(config => {
             const elemento = document.getElementById(config.id);
             if (elemento) {
@@ -54,7 +54,7 @@ const ModalManager = (function() {
                 errores++;
             }
         });
-        
+
         console.log(`✅ ${contador} modales inicializados correctamente (${errores} errores)`);
         return modales;
     }
@@ -75,7 +75,7 @@ const ModalManager = (function() {
      */
     function showModal(nombre) {
         console.log(`📌 Intentando mostrar modal: ${nombre}`);
-        
+
         const modal = modales[nombre];
         if (modal) {
             try {
@@ -88,7 +88,7 @@ const ModalManager = (function() {
             }
         } else {
             console.error(`❌ Modal ${nombre} no disponible`);
-            
+
             // Intentar inicializar modales si no están disponibles
             if (Object.keys(modales).length === 0) {
                 console.log('🔄 No hay modales inicializados, intentando inicializar...');
@@ -110,7 +110,7 @@ const ModalManager = (function() {
      */
     function hideModal(nombre) {
         console.log(`📌 Intentando ocultar modal: ${nombre}`);
-        
+
         const modal = modales[nombre];
         if (modal) {
             try {
@@ -165,13 +165,13 @@ const ModalManager = (function() {
             'configurarPC': 'modalConfigurarPC',
             'asignarSilla': 'modalAsignarSilla'
         };
-        
+
         const id = config[nombre];
         if (!id) {
             console.error(`❌ Nombre de modal inválido: ${nombre}`);
             return false;
         }
-        
+
         const elemento = document.getElementById(id);
         if (elemento && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             try {
@@ -216,7 +216,7 @@ const ModalManager = (function() {
         listarModales,
         reinicializarModal
     };
-    
+
     console.log('✅ ModalManager: API creada');
     return api;
 })();
@@ -233,9 +233,9 @@ if (typeof ModalManager !== 'undefined') {
 window.ModalManager = ModalManager;
 
 // Script de diagnóstico para verificar modales
-window.diagnosticarModales = function() {
+window.diagnosticarModales = function () {
     console.log('=== DIAGNÓSTICO DE MODALES ===');
-    
+
     const modalesIds = [
         'modalResponsable',
         'modalPuestoDocente',
@@ -243,7 +243,7 @@ window.diagnosticarModales = function() {
         'modalConfigurarPC',
         'modalAsignarSilla'
     ];
-    
+
     console.log('🔍 Verificando elementos en DOM:');
     modalesIds.forEach(id => {
         const el = document.getElementById(id);
@@ -253,11 +253,11 @@ window.diagnosticarModales = function() {
             console.log(`  • Display: ${el.style.display}`);
         }
     });
-    
+
     console.log('\n🔍 Verificando modales inicializados:');
     const modalesInicializados = ModalManager.listarModales();
     console.log('- Inicializados:', modalesInicializados);
-    
+
     console.log('\n🔍 Verificando Bootstrap:');
     console.log('- bootstrap:', typeof bootstrap);
     console.log('- bootstrap.Modal:', typeof bootstrap?.Modal);

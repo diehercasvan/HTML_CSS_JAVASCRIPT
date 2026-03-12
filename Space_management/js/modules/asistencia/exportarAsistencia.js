@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo exportarAsistencia.js...');
 
-const ExportarAsistencia = (function() {
-    
+const ExportarAsistencia = (function () {
+
     /**
      * Obtiene el número de semana ISO
      */
@@ -23,12 +23,12 @@ const ExportarAsistencia = (function() {
         const dias = [];
         const start = new Date(fechaInicio);
         const end = new Date(fechaFin);
-        
+
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const fechaStr = d.toISOString().split('T')[0];
-            const asistencia = typeof AsistenciaData !== 'undefined' ? 
+            const asistencia = typeof AsistenciaData !== 'undefined' ?
                 AsistenciaData.obtenerAsistencia(curso, fechaStr) : null;
-            
+
             if (asistencia) {
                 dias.push({
                     fecha: fechaStr,
@@ -36,7 +36,7 @@ const ExportarAsistencia = (function() {
                 });
             }
         }
-        
+
         return dias;
     }
 
@@ -60,10 +60,10 @@ const ExportarAsistencia = (function() {
      */
     function exportarRegistroDiario() {
         console.log('📤 Exportando registro diario...');
-        
+
         const curso = document.getElementById('cursoAsistencia')?.value;
         const fecha = document.getElementById('fechaAsistencia')?.value;
-        
+
         if (!curso || !fecha) {
             Swal.fire({
                 icon: 'warning',
@@ -72,10 +72,10 @@ const ExportarAsistencia = (function() {
             });
             return;
         }
-        
-        const asistencia = typeof AsistenciaData !== 'undefined' ? 
+
+        const asistencia = typeof AsistenciaData !== 'undefined' ?
             AsistenciaData.obtenerAsistencia(curso, fecha) : null;
-        
+
         if (!asistencia) {
             Swal.fire({
                 icon: 'warning',
@@ -84,10 +84,10 @@ const ExportarAsistencia = (function() {
             });
             return;
         }
-        
-        const docente = typeof AsistenciaData !== 'undefined' ? 
+
+        const docente = typeof AsistenciaData !== 'undefined' ?
             AsistenciaData.obtenerDocenteActual(curso) : null;
-        
+
         const datos = {
             version: "0.8",
             tipo: "registro_diario",
@@ -101,10 +101,10 @@ const ExportarAsistencia = (function() {
             presentes: asistencia.registros.filter(a => a.asistio).length,
             ausentes: asistencia.registros.filter(a => !a.asistio).length
         };
-        
+
         const nombreArchivo = `asistencia-${curso}-${fecha}.json`;
         descargarJSON(datos, nombreArchivo);
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Registro exportado',
@@ -119,10 +119,10 @@ const ExportarAsistencia = (function() {
      */
     function exportarRegistroSemanal() {
         console.log('📤 Exportando registro semanal...');
-        
+
         const curso = document.getElementById('cursoAsistencia')?.value;
         const semanaInput = document.getElementById('semanaAsistencia')?.value;
-        
+
         if (!curso || !semanaInput) {
             Swal.fire({
                 icon: 'warning',
@@ -131,7 +131,7 @@ const ExportarAsistencia = (function() {
             });
             return;
         }
-        
+
         // Calcular fechas de la semana
         const [year, week] = semanaInput.split('-W');
         const fechaInicio = new Date(year, 0, 1 + (week - 1) * 7);
@@ -140,22 +140,22 @@ const ExportarAsistencia = (function() {
         }
         const fechaFin = new Date(fechaInicio);
         fechaFin.setDate(fechaFin.getDate() + 4);
-        
+
         const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
         const fechaFinStr = fechaFin.toISOString().split('T')[0];
-        
-        const docente = typeof AsistenciaData !== 'undefined' ? 
+
+        const docente = typeof AsistenciaData !== 'undefined' ?
             AsistenciaData.obtenerDocenteActual(curso) : null;
-        
+
         const dias = obtenerAsistenciaPorDias(curso, fechaInicioStr, fechaFinStr);
-        
+
         let totalPresentes = 0;
         let totalRegistros = 0;
         dias.forEach(dia => {
             totalPresentes += dia.asistencia.filter(a => a.asistio).length;
             totalRegistros += dia.asistencia.length;
         });
-        
+
         const datos = {
             version: "0.8",
             tipo: "registro_semanal",
@@ -171,14 +171,14 @@ const ExportarAsistencia = (function() {
                 registros: totalRegistros,
                 presentes: totalPresentes,
                 ausentes: totalRegistros - totalPresentes,
-                porcentaje: totalRegistros > 0 ? 
+                porcentaje: totalRegistros > 0 ?
                     Math.round((totalPresentes / totalRegistros) * 100) : 0
             }
         };
-        
+
         const nombreArchivo = `asistencia-${curso}-semana-${week}-${year}.json`;
         descargarJSON(datos, nombreArchivo);
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Registro semanal exportado',

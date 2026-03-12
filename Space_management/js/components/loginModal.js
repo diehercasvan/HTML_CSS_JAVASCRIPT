@@ -1,23 +1,23 @@
 // js/components/loginModal.js
 // Versión 1.0 - Modal de inicio de sesión
 
-const LoginModal = (function() {
-    
+const LoginModal = (function () {
+
     let modalInstance = null;
     let onSuccessCallback = null;
-    
+
     /**
      * Muestra el modal de login
      */
     function show(onSuccess = null) {
         onSuccessCallback = onSuccess;
-        
+
         // Si ya está autenticado, no mostrar
         if (Auth.isAuthenticated()) {
             if (onSuccessCallback) onSuccessCallback(Auth.getCurrentUser());
             return;
         }
-        
+
         Swal.fire({
             title: '🔐 Iniciar Sesión',
             html: `
@@ -45,7 +45,7 @@ const LoginModal = (function() {
             didOpen: () => {
                 // Enfocar el primer campo
                 document.getElementById('loginDocumento').focus();
-                
+
                 // Permitir submit con Enter
                 document.getElementById('loginForm').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
@@ -57,22 +57,22 @@ const LoginModal = (function() {
             preConfirm: async () => {
                 const documento = document.getElementById('loginDocumento').value;
                 const email = document.getElementById('loginEmail').value;
-                
+
                 if (!documento || !email) {
                     Swal.showValidationMessage('Todos los campos son obligatorios');
                     return false;
                 }
-                
+
                 // Mostrar carga
                 Swal.showLoading();
-                
+
                 const result = await Auth.login(documento, email);
-                
+
                 if (!result.success) {
                     Swal.showValidationMessage(result.error);
                     return false;
                 }
-                
+
                 return result.user;
             }
         }).then((result) => {
@@ -84,14 +84,14 @@ const LoginModal = (function() {
                     timer: 2000,
                     showConfirmButton: false
                 });
-                
+
                 if (onSuccessCallback) {
                     onSuccessCallback(result.value);
                 }
             }
         });
     }
-    
+
     /**
      * Muestra información de la sesión actual
      */
@@ -100,10 +100,10 @@ const LoginModal = (function() {
             show();
             return;
         }
-        
+
         const user = Auth.getCurrentUser();
         const minutesLeft = Auth.getSessionTimeRemaining();
-        
+
         Swal.fire({
             title: '👤 Sesión Activa',
             html: `
@@ -134,7 +134,7 @@ const LoginModal = (function() {
             }
         });
     }
-    
+
     /**
      * Verifica autenticación antes de una acción
      */
@@ -144,7 +144,7 @@ const LoginModal = (function() {
             Auth.refreshTokenIfNeeded();
             return true;
         }
-        
+
         const result = await Swal.fire({
             title: '🔐 Acceso Restringido',
             text: 'Debe iniciar sesión para continuar',
@@ -153,7 +153,7 @@ const LoginModal = (function() {
             confirmButtonText: 'Iniciar Sesión',
             cancelButtonText: 'Cancelar'
         });
-        
+
         if (result.isConfirmed) {
             return new Promise((resolve) => {
                 show(() => {
@@ -161,17 +161,17 @@ const LoginModal = (function() {
                 });
             });
         }
-        
+
         return false;
     }
-    
+
     // API pública
     return {
         show,
         showSessionInfo,
         requireAuth
     };
-    
+
 })();
 
 // Exponer globalmente

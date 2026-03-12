@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo llamadosData.js v3.1...');
 
-const LlamadosData = (function() {
-    
+const LlamadosData = (function () {
+
     let llamados = [];
 
     /**
@@ -52,7 +52,7 @@ const LlamadosData = (function() {
             if (!llamado.docente || !llamado.docente.nombre) {
                 console.warn('⚠️ Llamado sin docente asignado');
             }
-            
+
             const nuevoLlamado = {
                 id: Date.now(),
                 ...llamado,
@@ -65,12 +65,12 @@ const LlamadosData = (function() {
                     }
                 ]
             };
-            
+
             llamados.push(nuevoLlamado);
             guardarLlamados();
             console.log('✅ Llamado agregado:', nuevoLlamado.id);
             return nuevoLlamado;
-            
+
         } catch (error) {
             console.error('❌ Error agregando llamado:', error);
             return null;
@@ -82,7 +82,7 @@ const LlamadosData = (function() {
      */
     function getLlamadosPorEstudiante(documento) {
         return llamados.filter(l => l.estudiante?.documento === documento)
-                      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     }
 
     /**
@@ -106,18 +106,18 @@ const LlamadosData = (function() {
         try {
             const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
-            
+
             llamados[index].estado = nuevoEstado;
             llamados[index].historial.push({
                 fecha: new Date().toISOString(),
                 accion: 'estado_actualizado',
                 valor: nuevoEstado
             });
-            
+
             guardarLlamados();
             console.log(`✅ Estado del llamado ${id} actualizado a ${nuevoEstado}`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando estado:', error);
             return false;
@@ -131,31 +131,31 @@ const LlamadosData = (function() {
         try {
             const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
-            
+
             // Preservar el ID y la fecha de creación
             const llamadoOriginal = llamados[index];
-            
+
             llamados[index] = {
                 ...llamadoOriginal,
                 ...nuevosDatos,
                 fechaModificacion: new Date().toISOString()
             };
-            
+
             // Asegurar que el docente esté presente
             if (!llamados[index].docente) {
                 llamados[index].docente = { nombre: 'No asignado', documento: '' };
             }
-            
+
             llamados[index].historial.push({
                 fecha: new Date().toISOString(),
                 accion: 'actualizado',
                 usuario: nuevosDatos.docente?.nombre || 'Sistema'
             });
-            
+
             guardarLlamados();
             console.log(`✅ Llamado ${id} actualizado`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error actualizando llamado:', error);
             return false;
@@ -169,12 +169,12 @@ const LlamadosData = (function() {
         try {
             const index = llamados.findIndex(l => String(l.id) === String(id));
             if (index === -1) return false;
-            
+
             llamados.splice(index, 1);
             guardarLlamados();
             console.log(`✅ Llamado ${id} eliminado`);
             return true;
-            
+
         } catch (error) {
             console.error('❌ Error eliminando llamado:', error);
             return false;
@@ -188,7 +188,7 @@ const LlamadosData = (function() {
         try {
             const original = getLlamadoPorId(id);
             if (!original) return null;
-            
+
             const copia = {
                 ...original,
                 id: Date.now(),
@@ -203,12 +203,12 @@ const LlamadosData = (function() {
                     }
                 ]
             };
-            
+
             llamados.push(copia);
             guardarLlamados();
             console.log(`✅ Llamado duplicado: ${copia.id}`);
             return copia;
-            
+
         } catch (error) {
             console.error('❌ Error duplicando llamado:', error);
             return null;
@@ -225,7 +225,7 @@ const LlamadosData = (function() {
             total: llamados.length,
             llamados: llamados
         };
-        
+
         const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -235,7 +235,7 @@ const LlamadosData = (function() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Exportado',
@@ -251,19 +251,19 @@ const LlamadosData = (function() {
     function importarLlamados(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
-            reader.onload = function(e) {
+
+            reader.onload = function (e) {
                 try {
                     const datos = JSON.parse(e.target.result);
-                    
+
                     if (!datos.llamados || !Array.isArray(datos.llamados)) {
                         reject(new Error('Formato de archivo inválido'));
                         return;
                     }
-                    
+
                     let nuevos = 0;
                     let actualizados = 0;
-                    
+
                     datos.llamados.forEach(nuevo => {
                         const existe = llamados.some(l => l.id === nuevo.id);
                         if (!existe) {
@@ -275,9 +275,9 @@ const LlamadosData = (function() {
                             actualizados++;
                         }
                     });
-                    
+
                     guardarLlamados();
-                    
+
                     Swal.fire({
                         icon: 'success',
                         title: 'Importado',
@@ -289,14 +289,14 @@ const LlamadosData = (function() {
                         timer: 3000,
                         showConfirmButton: false
                     });
-                    
+
                     resolve({ nuevos, actualizados });
-                    
+
                 } catch (error) {
                     reject(error);
                 }
             };
-            
+
             reader.readAsText(file);
         });
     }

@@ -10,24 +10,24 @@ if (typeof DataManager === 'undefined') {
     console.log('✅ equipos.js: DataManager disponible');
 }
 
-const EquiposModule = (function() {
+const EquiposModule = (function () {
     console.log('📦 Ejecutando IIFE de EquiposModule...');
-    
+
     /**
      * Abre el modal para agregar un nuevo equipo
      */
     function agregarEquipo() {
         console.log('🔄 Abriendo modal para nuevo equipo...');
-        
+
         const form = document.getElementById('formEquipo');
         if (form) form.reset();
-        
+
         const indexField = document.getElementById('equipoIndex');
         if (indexField) indexField.value = '-1';
-        
+
         const serialField = document.getElementById('equipoSerial');
         if (serialField) serialField.value = '';
-        
+
         if (typeof ModalManager !== 'undefined') {
             ModalManager.showModal('equipo');
         } else {
@@ -45,10 +45,10 @@ const EquiposModule = (function() {
      */
     function editarEquipo(index) {
         console.log('🔄 Editando equipo índice:', index);
-        
+
         const equipos = DataManager.getEquipos?.() || [];
         const eq = equipos[index];
-        
+
         if (!eq) {
             console.error('❌ Equipo no encontrado');
             if (typeof Utils !== 'undefined') {
@@ -56,9 +56,9 @@ const EquiposModule = (function() {
             }
             return;
         }
-        
+
         console.log('📝 Datos del equipo:', eq);
-        
+
         // Asignar valores a los campos
         const campos = [
             { id: 'equipoIndex', valor: index },
@@ -68,7 +68,7 @@ const EquiposModule = (function() {
             { id: 'equipoLimpieza', valor: eq.estadoLimpieza || 'Bueno' },
             { id: 'equipoObservaciones', valor: eq.observaciones || '' }
         ];
-        
+
         campos.forEach(campo => {
             const el = document.getElementById(campo.id);
             if (el) {
@@ -78,7 +78,7 @@ const EquiposModule = (function() {
                 console.warn(`⚠️ Campo ${campo.id} no encontrado`);
             }
         });
-        
+
         if (typeof ModalManager !== 'undefined') {
             ModalManager.showModal('equipo');
         }
@@ -89,7 +89,7 @@ const EquiposModule = (function() {
      */
     function guardarEquipo() {
         console.log('💾 Guardando equipo...');
-        
+
         // Obtener valores del formulario
         const tipo = document.getElementById('equipoTipo')?.value;
         const serial = document.getElementById('equipoSerial')?.value;
@@ -97,7 +97,7 @@ const EquiposModule = (function() {
         const estadoLimpieza = document.getElementById('equipoLimpieza')?.value;
         const observaciones = document.getElementById('equipoObservaciones')?.value;
         const idx = parseInt(document.getElementById('equipoIndex')?.value || '-1');
-        
+
         // Validaciones
         if (!tipo) {
             if (typeof Utils !== 'undefined') {
@@ -107,7 +107,7 @@ const EquiposModule = (function() {
             }
             return;
         }
-        
+
         if (!serial) {
             if (typeof Utils !== 'undefined') {
                 Utils.showToast('warning', 'Ingrese el serial del equipo');
@@ -116,7 +116,7 @@ const EquiposModule = (function() {
             }
             return;
         }
-        
+
         const data = {
             tipo,
             serial,
@@ -124,9 +124,9 @@ const EquiposModule = (function() {
             estadoLimpieza: estadoLimpieza || 'Bueno',
             observaciones: observaciones || ''
         };
-        
+
         console.log('📦 Datos a guardar:', data);
-        
+
         let resultado = false;
         if (idx >= 0) {
             resultado = DataManager.actualizarEquipo?.(idx, data) || false;
@@ -140,16 +140,16 @@ const EquiposModule = (function() {
                 Utils.showToast('success', 'Equipo agregado');
             }
         }
-        
+
         if (!resultado && typeof Utils !== 'undefined') {
             Utils.showToast('error', 'Error al guardar');
         }
-        
+
         // Actualizar tabla
         if (typeof UIManager !== 'undefined' && UIManager.renderizarEquipos) {
             UIManager.renderizarEquipos();
         }
-        
+
         if (typeof ModalManager !== 'undefined') {
             ModalManager.hideModal('equipo');
         }
@@ -160,7 +160,7 @@ const EquiposModule = (function() {
      */
     function eliminarEquipo(index) {
         console.log('🗑️ Eliminando equipo índice:', index);
-        
+
         const confirmar = async () => {
             if (typeof Utils !== 'undefined') {
                 const result = await Utils.showConfirm(
@@ -172,15 +172,15 @@ const EquiposModule = (function() {
                 return confirm('¿Eliminar equipo?');
             }
         };
-        
+
         confirmar().then(confirmed => {
             if (confirmed) {
                 const eliminado = DataManager.eliminarEquipo?.(index);
-                
+
                 if (eliminado && typeof UIManager !== 'undefined') {
                     UIManager.renderizarEquipos();
                 }
-                
+
                 if (typeof Utils !== 'undefined') {
                     if (eliminado) {
                         Utils.showToast('success', 'Equipo eliminado');
@@ -220,7 +220,7 @@ const EquiposModule = (function() {
         eliminarEquipo,
         cargarEquipos
     };
-    
+
     console.log('✅ EquiposModule: API creada');
     return api;
 })();

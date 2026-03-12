@@ -54,9 +54,9 @@ document.addEventListener('DOMContentLoaded', async function () {
             const user = Auth.getCurrentUser();
             Logger.success(`Sesión activa: ${user.nombre}`);
             // Ocultar overlay si existe
-    if (typeof AuthOverlay !== 'undefined') {
-        AuthOverlay.hide();
-    }
+            if (typeof AuthOverlay !== 'undefined') {
+                AuthOverlay.hide();
+            }
         }
         // Inicializar protector de módulos
         if (typeof AuthGuard !== 'undefined') {

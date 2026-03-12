@@ -1,16 +1,16 @@
 // js/components/authOverlay.js
 // Versión 1.0 - Overlay para contenido no autenticado
 
-const AuthOverlay = (function() {
-    
+const AuthOverlay = (function () {
+
     let overlay = null;
-    
+
     /**
      * Crea el overlay de bloqueo
      */
     function createOverlay() {
         if (overlay) return overlay;
-        
+
         overlay = document.createElement('div');
         overlay.id = 'authOverlay';
         overlay.style.cssText = `
@@ -27,7 +27,7 @@ const AuthOverlay = (function() {
             flex-direction: column;
             backdrop-filter: blur(5px);
         `;
-        
+
         overlay.innerHTML = `
             <div style="text-align: center; max-width: 400px; padding: 30px;">
                 <i class="fas fa-lock fa-4x text-primary mb-4"></i>
@@ -38,11 +38,11 @@ const AuthOverlay = (function() {
                 </button>
             </div>
         `;
-        
+
         document.body.appendChild(overlay);
         return overlay;
     }
-    
+
     /**
      * Muestra el overlay
      */
@@ -50,7 +50,7 @@ const AuthOverlay = (function() {
         const overlay = createOverlay();
         overlay.style.display = 'flex';
     }
-    
+
     /**
      * Oculta el overlay
      */
@@ -59,7 +59,7 @@ const AuthOverlay = (function() {
             overlay.style.display = 'none';
         }
     }
-    
+
     /**
      * Actualiza según estado de autenticación
      */
@@ -70,19 +70,19 @@ const AuthOverlay = (function() {
             show();
         }
     }
-    
+
     // Escuchar cambios en autenticación
     Auth.addListener(() => {
         update();
     });
-    
+
     // API pública
     return {
         show,
         hide,
         update
     };
-    
+
 })();
 
 window.AuthOverlay = AuthOverlay;

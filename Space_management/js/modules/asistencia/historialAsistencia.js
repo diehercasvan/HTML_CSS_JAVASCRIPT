@@ -145,70 +145,70 @@ const HistorialAsistencia = (function () {
         }
     }
 
-   /**
- * Eliminar un registro (VERSIÓN CORREGIDA CON RECARGA AUTOMÁTICA)
- */
-function eliminar(id) {
-    console.log('🗑️ Eliminando asistencia:', id);
-    
-    const asistencias = AsistenciaData.obtenerTodasAsistencias();
-    const asistencia = asistencias.find(a => a.id == id);
-    
-    if (!asistencia) {
-        Swal.fire('Error', 'Registro no encontrado', 'error');
-        return;
-    }
-    
-    Swal.fire({
-        title: '¿Eliminar registro?',
-        html: `
+    /**
+  * Eliminar un registro (VERSIÓN CORREGIDA CON RECARGA AUTOMÁTICA)
+  */
+    function eliminar(id) {
+        console.log('🗑️ Eliminando asistencia:', id);
+
+        const asistencias = AsistenciaData.obtenerTodasAsistencias();
+        const asistencia = asistencias.find(a => a.id == id);
+
+        if (!asistencia) {
+            Swal.fire('Error', 'Registro no encontrado', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: '¿Eliminar registro?',
+            html: `
             <p><strong>Fecha:</strong> ${asistencia.fecha}</p>
             <p><strong>Curso:</strong> ${asistencia.curso}</p>
             <p><strong>Docente:</strong> ${asistencia.docente?.nombre || 'N/A'}</p>
         `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Mostrar carga
-            Swal.fire({
-                title: 'Eliminando...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-            
-            const eliminado = AsistenciaData.eliminarAsistencia(id);
-            
-            if (eliminado) {
-                console.log('✅ Registro eliminado, recargando tabla...');
-                
-                // Cerrar modal de carga
-                Swal.close();
-                
-                // RECARGAR TABLA INMEDIATAMENTE
-                renderizarHistorial();
-                
-                // Mostrar éxito
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mostrar carga
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Eliminado',
-                    text: 'El registro ha sido eliminado',
-                    timer: 1500,
-                    showConfirmButton: false
+                    title: 'Eliminando...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
                 });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudo eliminar'
-                });
+
+                const eliminado = AsistenciaData.eliminarAsistencia(id);
+
+                if (eliminado) {
+                    console.log('✅ Registro eliminado, recargando tabla...');
+
+                    // Cerrar modal de carga
+                    Swal.close();
+
+                    // RECARGAR TABLA INMEDIATAMENTE
+                    renderizarHistorial();
+
+                    // Mostrar éxito
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Eliminado',
+                        text: 'El registro ha sido eliminado',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo eliminar'
+                    });
+                }
             }
-        }
-    });
-}
+        });
+    }
 
     return {
         renderizarHistorial,
@@ -263,25 +263,25 @@ window.verificarDatosHistorial = function () {
 };
 
 // Ejecutar en consola para diagnosticar
-window.diagnosticarHistorial = function() {
+window.diagnosticarHistorial = function () {
     console.log('=== DIAGNÓSTICO DEL HISTORIAL ===');
-    
+
     // 1. Verificar funciones
     console.log('1. HistorialAsistencia.renderizarHistorial:', typeof HistorialAsistencia?.renderizarHistorial);
     console.log('2. AsistenciaData.obtenerTodasAsistencias:', typeof AsistenciaData?.obtenerTodasAsistencias);
     console.log('3. AsistenciaData.exportarAsistencias:', typeof AsistenciaData?.exportarAsistencias);
-    
+
     // 2. Verificar datos
     if (AsistenciaData) {
         const asistencias = AsistenciaData.obtenerTodasAsistencias();
         console.log('4. Total asistencias:', asistencias.length);
     }
-    
+
     // 3. Probar recarga manual
     console.log('5. Recargando manualmente...');
     if (HistorialAsistencia) {
         HistorialAsistencia.renderizarHistorial();
     }
-    
+
     return '✅ Diagnóstico completado';
 };

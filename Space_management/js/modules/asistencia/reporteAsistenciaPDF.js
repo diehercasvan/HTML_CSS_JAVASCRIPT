@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando reporteAsistenciaPDF.js...');
 
-const ReporteAsistenciaPDF = (function() {
-    
+const ReporteAsistenciaPDF = (function () {
+
     /**
      * Carga el logo para los reportes
      */
@@ -20,8 +20,8 @@ const ReporteAsistenciaPDF = (function() {
      * Genera el header con logo
      */
     function generarHeaderConLogo(logoBase64, titulo, subtitulo = '') {
-        const logoHtml = logoBase64 ? 
-            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` : 
+        const logoHtml = logoBase64 ?
+            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` :
             `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 24px; font-weight: bold;">
                 SENA
             </div>`;
@@ -44,21 +44,21 @@ const ReporteAsistenciaPDF = (function() {
      */
     async function generarReporteDesdeHistorial(datosAsistencia) {
         console.log('📄 Generando reporte desde historial...');
-        
+
         const logoBase64 = await cargarLogo();
-        
+
         // Obtener nombre del curso
         const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
         const cursoInfo = cursos.find(c => c.id === datosAsistencia.curso);
         const nombreCurso = cursoInfo ? cursoInfo.nombre : datosAsistencia.curso;
-        
+
         // Calcular estadísticas
         const total = datosAsistencia.registros.length;
         const presentes = datosAsistencia.registros.filter(r => r.asistio).length;
         const ausentes = total - presentes;
         const uniforme = datosAsistencia.registros.filter(r => r.uniforme).length;
         const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
-        
+
         const datos = {
             tipo: 'diario',
             curso: datosAsistencia.curso,
@@ -70,7 +70,7 @@ const ReporteAsistenciaPDF = (function() {
                 total, presentes, ausentes, uniforme, porcentaje
             }
         };
-        
+
         generarHTMLReporte(datos, logoBase64);
     }
 
@@ -79,12 +79,12 @@ const ReporteAsistenciaPDF = (function() {
      */
     async function generarReporteDiario() {
         console.log('📄 Generando reporte diario de asistencia...');
-        
+
         const logoBase64 = await cargarLogo();
-        
+
         const curso = document.getElementById('cursoAsistencia')?.value;
         const fecha = document.getElementById('fechaAsistencia')?.value;
-        
+
         if (!curso) {
             Swal.fire({
                 icon: 'warning',
@@ -93,7 +93,7 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         if (!fecha) {
             Swal.fire({
                 icon: 'warning',
@@ -102,9 +102,9 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         const asistencia = AsistenciaData.obtenerAsistencia(curso, fecha);
-        
+
         if (!asistencia) {
             Swal.fire({
                 icon: 'info',
@@ -113,19 +113,19 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         // Obtener nombre del curso
         const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
         const cursoInfo = cursos.find(c => c.id === curso);
         const nombreCurso = cursoInfo ? cursoInfo.nombre : curso;
-        
+
         // Calcular estadísticas
         const total = asistencia.registros.length;
         const presentes = asistencia.registros.filter(r => r.asistio).length;
         const ausentes = total - presentes;
         const uniforme = asistencia.registros.filter(r => r.uniforme).length;
         const porcentaje = total > 0 ? Math.round((presentes / total) * 100) : 0;
-        
+
         const datos = {
             tipo: 'diario',
             curso: curso,
@@ -137,7 +137,7 @@ const ReporteAsistenciaPDF = (function() {
                 total, presentes, ausentes, uniforme, porcentaje
             }
         };
-        
+
         generarHTMLReporte(datos, logoBase64);
     }
 
@@ -146,12 +146,12 @@ const ReporteAsistenciaPDF = (function() {
      */
     async function generarReporteSemanal() {
         console.log('📄 Generando reporte semanal de asistencia...');
-        
+
         const logoBase64 = await cargarLogo();
-        
+
         const curso = document.getElementById('cursoAsistencia')?.value;
         const semanaInput = document.getElementById('semanaAsistencia')?.value;
-        
+
         if (!curso) {
             Swal.fire({
                 icon: 'warning',
@@ -160,7 +160,7 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         if (!semanaInput) {
             Swal.fire({
                 icon: 'warning',
@@ -169,7 +169,7 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         // Calcular fechas de la semana
         const [year, week] = semanaInput.split('-W');
         const fechaInicio = new Date(year, 0, 1 + (week - 1) * 7);
@@ -178,18 +178,18 @@ const ReporteAsistenciaPDF = (function() {
         }
         const fechaFin = new Date(fechaInicio);
         fechaFin.setDate(fechaFin.getDate() + 4);
-        
+
         const fechaInicioStr = fechaInicio.toISOString().split('T')[0];
         const fechaFinStr = fechaFin.toISOString().split('T')[0];
-        
+
         // Obtener todas las asistencias de la semana
         const todasAsistencias = AsistenciaData.obtenerTodasAsistencias();
-        const asistenciasSemana = todasAsistencias.filter(a => 
-            a.curso === curso && 
-            a.fecha >= fechaInicioStr && 
+        const asistenciasSemana = todasAsistencias.filter(a =>
+            a.curso === curso &&
+            a.fecha >= fechaInicioStr &&
             a.fecha <= fechaFinStr
         );
-        
+
         if (asistenciasSemana.length === 0) {
             Swal.fire({
                 icon: 'info',
@@ -198,37 +198,37 @@ const ReporteAsistenciaPDF = (function() {
             });
             return;
         }
-        
+
         // Obtener nombre del curso
         const cursos = DataManager.getCursos ? DataManager.getCursos() : [];
         const cursoInfo = cursos.find(c => c.id === curso);
         const nombreCurso = cursoInfo ? cursoInfo.nombre : curso;
-        
+
         // Calcular estadísticas totales de la semana
         let totalRegistros = 0;
         let totalPresentes = 0;
         let totalUniforme = 0;
-        
+
         asistenciasSemana.forEach(dia => {
             totalRegistros += dia.registros.length;
             totalPresentes += dia.registros.filter(r => r.asistio).length;
             totalUniforme += dia.registros.filter(r => r.uniforme).length;
         });
-        
+
         const totalAusentes = totalRegistros - totalPresentes;
         const porcentajeSemana = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0;
-        
+
         // Preparar datos por día
         const diasSemana = [];
         for (let d = new Date(fechaInicio); d <= fechaFin; d.setDate(d.getDate() + 1)) {
             const fechaStr = d.toISOString().split('T')[0];
             const dia = asistenciasSemana.find(a => a.fecha === fechaStr);
-            
+
             if (dia) {
                 const presentes = dia.registros.filter(r => r.asistio).length;
                 const ausentes = dia.registros.length - presentes;
                 const porcentajeDia = Math.round((presentes / dia.registros.length) * 100);
-                
+
                 diasSemana.push({
                     fecha: fechaStr,
                     existe: true,
@@ -249,7 +249,7 @@ const ReporteAsistenciaPDF = (function() {
                 });
             }
         }
-        
+
         generarHTMLReporte({
             tipo: 'semanal',
             curso: curso,
@@ -274,22 +274,22 @@ const ReporteAsistenciaPDF = (function() {
      */
     function generarHTMLReporte(datos, logoBase64) {
         const fechaActual = new Date().toLocaleString();
-        const titulo = datos.tipo === 'diario' ? 
+        const titulo = datos.tipo === 'diario' ?
             `REPORTE DIARIO DE ASISTENCIA` :
             `REPORTE SEMANAL DE ASISTENCIA`;
-        
+
         const subtitulo = datos.tipo === 'diario' ?
             `${datos.fecha} - Curso ${datos.curso}` :
             `Semana ${datos.semana} (${datos.fechaInicio} al ${datos.fechaFin}) - Curso ${datos.curso}`;
-        
+
         let contenido = '';
-        
+
         if (datos.tipo === 'diario') {
             contenido = generarHTMLDiario(datos);
         } else {
             contenido = generarHTMLSemanal(datos);
         }
-        
+
         const ventana = window.open('', '_blank');
         ventana.document.write(`
             <!DOCTYPE html>
@@ -552,7 +552,7 @@ const ReporteAsistenciaPDF = (function() {
     function generarHTMLSemanal(datos) {
         // Obtener todos los estudiantes únicos de la semana
         const estudiantesMap = new Map();
-        
+
         datos.asistencias.forEach(dia => {
             dia.registros.forEach(r => {
                 if (!estudiantesMap.has(r.documento)) {
@@ -568,20 +568,20 @@ const ReporteAsistenciaPDF = (function() {
                 };
             });
         });
-        
+
         const estudiantes = Array.from(estudiantesMap.values());
-        
+
         // Crear cabecera de la tabla con los días de la semana
-        const diasCabecera = datos.dias.map(dia => 
+        const diasCabecera = datos.dias.map(dia =>
             `<th style="font-size: 11px; text-align: center;">${dia.fecha.split('-')[2]}/${dia.fecha.split('-')[1]}</th>`
         ).join('');
-        
+
         // Crear filas de estudiantes
         const filasEstudiantes = estudiantes.map(est => {
             let fila = `<tr>
                 <td>${est.documento}</td>
                 <td>${est.nombre}</td>`;
-            
+
             datos.dias.forEach(dia => {
                 const registro = est.dias[dia.fecha];
                 if (registro) {
@@ -595,7 +595,7 @@ const ReporteAsistenciaPDF = (function() {
                     fila += `<td style="text-align: center; color: #666;">—</td>`;
                 }
             });
-            
+
             fila += '</tr>';
             return fila;
         }).join('');
@@ -650,16 +650,16 @@ const ReporteAsistenciaPDF = (function() {
 
             <h2 style="margin-top: 30px;">Resumen por Día</h2>
             ${datos.dias.map(dia => {
-                if (!dia.existe) {
-                    return `
+            if (!dia.existe) {
+                return `
                         <div class="dia-card">
                             <div class="dia-header">${dia.fecha}</div>
                             <p class="text-muted">Sin registro de asistencia</p>
                         </div>
                     `;
-                }
-                
-                return `
+            }
+
+            return `
                     <div class="dia-card">
                         <div class="dia-header">${dia.fecha} - Docente: ${dia.docente?.nombre || 'N/A'}</div>
                         <p><strong>Total:</strong> ${dia.registros} | 
@@ -672,7 +672,7 @@ const ReporteAsistenciaPDF = (function() {
                         </div>
                     </div>
                 `;
-            }).join('')}
+        }).join('')}
         `;
     }
 

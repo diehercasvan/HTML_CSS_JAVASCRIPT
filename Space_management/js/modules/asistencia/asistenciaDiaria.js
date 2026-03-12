@@ -3,8 +3,8 @@
 
 console.log('🔄 Cargando módulo asistenciaDiaria.js...');
 
-const AsistenciaDiaria = (function() {
-    
+const AsistenciaDiaria = (function () {
+
     // Inicializar objeto temporal si no existe
     if (!window.asistenciasTemp) window.asistenciasTemp = {};
 
@@ -13,15 +13,15 @@ const AsistenciaDiaria = (function() {
      */
     async function filtrarAsistencia() {
         console.log('🔍 Filtrando asistencia...');
-        
+
         const cursoSelect = document.getElementById('cursoAsistencia');
         const fechaInput = document.getElementById('fechaAsistencia');
-        
+
         if (!cursoSelect || !fechaInput) return;
-        
+
         const curso = cursoSelect.value;
         const fecha = fechaInput.value;
-        
+
         if (!curso || !fecha) {
             Swal.fire({
                 icon: 'warning',
@@ -30,10 +30,10 @@ const AsistenciaDiaria = (function() {
             });
             return;
         }
-        
+
         // Buscar asistencia guardada
         const asistenciaGuardada = AsistenciaData.obtenerAsistencia(curso, fecha);
-        
+
         if (asistenciaGuardada) {
             console.log('📋 Asistencia encontrada:', asistenciaGuardada);
             window.asistenciasTemp = {};
@@ -48,7 +48,7 @@ const AsistenciaDiaria = (function() {
             console.log('📭 No hay asistencia guardada para esta fecha');
             window.asistenciasTemp = {};
         }
-        
+
         await renderizarTablaAsistencia(curso, fecha);
     }
 
@@ -57,30 +57,30 @@ const AsistenciaDiaria = (function() {
      */
     async function renderizarTablaAsistencia(cursoId, fecha) {
         console.log(`📋 Renderizando asistencia para curso ${cursoId}, fecha ${fecha}`);
-        
+
         const tbody = document.getElementById('cuerpoTablaAsistencia');
         if (!tbody) return;
-        
+
         try {
             const estudiantes = await DataManager.getEstudiantesPorCurso(cursoId) || [];
-            const sillas = DataManager.getSillasPorCurso ? 
+            const sillas = DataManager.getSillasPorCurso ?
                 DataManager.getSillasPorCurso(cursoId) : [];
-            
+
             if (estudiantes.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No hay estudiantes en este curso</td></tr>';
                 return;
             }
-            
+
             let html = '';
             estudiantes.forEach(estudiante => {
                 const sillaAsignada = sillas.find(s => s.documento === estudiante.documento);
                 const registro = window.asistenciasTemp?.[estudiante.documento];
-                
+
                 const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
                 const asistio = registro?.asistio || false;
                 const uniforme = registro?.uniforme || false;
                 const observaciones = registro?.observaciones || '';
-                
+
                 html += `
                     <tr>
                         <td>${estudiante.documento}</td>
@@ -119,9 +119,9 @@ const AsistenciaDiaria = (function() {
                     </tr>
                 `;
             });
-            
+
             tbody.innerHTML = html;
-            
+
         } catch (error) {
             console.error('❌ Error renderizando asistencia:', error);
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error cargando datos</td></tr>';
@@ -134,9 +134,9 @@ const AsistenciaDiaria = (function() {
     function marcarAsistencia(doc, presente) {
         if (!window.asistenciasTemp) window.asistenciasTemp = {};
         if (!window.asistenciasTemp[doc]) window.asistenciasTemp[doc] = {};
-        
+
         window.asistenciasTemp[doc].asistio = presente;
-        
+
         const label = document.querySelector(`label[for="asistencia_${doc}"]`);
         if (label) {
             label.textContent = presente ? 'Presente' : 'Ausente';
@@ -149,9 +149,9 @@ const AsistenciaDiaria = (function() {
     function marcarUniforme(doc, tieneUniforme) {
         if (!window.asistenciasTemp) window.asistenciasTemp = {};
         if (!window.asistenciasTemp[doc]) window.asistenciasTemp[doc] = {};
-        
+
         window.asistenciasTemp[doc].uniforme = tieneUniforme;
-        
+
         const label = document.querySelector(`label[for="uniforme_${doc}"]`);
         if (label) {
             label.textContent = tieneUniforme ? 'Con Uniforme' : 'Sin Uniforme';
@@ -164,7 +164,7 @@ const AsistenciaDiaria = (function() {
     function actualizarObservacion(doc, obs) {
         if (!window.asistenciasTemp) window.asistenciasTemp = {};
         if (!window.asistenciasTemp[doc]) window.asistenciasTemp[doc] = {};
-        
+
         window.asistenciasTemp[doc].observaciones = obs;
     }
 
@@ -173,10 +173,10 @@ const AsistenciaDiaria = (function() {
      */
     function marcarTodos() {
         console.log('✅ Marcando todos los estudiantes');
-        
+
         const asis = document.querySelectorAll('[id^="asistencia_"]');
         const unif = document.querySelectorAll('[id^="uniforme_"]');
-        
+
         asis.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = true;
@@ -184,7 +184,7 @@ const AsistenciaDiaria = (function() {
                 marcarAsistencia(doc, true);
             }
         });
-        
+
         unif.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = true;
@@ -192,7 +192,7 @@ const AsistenciaDiaria = (function() {
                 marcarUniforme(doc, true);
             }
         });
-        
+
         Swal.fire({
             icon: 'success',
             title: 'Marcados',
@@ -207,10 +207,10 @@ const AsistenciaDiaria = (function() {
      */
     function desmarcarTodos() {
         console.log('✅ Desmarcando todos los estudiantes');
-        
+
         const asis = document.querySelectorAll('[id^="asistencia_"]');
         const unif = document.querySelectorAll('[id^="uniforme_"]');
-        
+
         asis.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = false;
@@ -218,7 +218,7 @@ const AsistenciaDiaria = (function() {
                 marcarAsistencia(doc, false);
             }
         });
-        
+
         unif.forEach(cb => {
             if (cb.type === 'checkbox') {
                 cb.checked = false;
@@ -226,7 +226,7 @@ const AsistenciaDiaria = (function() {
                 marcarUniforme(doc, false);
             }
         });
-        
+
         Swal.fire({
             icon: 'info',
             title: 'Desmarcados',
@@ -241,15 +241,15 @@ const AsistenciaDiaria = (function() {
      */
     async function guardarAsistencia() {
         console.log('💾 Guardando asistencia...');
-        
+
         const cursoSelect = document.getElementById('cursoAsistencia');
         const fechaInput = document.getElementById('fechaAsistencia');
-        
+
         if (!cursoSelect || !fechaInput) return;
-        
+
         const curso = cursoSelect.value;
         const fecha = fechaInput.value;
-        
+
         if (!curso || !fecha) {
             Swal.fire({
                 icon: 'warning',
@@ -258,9 +258,9 @@ const AsistenciaDiaria = (function() {
             });
             return;
         }
-        
+
         const estudiantes = await DataManager.getEstudiantesPorCurso(curso) || [];
-        
+
         if (estudiantes.length === 0) {
             Swal.fire({
                 icon: 'warning',
@@ -269,7 +269,7 @@ const AsistenciaDiaria = (function() {
             });
             return;
         }
-        
+
         const registros = estudiantes.map(e => ({
             documento: e.documento,
             nombre: `${e.nombres} ${e.apellidos}`,
@@ -277,13 +277,13 @@ const AsistenciaDiaria = (function() {
             uniforme: window.asistenciasTemp?.[e.documento]?.uniforme || false,
             observaciones: window.asistenciasTemp?.[e.documento]?.observaciones || ''
         }));
-        
+
         const resultado = AsistenciaData.guardarAsistencia(curso, fecha, registros);
-        
+
         if (resultado) {
             const presentes = registros.filter(r => r.asistio).length;
             const uniformes = registros.filter(r => r.uniforme).length;
-            
+
             Swal.fire({
                 icon: 'success',
                 title: '✅ Asistencia guardada',
@@ -295,7 +295,7 @@ const AsistenciaDiaria = (function() {
                 timer: 2000,
                 showConfirmButton: false
             });
-            
+
             // Actualizar historial
             if (typeof HistorialAsistencia !== 'undefined') {
                 HistorialAsistencia.renderizarHistorial();
@@ -309,7 +309,7 @@ const AsistenciaDiaria = (function() {
     function cargarAsistenciaPorCurso() {
         const cursoSelect = document.getElementById('cursoAsistencia');
         const fechaInput = document.getElementById('fechaAsistencia');
-        
+
         if (cursoSelect && cursoSelect.value && fechaInput) {
             if (!fechaInput.value) {
                 fechaInput.value = new Date().toISOString().split('T')[0];
@@ -324,16 +324,16 @@ const AsistenciaDiaria = (function() {
     function establecerSemanaActual() {
         const fechaInput = document.getElementById('fechaAsistencia');
         const semanaInput = document.getElementById('semanaAsistencia');
-        
+
         if (fechaInput && fechaInput.value && semanaInput) {
             const fecha = new Date(fechaInput.value);
             const año = fecha.getFullYear();
-            
+
             // Calcular número de semana ISO
             const inicioAño = new Date(año, 0, 1);
             const dias = Math.floor((fecha - inicioAño) / (24 * 60 * 60 * 1000));
             const semana = Math.ceil((dias + inicioAño.getDay() + 1) / 7);
-            
+
             semanaInput.value = `${año}-W${String(semana).padStart(2, '0')}`;
         }
     }

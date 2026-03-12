@@ -28,8 +28,8 @@ const Reportes = (function () {
      * Genera el header con logo para los reportes
      */
     function generarHeaderConLogo(logoBase64, titulo, subtitulo = '') {
-        const logoHtml = logoBase64 ? 
-            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` : 
+        const logoHtml = logoBase64 ?
+            `<div class="logo"><img src="${logoBase64}" alt="Logo SENA"></div>` :
             `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 24px; font-weight: bold;">
                 SENA
             </div>`;

@@ -1,26 +1,26 @@
 // js/components/validationPanel.js
 // Versión 1.0 - Panel de validación con toggle y logs sanitizados
 
-const ValidationPanel = (function() {
-    
+const ValidationPanel = (function () {
+
     let panel = null;
     let updateInterval = null;
     let isVisible = false;
-    
+
     /**
      * Inicializa el panel
      */
     function init() {
         // Solo en desarrollo
         if (!Logger.isDev()) return;
-        
+
         createPanel();
         setupHotkey();
         startAutoUpdate();
-        
+
         Logger.info('Panel de validación inicializado');
     }
-    
+
     /**
      * Crea el panel en el DOM
      */
@@ -43,13 +43,13 @@ const ValidationPanel = (function() {
             font-family: 'Segoe UI', sans-serif;
             font-size: 12px;
         `;
-        
+
         panel.innerHTML = getPanelHTML();
         document.body.appendChild(panel);
-        
+
         setupEventListeners();
     }
-    
+
     /**
      * HTML del panel
      */
@@ -73,7 +73,7 @@ const ValidationPanel = (function() {
             </div>
         `;
     }
-    
+
     /**
      * Configura event listeners
      */
@@ -82,12 +82,12 @@ const ValidationPanel = (function() {
             const content = document.getElementById('panelContent');
             content.style.display = content.style.display === 'none' ? 'block' : 'none';
         });
-        
+
         document.getElementById('togglePanelClose').addEventListener('click', () => {
             hide();
         });
     }
-    
+
     /**
      * Configura tecla de acceso rápido (Ctrl+Shift+V)
      */
@@ -99,7 +99,7 @@ const ValidationPanel = (function() {
             }
         });
     }
-    
+
     /**
      * Muestra el panel
      */
@@ -110,7 +110,7 @@ const ValidationPanel = (function() {
             updateContent();
         }
     }
-    
+
     /**
      * Oculta el panel
      */
@@ -120,7 +120,7 @@ const ValidationPanel = (function() {
             isVisible = false;
         }
     }
-    
+
     /**
      * Alterna visibilidad del panel
      */
@@ -131,7 +131,7 @@ const ValidationPanel = (function() {
             show();
         }
     }
-    
+
     /**
      * Inicia actualización automática
      */
@@ -143,18 +143,18 @@ const ValidationPanel = (function() {
             }
         }, 3000);
     }
-    
+
     /**
      * Actualiza el contenido del panel
      */
     function updateContent() {
         const content = document.getElementById('panelContent');
         if (!content) return;
-        
+
         const estado = getValidationState();
         const logs = Logger.getLogs();
         const auth = Auth.getCurrentUser();
-        
+
         content.innerHTML = `
             <div style="margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
@@ -187,7 +187,7 @@ const ValidationPanel = (function() {
             </div>
         `;
     }
-    
+
     /**
      * Renderiza estado de autenticación
      */
@@ -199,7 +199,7 @@ const ValidationPanel = (function() {
                 </div>
             `;
         }
-        
+
         return `
             <div class="alert alert-success" style="padding: 5px; margin-bottom: 10px; font-size: 11px;">
                 <div><strong>👤 ${auth.nombre}</strong></div>
@@ -208,7 +208,7 @@ const ValidationPanel = (function() {
             </div>
         `;
     }
-    
+
     /**
      * Obtiene estado de validación del sistema
      */
@@ -222,7 +222,7 @@ const ValidationPanel = (function() {
             planes: window.PlanesData?.cargarPlanes?.().length || 0
         };
     }
-    
+
     /**
      * Renderiza estado en tabla
      */
@@ -252,7 +252,7 @@ const ValidationPanel = (function() {
             </table>
         `;
     }
-    
+
     /**
      * Renderiza logs con colores
      */
@@ -260,7 +260,7 @@ const ValidationPanel = (function() {
         if (logs.length === 0) {
             return '<div style="padding: 10px; text-align: center; color: #999;">No hay logs</div>';
         }
-        
+
         return logs.map(log => {
             const color = getLogColor(log.level);
             return `
@@ -275,12 +275,12 @@ const ValidationPanel = (function() {
             `;
         }).join('');
     }
-    
+
     /**
      * Obtiene color según nivel de log
      */
     function getLogColor(level) {
-        switch(level) {
+        switch (level) {
             case 'error': return '#dc3545';
             case 'warning': return '#ffc107';
             case 'success': return '#28a745';
@@ -288,7 +288,7 @@ const ValidationPanel = (function() {
             default: return '#6c757d';
         }
     }
-    
+
     // API pública
     return {
         init,
@@ -297,7 +297,7 @@ const ValidationPanel = (function() {
         toggle,
         updateContent
     };
-    
+
 })();
 
 // Exponer globalmente

@@ -3,18 +3,18 @@
 
 console.log('🔄 Cargando logoUtils.js...');
 
-const LogoUtils = (function() {
-    
+const LogoUtils = (function () {
+
     // Logo del SENA en base64 (placeholder - reemplazar con el oficial después)
     const LOGO_SENA_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...'; // Aquí irá el logo real
-    
+
     /**
      * Obtiene el logo del SENA
      */
     function getLogoSena() {
         return LOGO_SENA_BASE64;
     }
-    
+
     /**
      * Intenta cargar el logo desde diferentes rutas
      */
@@ -25,7 +25,7 @@ const LogoUtils = (function() {
             'img/sena-logo.png',
             '../img/logo-sena.png'
         ];
-        
+
         for (const ruta of rutas) {
             try {
                 const response = await fetch(ruta);
@@ -43,7 +43,7 @@ const LogoUtils = (function() {
         }
         return null;
     }
-    
+
     /**
      * Genera HTML para el logo en los reportes
      */
@@ -51,7 +51,7 @@ const LogoUtils = (function() {
         if (logoBase64) {
             return `<img src="${logoBase64}" style="max-width: 100px; max-height: 100px;">`;
         }
-        
+
         // Versión de respaldo con texto
         return `
             <div style="width: 80px; height: 80px; background: #003366; color: white; 
@@ -61,7 +61,7 @@ const LogoUtils = (function() {
             </div>
         `;
     }
-    
+
     return {
         getLogoSena,
         cargarLogoDesdeArchivo,

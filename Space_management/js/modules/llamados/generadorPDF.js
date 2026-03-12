@@ -3,25 +3,25 @@
 
 console.log('🔄 Cargando generadorPDF.js...');
 
-const GeneradorPDF = (function() {
-    
+const GeneradorPDF = (function () {
+
     async function generarPDFLlamado(llamadoId) {
         console.log('📄 Generando PDF para llamado:', llamadoId);
-        
+
         const llamado = LlamadosData.getLlamadoPorId(llamadoId);
         if (!llamado) {
             Swal.fire('Error', 'Llamado no encontrado', 'error');
             return;
         }
-        
+
         // Cargar logo
         let logoBase64 = null;
         if (typeof LogoUtils !== 'undefined') {
             logoBase64 = await LogoUtils.cargarLogoDesdeArchivo();
         }
-        
+
         const contenido = generarHTMLLlamado(llamado, logoBase64);
-        
+
         const ventana = window.open('', '_blank');
         ventana.document.write(`
             <!DOCTYPE html>
@@ -143,8 +143,8 @@ const GeneradorPDF = (function() {
     }
 
     function generarHTMLLlamado(llamado, logoBase64) {
-        const logoHtml = logoBase64 ? 
-            `<div class="logo"><img src="${logoBase64}" alt="Logo"></div>` : 
+        const logoHtml = logoBase64 ?
+            `<div class="logo"><img src="${logoBase64}" alt="Logo"></div>` :
             `<div class="logo" style="background: #003366; color: white; display: flex; align-items: center; justify-content: center;">SENA</div>`;
 
         const compromisosHtml = llamado.compromisos?.map(c => `
